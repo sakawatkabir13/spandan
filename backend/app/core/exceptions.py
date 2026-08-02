@@ -1,0 +1,79 @@
+from typing import Any, Dict, Optional
+from fastapi import HTTPException, Request, status
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+
+
+class SpandanException(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        status_code: int = status.HTTP_400_BAD_REQUEST,
+        details: Optional[Any] = None,
+    ):
+        self.code = code
+        self.message = message
+        self.status_code = status_code
+        self.details = details
+        super().__init__(message)
+
+
+def create_error_response(code: str, message: str, details: Optional[Any] = None) -> Dict[str, Any]:
+    return {
+        "success": False,
+        "error": {
+            "code": code,
+            "message": message,
+            "details": details,
+        },
+    }
+
+
+def create_success_response(
+    message: str, data: Optional[Any] = None
+) -> Dict[str, Any]:
+    return {
+        "success": True,
+        "message": message,
+        "data": data,
+    }
+
+
+async def spandan_exception_handler(request: Request, exc: SpandanException) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=create_error_response(
+            code=exc.code, message=exc.message, details=exc.details
+        ),
+    )
+
+
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    details = exc.errors()
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=create_error_response(
+            code="VALIDATION_ERROR",
+            message="Input validation failed.",
+            details=details,
+        ),
+    )
+
+
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    code_map = {
+        400: "BAD_REQUEST",
+        401: "INVALID_CREDENTIALS",
+        403: "FORBIDDEN",
+        404: "NOT_FOUND",
+        409: "CONFLICT",
+        422: "VALIDATION_ERROR",
+        500: "INTERNAL_SERVER_ERROR",
+    }
+    code = code_map.get(exc.status_code, "ERROR")
+    message = exc.detail if isinstance(exc.detail, str) else "HTTP Exception"
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=create_error_response(code=code, message=message),
+    )

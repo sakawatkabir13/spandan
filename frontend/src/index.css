@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased selection:bg-spandan-500 selection:text-white font-sans;
+  }
+}
+
+@layer components {
+  /* Glassmorphism Cards & Modals */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/40 shadow-glass rounded-2xl transition-all duration-300;
+  }
+  .glass-card-hover {
+    @apply hover:shadow-glass-lg hover:-translate-y-1 hover:border-spandan-300/60;
+  }
+  .glass-dark {
+    @apply bg-slateDark-900/80 backdrop-blur-md border border-slate-800/60 shadow-glass rounded-2xl text-white;
+  }
+
+  /* Custom Input Styling */
+  .input-field {
+    @apply w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/90 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-spandan-500 focus:border-transparent transition duration-200 shadow-sm disabled:bg-slate-100 disabled:cursor-not-allowed;
+  }
+
+  /* Button Variants */
+  .btn-primary {
+    @apply px-5 py-2.5 rounded-xl bg-gradient-to-r from-spandan-600 to-spandan-500 text-white font-medium shadow-md shadow-spandan-500/25 hover:shadow-lg hover:shadow-spandan-500/35 hover:from-spandan-700 hover:to-spandan-600 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-secondary {
+    @apply px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-danger {
+    @apply px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white font-medium shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/35 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none;
+  }
+}
+
+/* Smooth micro animations */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

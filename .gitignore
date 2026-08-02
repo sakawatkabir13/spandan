@@ -1,0 +1,41 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments & Virtual Envs
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Frontend
+node_modules/
+dist/
+build/
+.cache/
+*.local
+
+# Testing & Logs
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.log
+logs/
+
+# Uploads & Storage
+uploads/
+*.db
+*.sqlite3
+
+# IDEs & Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
