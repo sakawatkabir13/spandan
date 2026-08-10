@@ -39,8 +39,8 @@ export const Navbar: React.FC = () => {
             <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-slate-900 via-spandan-800 to-spandan-600 bg-clip-text text-transparent">
               Spandan
             </span>
-            <span className="text-[10px] font-medium uppercase tracking-widest text-spandan-600 -mt-1">
-              Chamber & AI Triage
+            <span className="text-[10px] font-medium tracking-widest text-spandan-600 -mt-1">
+              Find Care. Book Easily
             </span>
           </div>
         </Link>
