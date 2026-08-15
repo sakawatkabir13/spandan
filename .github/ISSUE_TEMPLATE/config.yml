@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/sakawatkabir13/19-spandan/discussions
+    about: Ask questions and brainstorm ideas with the community.
+  - name: 🔒 Security report
+    url: SECURITY.md
+    about: Please report security issues privately — do not open a public issue.

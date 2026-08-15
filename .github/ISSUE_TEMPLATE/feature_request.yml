@@ -1,0 +1,60 @@
+name: Feature Request
+description: Suggest a new feature for Spandan.
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us understand the problem you are trying to solve before proposing a solution.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem are you trying to solve? Who is affected?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the feature you would like to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you have considered.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      multiple: false
+      options:
+        - Patient experience
+        - Doctor experience
+        - Assistant experience
+        - Administrator experience
+        - AI Triage
+        - Infrastructure / DevOps
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have searched existing feature requests and there is no duplicate.
+          required: true
+        - label: I am willing to submit a PR for this feature.
+          required: false

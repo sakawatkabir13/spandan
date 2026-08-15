@@ -1,99 +1,453 @@
-# Spandan: An AI-Assisted Appointment Booking & Private Chamber Management System
+<div align="center">
 
-**Spandan** is a complete, production-ready full-stack web application tailored for Bangladesh’s healthcare ecosystem. It streamlines consultation scheduling for private doctor chambers while incorporating safe AI triage (`Groq API` / `Llama`) to recommend appropriate medical specialties based on patient symptoms.
+# 🩺 Spandan
+
+### AI-Assisted Appointment Booking & Private Chamber Management System — verified doctors, multi-chamber scheduling, real-time queues, and safety-first AI triage for Bangladesh.
+
+[![Live](https://img.shields.io/badge/Live-spandan.cuetinsights.dev-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://spandan.cuetinsights.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](./LICENSE)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Groq](https://img.shields.io/badge/Groq-Llama%203.3-FF6B35?style=for-the-badge)](https://groq.com)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](./docker-compose.yml)
+
+<br />
+
+Spandan is a production-style healthcare platform that brings **patients, doctors, assistants, and admins** into one secure system — with AI-assisted symptom triage, role-based dashboards, and an end-to-end queue engine with no double-booking.
+
+[🚀 Live Demo](https://spandan.cuetinsights.dev) · [🐛 Report Bug](https://github.com/sakawatkabir13/19-spandan/issues) · [✨ Request Feature](https://github.com/sakawatkabir13/19-spandan/issues)
+
+</div>
 
 ---
 
-## 🌟 Key Features
+## ✨ Why Spandan?
 
-- **Multi-Role RBAC**: Dedicated portals and permissions for **Patients**, **Doctors**, **Assistants**, and **Administrators**.
-- **Verified Doctor Profiles & Multiple Chambers**: Strict administrator verification workflow before doctors appear publicly or open schedules.
-- **Unified Online & Offline Queue Engine**: Real-time serial allocation, delay tracking, and dynamic estimated consultation times with zero double-booking (PostgreSQL atomic transactions).
-- **AI Symptom Triage**: Rule-based emergency screening and Groq Llama-powered specialty recommendations with strict disclaimers.
-- **Dockerized Infrastructure**: Complete container orchestration with PostgreSQL, FastAPI backend, and React TypeScript frontend.
+Booking a private chamber consultation in Bangladesh today means phone calls, paper registers, and zero visibility into queue times. **Spandan** digitises the entire flow — from **verified doctor profiles** and **multi-chamber scheduling** to a **real-time queue engine** with atomic serial allocation — and adds a **safety-first AI triage** layer that suggests which specialty to consult based on symptoms.
+
+> ⚠️ **Spandan's AI is informational only.** It does **not** diagnose, prescribe, or replace professional medical advice. In an emergency, call **999** (Bangladesh).
 
 ---
 
-## 🏗️ Technology Stack
+## 📑 Table of Contents
 
-- **Frontend**: React 18, TypeScript, Vite, TanStack Query, React Hook Form, Zod, Tailwind CSS, Lucide Icons.
-- **Backend**: Python 3.11+, FastAPI, SQLAlchemy 2.x (AsyncPG), Pydantic v2, Alembic, Argon2/Bcrypt password hashing, JWT RBAC.
-- **Database**: PostgreSQL 16 with strict constraints and row-level concurrency locking (`SELECT FOR UPDATE`).
-- **AI Engine**: Groq API (`GROQ_MODEL`) with structured JSON schema enforcement.
-- **Testing**: Pytest (Backend integration/unit tests), Vitest & React Testing Library (Frontend).
+1. [✨ Features](#-features)
+2. [🖼️ Screenshots](#-screenshots)
+3. [🧱 Tech Stack](#-tech-stack)
+4. [🏗️ Architecture](#-architecture)
+5. [🚀 Quick Start](#-quick-start)
+6. [🔑 Demo Credentials](#-demo-credentials)
+7. [🧪 Available Scripts](#-available-scripts)
+8. [📁 Project Structure](#-project-structure)
+9. [🔐 Environment Variables](#-environment-variables)
+10. [🐳 Docker Deployment](#-docker-deployment)
+11. [🛡️ Medical Disclaimer](#-medical-disclaimer)
+12. [🗺️ Roadmap](#-roadmap)
+13. [🤝 Contributing](#-contributing)
+14. [🛡️ Security](#-security)
+15. [📄 License](#-license)
+16. [🙏 Acknowledgements](#-acknowledgements)
+17. [👥 Contributors](#-contributors)
 
 ---
 
-## 🚀 Quick Start & Deployment Guide
+## ✨ Features
 
-### 1. Prerequisites
-- Docker & Docker Compose installed (v2.x+)
-- Make utility (optional, for convenience commands)
+### 🧑‍⚕️ For Patients
+- 🩺 Browse a verified directory of doctors with specialty and chamber filters
+- 📅 Book appointments online with **live queue serial** allocation
+- 🧾 Full **appointment history** with per-visit status tracking
+- 🤖 **AI symptom triage** that recommends which specialty to consult
+- 📱 Fully responsive across desktop, tablet, and mobile
 
-### 2. Environment Setup
-Copy the sample environment file:
+### 👨‍⚕️ For Doctors
+- 🧑‍💼 Dedicated **Doctor Dashboard** for schedules, chambers, and patient queue
+- ➕ Submit new chamber schedules for admin approval before going live
+- 📈 Track today's queue, active serials, and consultation history
+- 🏥 Manage **multiple chambers** with independent schedules and fees
+
+### 🧑‍💼 For Assistants
+- 🎟️ Manage the **walk-in (offline) queue** for the assigned doctor/chamber
+- ➡️ Mark serials as *served*, *skipped*, or *delayed* in real time
+- 📋 Print or share the current queue snapshot with waiting patients
+
+### 🛡️ For Admins
+- 🧭 Centralized **Admin Dashboard** for moderation
+- ✅ Approve / reject doctor verification and new chamber schedule requests
+- 👀 Visibility into users, roles, appointments, and audit logs
+
+### 🔐 Platform-Wide
+- 🔑 Email + password auth with **JWT access + refresh tokens** and **Argon2/Bcrypt** hashing
+- 🔁 Password reset and forgot-password flows
+- ⚡ Code-split routes with **React Router v6**
+- 🧪 Backend tests with **Pytest** + frontend tests with **Vitest** + **Testing Library**
+- 🎨 Theming and design tokens with **Tailwind CSS**
+- 🔒 Strict Postgres constraints and row-level locking (`SELECT FOR UPDATE`) — zero double-booking
+
+---
+
+## 🖼️ Screenshots
+
+> Placeholders ship as `.svg` files in `docs/screenshots/`. Replace with real `.png` (1280×720) screenshots after the first deploy.
+
+| Landing | Marketplace |
+| :---: | :---: |
+| ![Landing](./docs/screenshots/landing.svg) | ![Marketplace](./docs/screenshots/marketplace.svg) |
+
+| Doctor Dashboard | Admin Dashboard |
+| :---: | :---: |
+| ![Doctor Dashboard](./docs/screenshots/farmer-dashboard.svg) | ![Admin Dashboard](./docs/screenshots/admin-dashboard.svg) |
+
+| AI Triage | Live Queue |
+| :---: | :---: |
+| ![AI Triage](./docs/screenshots/ai-triage.svg) | ![Live Queue](./docs/screenshots/queue-engine.svg) |
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart LR
+    Browser["🖥️ React 18 + Vite + TS<br/>TanStack Query · Zod<br/>Tailwind · Lucide"]
+    API["⚙️ FastAPI (Async)<br/>SQLAlchemy 2 · Alembic<br/>Pydantic v2 · JWT<br/>Argon2 / Bcrypt"]
+    DB[("🗄️ PostgreSQL 16<br/>row-level locking<br/>SELECT FOR UPDATE")]
+    AI["🤖 AI Triage (3-tier)<br/>1. Local emergency keywords<br/>2. Groq Llama 3.3<br/>3. Local fallback"]
+
+    Browser <-->|"HTTPS / REST / JWT"| API
+    API <-->|"asyncpg"| DB
+    API --> AI
+    AI --> API
+```
+
+**Key flows**
+- **Auth & RBAC** — JWT access + refresh tokens; Argon2/Bcrypt hashing; four role-based portals (Patient, Doctor, Assistant, Admin).
+- **Queue engine** — PostgreSQL row-level locking (`SELECT FOR UPDATE`) guarantees **no double-booking** between online and walk-in serials.
+- **AI triage** — 3-tier pipeline: local emergency keyword screening → Groq Llama structured JSON → local fallback engine when the API is unavailable.
+- **Doctor verification** — doctors only become publicly visible after admin approval (`PENDING → APPROVED / REJECTED / SUSPENDED`).
+
+See [`AI_TRIAGE_GUIDE.md`](./AI_TRIAGE_GUIDE.md) for the full triage pipeline. For deeper internals — auth flow, queue-engine locking, state machines, ERD, and deployment topology — see [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+
+---
+
+## 🧱 Tech Stack
+
+### Frontend
+| Layer | Technology |
+| --- | --- |
+| Framework | **React 18** |
+| Language | **TypeScript 5** |
+| Build tool | **Vite 5** |
+| Styling | **Tailwind CSS 3** |
+| Routing | **React Router v6** |
+| Forms | **React Hook Form** + **Zod** resolvers |
+| Data fetching | **TanStack Query v5** |
+| Icons | **Lucide React** |
+
+### Backend
+| Layer | Technology |
+| --- | --- |
+| Runtime | **Python 3.11+** |
+| Framework | **FastAPI 0.110** (async) |
+| ORM | **SQLAlchemy 2** with `asyncpg` |
+| Validation | **Pydantic v2** |
+| Migrations | **Alembic** |
+| Auth | **JWT** (access + refresh) · **Argon2 / Bcrypt** hashing |
+| AI | **Groq API** — `llama-3.3-70b-versatile` |
+
+### Database & Tooling
+| Layer | Technology |
+| --- | --- |
+| Database | **PostgreSQL 16** (row-level locking) |
+| Backend tests | **Pytest** + `pytest-asyncio` + `aiosqlite` |
+| Backend lint | **Ruff** |
+| Frontend tests | **Vitest** + **Testing Library** + **jsdom** |
+| Frontend lint | **ESLint** |
+| Orchestration | **Docker Compose** (db + backend + frontend) |
+
+---
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Docker** & Docker Compose **v2.x+**
+- `make` *(optional, for convenience targets)*
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/sakawatkabir13/19-spandan.git
+cd 19-spandan
+```
+
+### 2. Configure environment
+
 ```bash
 cp .env.example .env
 ```
-*(Optional: Add your `GROQ_API_KEY` to `.env` if you want live AI triage. A fallback triage engine operates automatically if the API key is omitted).*
 
-### 3. Launch with Docker Compose
-To start the database, backend, and frontend containers:
+> 🔑 *(Optional)* add a real `GROQ_API_KEY` to `.env` to enable live AI triage. Without it, Spandan automatically runs the **local fallback engine**.
+
+### 3. Launch the stack
+
 ```bash
 make up
-# Or directly: docker compose up --build -d
+# or:  docker compose up --build -d
 ```
 
-During startup, the backend container automatically:
-1. Waits for PostgreSQL healthcheck.
-2. Runs Alembic database schema migrations (`alembic upgrade head`).
-3. Executes the idempotent seed data script (`python -m scripts.seed`).
+On first boot the backend will:
 
-### 4. Accessing the Applications
-- **Frontend Web Portal**: [http://localhost:5173](http://localhost:5173)
-- **Backend API Docs (Swagger UI)**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Backend ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+1. Wait for Postgres to be healthy.
+2. Run `alembic upgrade head` (idempotent migrations).
+3. Execute `python -m scripts.seed` (idempotent seed data).
+4. Start Uvicorn with hot-reload.
+
+### 4. Open the apps
+
+| App | URL |
+| --- | --- |
+| 🖥️ Frontend | http://localhost:5173 |
+| 📘 Swagger UI | http://localhost:8000/docs |
+| 📕 ReDoc | http://localhost:8000/redoc |
+| 🌐 Production | https://spandan.cuetinsights.dev |
 
 ---
 
-## 🔑 Demo & Seed Credentials
+## 🔑 Demo Credentials
 
-The initial seed script creates the following accounts (all default passwords are `Password123!`):
+> All seed accounts use the password **`Password123!`**. **Change these immediately in any non-local environment.**
 
-| Role | Email | Password | Status | Notes |
-| :--- | :--- | :--- | :--- | :--- |
-| **Administrator** | `admin@spandan.com.bd` | `Password123!` | Active | Full system access & verification review |
-| **Doctor (Approved)**| `dr.rahman@spandan.com.bd` | `Password123!` | Approved | Cardiologist & General Medicine (Dhanmondi Chamber) |
-| **Doctor (Approved)**| `dr.farhana@spandan.com.bd`| `Password123!` | Approved | Pediatrician (Uttara Chamber) |
-| **Doctor (Pending)** | `dr.tariq@spandan.com.bd`  | `Password123!` | Pending | Awaiting verification by Admin |
-| **Assistant** | `assistant.karim@spandan.com.bd` | `Password123!` | Active | Assigned to Dr. Rahman |
-| **Assistant** | `assistant.nasrin@spandan.com.bd`| `Password123!` | Active | Assigned to Dr. Farhana |
-| **Patient** | `patient.jamal@gmail.com`  | `Password123!` | Active | Sample patient with bookings |
-| **Patient** | `patient.sadia@gmail.com`  | `Password123!` | Active | Sample patient with AI recommendation logs |
+| Role | Email | Status | Notes |
+| --- | --- | --- | --- |
+| Administrator | `admin@spandan.com.bd` | Active | Full system access & verification review |
+| Doctor (Approved) | `dr.rahman@spandan.com.bd` | Approved | Cardiologist & General Medicine (Dhanmondi) |
+| Doctor (Approved) | `dr.farhana@spandan.com.bd` | Approved | Pediatrician (Uttara) |
+| Doctor (Pending) | `dr.tariq@spandan.com.bd` | Pending | Awaiting admin verification |
+| Assistant | `assistant.karim@spandan.com.bd` | Active | Assigned to Dr. Rahman |
+| Assistant | `assistant.nasrin@spandan.com.bd` | Active | Assigned to Dr. Farhana |
+| Patient | `patient.jamal@gmail.com` | Active | Sample patient with bookings |
+| Patient | `patient.sadia@gmail.com` | Active | Sample patient with AI recommendation logs |
 
 ---
 
-## 🛠️ Management & Testing Commands
+## 🧪 Available Scripts
 
-Using `Makefile` shortcuts:
+### Root (`Makefile` shortcuts)
+
+| Command | Description |
+| --- | --- |
+| `make up` | Start all services (db, backend, frontend) via Docker Compose |
+| `make down` | Stop and remove containers |
+| `make restart` | Restart all services |
+| `make logs` | Follow logs from all services |
+| `make migrate` | Run Alembic migrations inside the backend container |
+| `make seed` | Re-run or reset the seed script |
+| `make test` | Run the full Pytest backend suite |
+| `make clean` | Remove volumes, containers, and build artifacts |
+
+### Backend (inside `backend/`)
+
 ```bash
-make logs       # Follow logs across all containers
-make migrate    # Run new Alembic migrations inside container
-make seed       # Re-run or reset seed data
-make test       # Execute complete Pytest suite for backend
-make down       # Stop and remove containers
-make clean      # Clean up volumes and build artifacts
+ruff check .              # lint
+pytest -v                 # run tests
+alembic upgrade head      # apply migrations
+uvicorn app.main:app --reload
 ```
 
-Or using direct Docker commands:
+### Frontend (inside `frontend/`)
+
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite dev server with HMR |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | Run ESLint over the project |
+| `npm run test` | Run the Vitest suite once |
+| `npm run test:watch` | Run Vitest in watch mode |
+
+---
+
+## 📁 Project Structure
+
+```
+19-spandan/
+├── backend/                 # FastAPI service
+│   ├── app/
+│   │   ├── api/             # routes & dependencies
+│   │   │   ├── dependencies/
+│   │   │   └── routes/
+│   │   ├── core/            # config, security, exceptions
+│   │   ├── db/              # SQLAlchemy base, async session
+│   │   ├── models/          # ORM models
+│   │   ├── repositories/    # data-access layer
+│   │   ├── schemas/         # Pydantic DTOs
+│   │   └── services/        # business logic
+│   ├── alembic/             # migrations
+│   ├── scripts/             # seed data
+│   ├── tests/               # Pytest suite
+│   ├── Dockerfile
+│   └── pyproject.toml
+├── frontend/                # Vite + React + TS
+│   ├── src/
+│   │   ├── api/             # axios client
+│   │   ├── components/      # common, layout
+│   │   ├── context/         # AuthContext
+│   │   ├── pages/           # auth, dashboard, doctors, ai
+│   │   └── types/
+│   ├── tests/               # Vitest setup
+│   ├── Dockerfile
+│   └── package.json
+├── docs/
+│   └── screenshots/         # README screenshot assets
+├── .github/
+│   ├── ISSUE_TEMPLATE/      # bug_report.yml, feature_request.yml
+│   ├── workflows/ci.yml     # GitHub Actions CI
+│   └── PULL_REQUEST_TEMPLATE.md
+├── docker-compose.yml
+├── Makefile
+├── .env.example
+├── LICENSE
+├── CONTRIBUTING.md
+├── CHANGELOG.md
+├── SECURITY.md
+├── CODE_OF_CONDUCT.md
+├── AI_TRIAGE_GUIDE.md
+├── docs/
+│   ├── ARCHITECTURE.md
+│   └── screenshots/
+└── README.md
+```
+
+---
+
+## 🔐 Environment Variables
+
+All variables are loaded from `.env` via `pydantic-settings`. Server-side secrets **must never** be committed.
+
+| Variable | Required | Description |
+| --- | :---: | --- |
+| `APP_ENV` | ✅ | `development` \| `staging` \| `production` |
+| `APP_NAME` | ✅ | Service name (default: `Spandan`) |
+| `APP_TIMEZONE` | ✅ | IANA timezone (default: `Asia/Dhaka`) |
+| `DATABASE_URL` | ✅ | e.g. `postgresql+asyncpg://spandan:spandan@db:5432/spandan` |
+| `JWT_SECRET_KEY` | ✅ | Long random string — **rotate in production** |
+| `JWT_ALGORITHM` | ✅ | `HS256` (default) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | ✅ | Default `30` |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | ✅ | Default `7` |
+| `FRONTEND_URL` | ✅ | e.g. `https://spandan.cuetinsights.dev` |
+| `BACKEND_URL` | ✅ | e.g. `https://api.spandan.cuetinsights.dev` |
+| `CORS_ORIGINS` | ✅ | Comma-separated allow-list |
+| `GROQ_API_KEY` | ⚙️ | Enables live AI triage; fallback engine runs without it |
+| `GROQ_MODEL` | ⚙️ | Default `llama-3.3-70b-versatile` |
+| `UPLOAD_DIR` | ✅ | Server-side upload path (default `uploads`) |
+| `MAX_UPLOAD_SIZE_MB` | ✅ | Default `5` |
+| `EMERGENCY_CONTACT_NUMBER` | ✅ | Default `999` |
+
+---
+
+## 🐳 Docker Deployment
+
+Spandan ships a multi-service `docker-compose.yml` that boots Postgres, the FastAPI backend, and the Vite frontend together.
+
 ```bash
+# Build & start everything
+docker compose up --build -d
+
+# Follow logs
+docker compose logs -f
+
+# Run the backend test suite inside the container
 docker compose exec backend pytest -v
+
+# Apply migrations or re-seed
 docker compose exec backend alembic upgrade head
+docker compose exec backend python -m scripts.seed
+
+# Tear down
+docker compose down
 ```
+
+A healthchecked Postgres ensures Alembic migrations only run after the DB is ready.
 
 ---
 
-## ⚠️ Medical & Safety Disclaimers
+## 🛡️ Medical Disclaimer
 
-1. **Not for Medical Diagnosis**: Spandan's AI Specialist Recommendation tool provides **general guidance only** based on user-entered symptoms. It does **never** diagnose illnesses or prescribe medications.
-2. **Emergency Guidance**: If you experience life-threatening symptoms (e.g., severe chest pain, difficulty breathing, stroke symptoms), contact local emergency services immediately (`999` in Bangladesh) or visit the nearest hospital emergency department.
+1. **Not a medical device.** Spandan's AI Specialist Recommendation tool provides **general guidance only** based on user-entered symptoms. It **never** diagnoses illnesses or prescribes medication.
+2. **Emergencies.** If you or someone near you is experiencing life-threatening symptoms (e.g., severe chest pain, difficulty breathing, stroke symptoms, severe bleeding), call **999** immediately or visit the nearest hospital emergency department.
+3. **Consult a licensed professional.** Always verify recommendations with a registered doctor before making health decisions.
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] WebSocket / SSE live queue updates
+- [ ] Doctor availability calendar view
+- [ ] Pluggable SMS & email notification providers
+- [ ] Patient PWA shell (install-to-home-screen, offline support)
+- [ ] Prescription upload with OCR for medicine reminders
+- [ ] Telemedicine video call integration
+- [ ] Internationalization (English · বাংলা)
+- [ ] Analytics dashboard for chamber owners
+
+Have an idea? [Open a feature request](https://github.com/sakawatkabir13/19-spandan/issues/new?template=feature_request.yml).
+
+---
+
+## 🤝 Contributing
+
+We love contributions! Please read [`CONTRIBUTING.md`](./CONTRIBUTING.md) and follow the [Code of Conduct](./CODE_OF_CONDUCT.md). A starter PR template is provided and our CI runs lint + tests automatically.
+
+---
+
+## 🛡️ Security
+
+Found a vulnerability? Please review [`SECURITY.md`](./SECURITY.md) and report it privately — **do not** open a public issue. We follow coordinated disclosure and will credit reporters with consent.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — see the [`LICENSE`](./LICENSE) file for details.
+
+© 2026 **Sakawat Kabir**
+
+---
+
+## 🙏 Acknowledgements
+
+- [FastAPI](https://fastapi.tiangolo.com/) & [SQLAlchemy](https://www.sqlalchemy.org/) — rock-solid async backend foundations.
+- [Groq](https://groq.com/) — blazingly fast Llama inference.
+- [TanStack](https://tanstack.com/), [Tailwind CSS](https://tailwindcss.com/), and the [Vite](https://vitejs.dev/) team — delightful frontend DX.
+- [PostgreSQL](https://www.postgresql.org/) — the world's most advanced open-source database.
+- The Bangladeshi doctor and patient community — this project exists to serve you.
+
+---
+
+## 👥 Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START -->
+| Name | Role / Focus | GitHub |
+| :--- | :--- | :---: |
+| **Mohammad Sakawat Kabir** | Project lead & full-stack | [@sakawatkabir13](https://github.com/sakawatkabir13) |
+| **Abdur Rashid Raj** | Frontend & patient flows | [@Asimpleman420](https://github.com/Asimpleman420) |
+| **Olid Hussan Opu** | Auth, dashboards & admin flows | [@olid-opu](https://github.com/olid-opu) |
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+If you'd like to join in, see the [Contributing guide](./CONTRIBUTING.md).
+
+---
+
+<div align="center">
+
+⭐ **If you find this project useful, please consider giving it a star!** ⭐
+
+Made with 💚 in 🇧🇩 Bangladesh by the [Spandan team](#-contributors)
+
+</div>

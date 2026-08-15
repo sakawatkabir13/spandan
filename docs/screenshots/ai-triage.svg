@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-label="Spandan AI triage placeholder">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e293b"/></linearGradient></defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <g fill="#94a3b8" font-family="ui-sans-serif, system-ui, sans-serif" text-anchor="middle">
+    <text x="640" y="340" font-size="56" font-weight="700" fill="#e2e8f0">🩺 AI Symptom Triage</text>
+    <text x="640" y="400" font-size="22">Screenshot placeholder · 1280×720</text>
+  </g>
+</svg>
