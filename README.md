@@ -416,7 +416,7 @@ Found a vulnerability? Please review [`SECURITY.md`](./SECURITY.md) and report i
 
 This project is licensed under the **MIT License** — see the [`LICENSE`](./LICENSE) file for details.
 
-© 2026 **Sakawat Kabir**
+© 2026 **Mohammad Sakawat Kabir**
 
 ---
 
