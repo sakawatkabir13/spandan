@@ -1,10 +1,11 @@
-from datetime import date
+from datetime import date, timedelta
+
 import pytest
 from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_appointment_booking_concurrency_and_tracking(client: AsyncClient):
+async def test_appointment_booking_concurrency_and_tracking(client: AsyncClient, db_session):
     # 1. Register a doctor and create chamber + schedule (max 2 patients for test capacity)
     await client.post(
         "/api/v1/auth/register/doctor",
@@ -36,11 +37,17 @@ async def test_appointment_booking_concurrency_and_tracking(client: AsyncClient)
     )
     chamber_id = chamber_resp.json()["data"]["id"]
 
+    from sqlalchemy import update
+
+    from app.models.doctor import DoctorProfile, DoctorVerificationStatus
+    await db_session.execute(update(DoctorProfile).values(verification_status=DoctorVerificationStatus.APPROVED))
+    await db_session.commit()
+
     sched_resp = await client.post(
         "/api/v1/schedules",
         json={
             "chamber_id": chamber_id,
-            "schedule_date": str(date.today()),
+            "schedule_date": str(date.today() + timedelta(days=1)),
             "start_time": "18:00:00",
             "end_time": "20:00:00",
             "maximum_patients": 2,  # Set max=2 to test overbooking rejection

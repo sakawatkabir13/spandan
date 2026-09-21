@@ -1,5 +1,6 @@
 from typing import List
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import SpandanException
@@ -71,7 +72,14 @@ class ChamberService:
                     message="You do not have permission to delete this chamber.",
                     status_code=403,
                 )
-        return await chamber_repo.delete(db, chamber_id)
+        from sqlalchemy import select
+
+        from app.models.schedule import Schedule, ScheduleStatus
+        active = await db.scalar(select(Schedule.id).where(Schedule.chamber_id == chamber_id, Schedule.status.in_([ScheduleStatus.OPEN, ScheduleStatus.FULL])).limit(1))
+        if active:
+            raise SpandanException(code="CONFLICT", message="Close or cancel active sessions before removing this chamber.", status_code=409)
+        await chamber_repo.update(db, chamber, {"is_active": False})
+        return True
 
 
 chamber_service = ChamberService()

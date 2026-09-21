@@ -1,22 +1,23 @@
 import asyncio
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timezone
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_password_hash
 from app.db.session import async_session_maker
-from app.models.user import User, UserRole, PatientProfile
+from app.models.appointment import Appointment, AppointmentStatus, BookingSource
+from app.models.chamber import Chamber
 from app.models.doctor import (
+    AssistantAssignment,
     DoctorProfile,
     DoctorVerificationStatus,
     Qualification,
     Specialization,
-    AssistantAssignment,
 )
-from app.models.chamber import Chamber
-from app.models.schedule import Schedule, ScheduleStatus, QueueState
-from app.models.appointment import Appointment, BookingSource, AppointmentStatus
 from app.models.recommendation import SpecialistRecommendation, UrgencyLevel
+from app.models.schedule import QueueState, Schedule, ScheduleStatus
+from app.models.user import PatientProfile, User, UserRole
 
 
 def utcnow() -> datetime:
@@ -47,9 +48,11 @@ async def seed_data(db: AsyncSession) -> None:
     ]
     spec_map = {}
     for name, desc in specs:
-        s = Specialization(name=name, description=desc, is_active=True)
-        db.add(s)
-        await db.flush()
+        s = await db.scalar(select(Specialization).where(Specialization.name == name))
+        if s is None:
+            s = Specialization(name=name, description=desc, is_active=True)
+            db.add(s)
+            await db.flush()
         spec_map[name] = s
 
     # 2. Administrator Account

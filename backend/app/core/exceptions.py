@@ -1,10 +1,11 @@
 from typing import Any, Dict, Optional
+
 from fastapi import HTTPException, Request, status
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 
-class SpandanException(Exception):
+class SpandanException(Exception):  # noqa: N818 - public API exception name
     def __init__(
         self,
         code: str,
@@ -50,9 +51,9 @@ async def spandan_exception_handler(request: Request, exc: SpandanException) -> 
 
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    details = exc.errors()
+    details = [{"loc": list(e["loc"]), "msg": e["msg"], "type": e["type"]} for e in exc.errors()]
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content=create_error_response(
             code="VALIDATION_ERROR",
             message="Input validation failed.",
@@ -77,3 +78,9 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         status_code=exc.status_code,
         content=create_error_response(code=code, message=message),
     )
+
+
+async def integrity_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(status_code=409, content=create_error_response(
+        code="CONFLICT", message="This change conflicts with an existing record. Please refresh and try again."
+    ))

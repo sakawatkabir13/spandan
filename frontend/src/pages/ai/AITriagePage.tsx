@@ -262,7 +262,7 @@ export const AITriagePage: React.FC = () => {
 
                 {result.urgency_level !== 'emergency' && (
                   <Link
-                    to={`/doctors?query=${encodeURIComponent(result.recommended_specialization_name)}`}
+                    to={result.recommended_specialization_id ? `/doctors?specialization_id=${result.recommended_specialization_id}` : `/doctors?query=${encodeURIComponent(result.recommended_specialization_name)}`}
                     className="btn-primary py-3 px-6 text-sm font-semibold whitespace-nowrap shadow-lg"
                   >
                     Book {result.recommended_specialization_name} Doctor

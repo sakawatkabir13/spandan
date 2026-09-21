@@ -9,7 +9,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User>;
   registerPatient: (data: any) => Promise<User>;
   registerDoctor: (data: any) => Promise<User>;
-  logout: () => void;
+  logout: (revokeServerSession?: boolean) => Promise<void>;
   updateUser: (user: User) => void;
 }
 
@@ -108,11 +108,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return normalized;
   };
 
-  const logout = () => {
-    localStorage.removeItem('spandan_access_token');
-    localStorage.removeItem('spandan_refresh_token');
-    localStorage.removeItem('spandan_user');
-    setUser(null);
+  const logout = async (revokeServerSession = true) => {
+    try {
+      if (revokeServerSession && localStorage.getItem('spandan_access_token')) {
+        await apiClient.post('/auth/logout');
+      }
+    } finally {
+      localStorage.removeItem('spandan_access_token');
+      localStorage.removeItem('spandan_refresh_token');
+      localStorage.removeItem('spandan_user');
+      setUser(null);
+    }
   };
 
   const updateUser = (updated: User) => {

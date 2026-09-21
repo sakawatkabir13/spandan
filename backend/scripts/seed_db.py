@@ -1,14 +1,9 @@
 import asyncio
 import logging
-import sys
-from pathlib import Path
-
-# Ensure backend root is on path
-ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.append(str(ROOT_DIR))
 
 from sqlalchemy import select
-from app.db.session import async_session_factory
+
+from app.db.session import async_session_maker
 from app.models.doctor import Specialization
 
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +13,7 @@ INITIAL_SPECIALIZATIONS = [
     {"name": "General Medicine", "description": "Primary healthcare, chronic diseases, and general diagnosis."},
     {"name": "Cardiology", "description": "Heart and cardiovascular system disorders, hypertension, and arrhythmias."},
     {"name": "Pediatrics", "description": "Medical care of infants, children, and adolescents."},
-    {"name": "Gynecology & Obstetrics", "description": "Women's reproductive health, pregnancy, and childbirth."},
+    {"name": "Gynecology and Obstetrics", "description": "Women's reproductive health, pregnancy, and childbirth."},
     {"name": "Neurology", "description": "Nervous system disorders, stroke, epilepsy, and migraines."},
     {"name": "Orthopedics", "description": "Bone, joint, muscle, ligament, and tendon care and surgeries."},
     {"name": "Dermatology", "description": "Skin, hair, and nail disorders, cosmetic and medical dermatology."},
@@ -26,7 +21,7 @@ INITIAL_SPECIALIZATIONS = [
     {"name": "Pulmonology / Respiratory Medicine", "description": "Lungs and respiratory tract diseases, asthma, COPD."},
     {"name": "Nephrology", "description": "Kidney care, renal failure, and dialysis management."},
     {"name": "Endocrinology", "description": "Hormone disorders, diabetes, thyroid disorders."},
-    {"name": "ENT (Otolaryngology)", "description": "Ear, nose, and throat conditions and head/neck surgery."},
+    {"name": "ENT", "description": "Ear, nose, and throat conditions and head/neck surgery."},
     {"name": "Ophthalmology", "description": "Eye care, vision problems, and ocular surgery."},
     {"name": "Psychiatry", "description": "Mental health diagnosis, treatment, and counseling."},
     {"name": "Emergency Medicine / ER", "description": "Immediate critical care for acute life-threatening conditions."},
@@ -34,7 +29,7 @@ INITIAL_SPECIALIZATIONS = [
 
 
 async def seed_specializations():
-    async with async_session_factory() as db:
+    async with async_session_maker() as db:
         logger.info("Checking existing specializations...")
         for spec_data in INITIAL_SPECIALIZATIONS:
             result = await db.execute(

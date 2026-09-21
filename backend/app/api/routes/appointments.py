@@ -1,9 +1,14 @@
 from typing import List, Optional
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import get_current_active_user, get_current_user, require_roles
+from app.api.dependencies.auth import (
+    get_current_active_user,
+    get_optional_user,
+    require_roles,
+)
 from app.core.exceptions import create_success_response
 from app.db.session import get_db
 from app.models.user import User, UserRole
@@ -65,7 +70,7 @@ async def update_appointment_status(
 @router.get("/track/{schedule_id}", response_model=ApiResponse[SerialTrackingResponse])
 async def track_serial(
     schedule_id: UUID,
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     tracking = await appointment_service.get_serial_tracking(db, schedule_id, current_user=current_user)

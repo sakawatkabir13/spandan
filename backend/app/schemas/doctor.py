@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
 from app.models.doctor import DoctorVerificationStatus
 
 
@@ -39,6 +41,7 @@ class DoctorProfileResponse(BaseModel):
     id: UUID
     user_id: UUID
     full_name: str
+    profile_photo_url: Optional[str] = None
     medical_registration_number: str
     biography: Optional[str] = None
     current_workplace: Optional[str] = None
@@ -54,6 +57,13 @@ class DoctorProfileResponse(BaseModel):
 
 
 class DoctorProfileUpdate(BaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_required_fields(cls, values):
+        if isinstance(values, dict) and any(key in values and values[key] is None for key in ['full_name', 'years_of_experience']):
+            raise ValueError("Required fields cannot be null")
+        return values
+
     full_name: Optional[str] = None
     biography: Optional[str] = None
     current_workplace: Optional[str] = None

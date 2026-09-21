@@ -71,9 +71,9 @@ export const Footer: React.FC = () => {
             Built with <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> for accessible healthcare in Bangladesh.
           </p>
           <div className="flex gap-4 mt-2 sm:mt-0">
-            <span>Privacy Policy</span>
-            <span>Terms of Service</span>
-            <span>BMDC Verification Guidelines</span>
+            <Link to="/privacy" className="hover:text-spandan-400 transition">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-spandan-400 transition">Terms of Service</Link>
+            <Link to="/medical-disclaimer" className="hover:text-spandan-400 transition">Medical Disclaimer</Link>
           </div>
         </div>
       </div>

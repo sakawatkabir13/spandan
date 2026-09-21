@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import get_current_active_user
-from app.core.exceptions import create_success_response, SpandanException
+from app.api.dependencies.auth import get_current_active_user, require_roles
+from app.core.exceptions import SpandanException, create_success_response
 from app.core.security import get_password_hash, verify_password
 from app.db.session import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.auth import (
     ChangePasswordRequest,
     LoginRequest,
@@ -43,8 +43,11 @@ async def register_doctor(
 
 @router.post("/register/assistant", response_model=ApiResponse[TokenResponse], status_code=status.HTTP_201_CREATED)
 async def register_assistant(
-    request: RegisterAssistantRequest, db: AsyncSession = Depends(get_db)
+    request: RegisterAssistantRequest, db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.DOCTOR, UserRole.ADMINISTRATOR))
 ):
+    from app.services.permissions import require_doctor_access
+    require_doctor_access(current_user, request.doctor_id, "can_manage_appointments")
     tokens = await auth_service.register_assistant(db, request)
     return create_success_response(message="Assistant registered successfully.", data=tokens)
 
@@ -69,8 +72,12 @@ async def refresh_token(request: RefreshTokenRequest, db: AsyncSession = Depends
 
 
 @router.post("/logout", response_model=ApiResponse[None])
-async def logout(current_user: User = Depends(get_current_active_user)):
-    # In stateless JWT, client deletes tokens. If token blacklist DB is needed, we record JTI.
+async def logout(
+    current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
+):
+    # Incrementing the version immediately revokes every access and refresh token for this user.
+    current_user.token_version += 1
+    await db.commit()
     return create_success_response(message="Logged out successfully.")
 
 
@@ -92,5 +99,6 @@ async def change_password(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
     current_user.password_hash = get_password_hash(request.new_password)
+    current_user.token_version += 1
     await db.commit()
     return create_success_response(message="Password updated successfully.")

@@ -1,6 +1,7 @@
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 from uuid import UUID
-from fastapi import Depends, Header, HTTPException, status
+
+from fastapi import Depends, Header, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -64,6 +65,8 @@ async def get_current_user(
             message="User associated with token no longer exists.",
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
+    if payload.get("ver", 0) != user.token_version:
+        raise SpandanException(code="INVALID_CREDENTIALS", message="Session has expired. Please sign in again.", status_code=401)
     return user
 
 
@@ -77,6 +80,16 @@ async def get_current_active_user(
             status_code=status.HTTP_403_FORBIDDEN,
         )
     return current_user
+
+
+async def get_optional_user(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    if not token:
+        return None
+    user = await get_current_user(token, db)
+    return await get_current_active_user(user)
 
 
 def require_roles(*allowed_roles: UserRole) -> Callable[[User], User]:

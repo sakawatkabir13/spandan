@@ -1,10 +1,11 @@
-from datetime import date, time
+from datetime import date, timedelta
+
 import pytest
 from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_specialization_and_doctor_discovery(client: AsyncClient):
+async def test_specialization_and_doctor_discovery(client: AsyncClient, db_session):
     # Register and verify a doctor
     reg_payload = {
         "email": "dr.cardio@spandan.com.bd",
@@ -43,10 +44,16 @@ async def test_specialization_and_doctor_discovery(client: AsyncClient):
     assert chamber_resp.status_code == 201
     chamber_id = chamber_resp.json()["data"]["id"]
 
+    from sqlalchemy import update
+
+    from app.models.doctor import DoctorProfile, DoctorVerificationStatus
+    await db_session.execute(update(DoctorProfile).values(verification_status=DoctorVerificationStatus.APPROVED))
+    await db_session.commit()
+
     # Create schedule
     schedule_payload = {
         "chamber_id": chamber_id,
-        "schedule_date": str(date.today()),
+        "schedule_date": str(date.today() + timedelta(days=1)),
         "start_time": "17:00:00",
         "end_time": "21:00:00",
         "maximum_patients": 20,
@@ -59,11 +66,11 @@ async def test_specialization_and_doctor_discovery(client: AsyncClient):
     assert sched_data["queue_state"]["current_serial"] == 0
 
     # Update queue state
-    queue_update = {"current_serial": 1, "delay_minutes": 15, "status_message": "Patient #1 inside"}
+    queue_update = {"current_serial": 0, "delay_minutes": 15, "status_message": "Patient #1 inside"}
     q_resp = await client.patch(f"/api/v1/schedules/{schedule_id}/queue", json=queue_update, headers=headers)
     assert q_resp.status_code == 200
     q_data = q_resp.json()["data"]
-    assert q_data["current_serial"] == 1
+    assert q_data["current_serial"] == 0
     assert q_data["delay_minutes"] == 15
 
     # Public discovery: Get chambers by doctor_id

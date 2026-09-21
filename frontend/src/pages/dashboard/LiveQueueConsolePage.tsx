@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 
 export const LiveQueueConsolePage: React.FC = () => {
-  useAuth();
+  const [loadError, setLoadError] = useState('');
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
@@ -32,7 +33,7 @@ export const LiveQueueConsolePage: React.FC = () => {
   const [statusMsg, setStatusMsg] = useState<string>('');
   const [updatingQueue, setUpdatingQueue] = useState(false);
 
-  const fetchQueueData = async () => {
+  const fetchQueueData = async (updateForm = true) => {
     if (!scheduleId) return;
     try {
       const [sResp, aResp] = await Promise.all([
@@ -41,7 +42,7 @@ export const LiveQueueConsolePage: React.FC = () => {
       ]);
       if (sResp.data.success) {
         setSchedule(sResp.data.data);
-        if (sResp.data.data.queue_state) {
+        if (updateForm && sResp.data.data.queue_state) {
           setDelayMins(sResp.data.data.queue_state.delay_minutes);
           setStatusMsg(sResp.data.data.queue_state.status_message || '');
         }
@@ -50,7 +51,7 @@ export const LiveQueueConsolePage: React.FC = () => {
         setAppointments(aResp.data.data);
       }
     } catch (err) {
-      // ignore
+      setLoadError('Unable to load the latest data. Please refresh to try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -65,7 +66,7 @@ export const LiveQueueConsolePage: React.FC = () => {
           const resp = await apiClient.get<ApiResponse<Schedule[]>>('/schedules/me');
           if (resp.data.success && resp.data.data.length > 0) {
             const first = resp.data.data[0];
-            navigate(`/dashboard/doctor/queue?schedule_id=${first.id}`, { replace: true });
+            navigate(`/dashboard/${user?.role === 'assistant' ? 'assistant' : 'doctor'}/queue?schedule_id=${first.id}`, { replace: true });
           } else {
             setLoading(false);
           }
@@ -78,6 +79,26 @@ export const LiveQueueConsolePage: React.FC = () => {
       fetchQueueData();
     }
   }, [scheduleId]);
+
+  useEffect(() => {
+    if (!scheduleId) return;
+    const timer = window.setInterval(() => { if (!document.hidden) void fetchQueueData(false); }, 15000);
+    return () => window.clearInterval(timer);
+  }, [scheduleId]);
+
+  const [bookingMessage, setBookingMessage] = useState('');
+  const bookOffline = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    setUpdatingQueue(true);
+    try {
+      await apiClient.post('/appointments', { ...Object.fromEntries(new FormData(form)), schedule_id: scheduleId });
+      form.reset();
+      setBookingMessage('Patient added to the session.');
+      await fetchQueueData();
+    } catch (error: any) { setBookingMessage(error.response?.data?.error?.message || 'Unable to book patient.'); }
+    finally { setUpdatingQueue(false); }
+  };
 
   const handleIncrementSerial = async () => {
     if (!scheduleId) return;
@@ -117,7 +138,7 @@ export const LiveQueueConsolePage: React.FC = () => {
       });
       fetchQueueData();
     } catch (err: any) {
-      alert('Failed to update patient status.');
+      setLoadError(err.response?.data?.error?.message || 'Failed to update patient status.');
     }
   };
 
@@ -141,6 +162,7 @@ export const LiveQueueConsolePage: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-slate-900 via-spandan-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
           <div className="space-y-2">
@@ -166,7 +188,7 @@ export const LiveQueueConsolePage: React.FC = () => {
                 Running Serial
               </span>
               <span className="text-4xl font-black text-emerald-400">
-                #{queue?.current_serial || 1}
+                #{queue?.current_serial ?? 0}
               </span>
             </div>
 
@@ -175,7 +197,7 @@ export const LiveQueueConsolePage: React.FC = () => {
               disabled={updatingQueue}
               className="btn-primary py-3 px-6 text-sm font-bold shadow-lg shadow-spandan-500/40"
             >
-              Call Next (#{(queue?.current_serial || 1) + 1})
+              Call Next Patient
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -223,6 +245,17 @@ export const LiveQueueConsolePage: React.FC = () => {
             </div>
           </form>
         </div>
+
+        <section className="glass-card p-6 space-y-4">
+          <h2 className="text-lg font-bold">Book a Patient at the Chamber</h2>
+          <p className="text-sm text-slate-600">Enter the phone number on the patient's registered account. New patients can create an account from the Register page.</p>
+          {bookingMessage && <p role="status" className="text-sm text-spandan-800">{bookingMessage}</p>}
+          <form onSubmit={bookOffline} className="grid sm:grid-cols-3 gap-3">
+            <label className="text-sm">Patient phone<input name="patient_phone" type="tel" required className="input-field" /></label>
+            <label className="text-sm">Booking source<select name="booking_source" className="input-field"><option value="walk_in">Walk-in</option><option value="phone">Phone</option><option value="assistant">Assistant</option></select></label>
+            <button disabled={updatingQueue || schedule.status !== 'open'} className="btn-primary self-end">Book Patient</button>
+          </form>
+        </section>
 
         {/* Booked Patient Roster */}
         <div className="glass-card p-6 border-slate-200 space-y-4">
@@ -274,7 +307,7 @@ export const LiveQueueConsolePage: React.FC = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2.5">
                           <h4 className="font-bold text-sm sm:text-base text-slate-900">
-                            {app.patient?.user?.full_name || 'Patient Name'}
+                            {app.patient?.full_name || 'Patient Name'}
                           </h4>
                           <Badge
                             variant={
@@ -299,7 +332,7 @@ export const LiveQueueConsolePage: React.FC = () => {
                         </div>
 
                         <p className="text-xs text-slate-500">
-                          Phone: <strong className="text-slate-700">{app.patient?.user?.phone_number}</strong> | Booked via {app.booking_source}
+                          Booked via {app.booking_source}
                         </p>
                         {app.patient_note && (
                           <p className="text-xs text-amber-800 bg-amber-50 px-2 py-1 rounded italic max-w-lg">
@@ -310,9 +343,9 @@ export const LiveQueueConsolePage: React.FC = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    {status !== 'cancelled' && status !== 'completed' && (
+                    {status !== 'cancelled' && status !== 'completed' && status !== 'absent' && (
                       <div className="flex flex-wrap items-center gap-2 self-end sm:self-center">
-                        {status !== 'checked_in' && status !== 'in_consultation' && (
+                        {['booked', 'confirmed'].includes(status) && (
                           <button
                             onClick={() => handleUpdateStatus(app.id, 'checked_in')}
                             className="btn-secondary py-1.5 px-3 text-xs font-semibold bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
@@ -320,7 +353,15 @@ export const LiveQueueConsolePage: React.FC = () => {
                             Check-In
                           </button>
                         )}
-                        {status !== 'in_consultation' && (
+                        {['checked_in', 'skipped'].includes(status) && (
+                          <button
+                            onClick={() => handleUpdateStatus(app.id, 'waiting')}
+                            className="btn-secondary py-1.5 px-3 text-xs font-semibold bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                          >
+                            Add to Waiting
+                          </button>
+                        )}
+                        {['booked', 'confirmed', 'checked_in', 'waiting', 'skipped'].includes(status) && (
                           <button
                             onClick={() => handleUpdateStatus(app.id, 'in_consultation')}
                             className="btn-secondary py-1.5 px-3 text-xs font-semibold bg-spandan-50 text-spandan-800 border-spandan-200 hover:bg-spandan-100"
@@ -328,18 +369,29 @@ export const LiveQueueConsolePage: React.FC = () => {
                             In Room
                           </button>
                         )}
-                        <button
-                          onClick={() => handleUpdateStatus(app.id, 'completed')}
-                          className="btn-primary py-1.5 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 shadow-none"
-                        >
-                          Complete
-                        </button>
-                        <button
-                          onClick={() => handleUpdateStatus(app.id, 'no_show')}
-                          className="btn-secondary py-1.5 px-3 text-xs font-semibold text-red-600 border-red-200 hover:bg-red-50"
-                        >
-                          No-Show
-                        </button>
+                        {['booked', 'confirmed', 'checked_in', 'waiting'].includes(status) && (
+                          <button
+                            onClick={() => handleUpdateStatus(app.id, 'skipped')}
+                            className="btn-secondary py-1.5 px-3 text-xs font-semibold text-amber-700 border-amber-200 hover:bg-amber-50"
+                          >
+                            Skip
+                          </button>
+                        )}
+                        {status === 'in_consultation' ? (
+                          <button
+                            onClick={() => handleUpdateStatus(app.id, 'completed')}
+                            className="btn-primary py-1.5 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 shadow-none"
+                          >
+                            Complete
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleUpdateStatus(app.id, 'absent')}
+                            className="btn-secondary py-1.5 px-3 text-xs font-semibold text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            No-Show
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

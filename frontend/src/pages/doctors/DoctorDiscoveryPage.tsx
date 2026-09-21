@@ -21,6 +21,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
 
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [specializations, setSpecializations] = useState<Specialization[]>([]);
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState(initialQuery);
@@ -32,7 +33,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
         const resp = await apiClient.get<ApiResponse<Specialization[]>>('/doctors/specializations');
         if (resp.data.success) setSpecializations(resp.data.data);
       } catch (err) {
-        // ignore
+        setLoadError('Unable to load doctor information. Please refresh to try again.');
       }
     };
     fetchSpecs();
@@ -50,7 +51,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
         setDoctors(resp.data.data);
       }
     } catch (err) {
-      // ignore
+      setLoadError('Unable to load doctor information. Please refresh to try again.');
     } finally {
       setLoading(false);
     }
@@ -67,6 +68,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
 
   return (
     <MainLayout>
+      {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
       <div className="space-y-8">
         {/* Header & Filter Bar */}
         <div className="glass-card p-6 border-slate-200 shadow-md">
@@ -141,16 +143,24 @@ export const DoctorDiscoveryPage: React.FC = () => {
                 className="glass-card p-6 border-slate-200/80 hover:border-spandan-400 transition flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-md shadow-spandan-500/20">
-                    {doctor.user?.full_name ? doctor.user.full_name.split(' ').slice(-1)[0][0] : 'DR'}
-                  </div>
+                  {doctor.profile_photo_url ? (
+                    <img
+                      src={doctor.profile_photo_url}
+                      alt={`${doctor.full_name} profile`}
+                      className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 shadow-md shadow-spandan-500/20"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-md shadow-spandan-500/20" aria-hidden="true">
+                      {doctor.full_name ? doctor.full_name.split(' ').slice(-1)[0][0] : 'DR'}
+                    </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-bold text-lg text-slate-900 hover:text-spandan-600 transition">
-                        <Link to={`/doctors/${doctor.id}`}>{doctor.user?.full_name}</Link>
+                        <Link to={`/doctors/${doctor.id}`}>{doctor.full_name}</Link>
                       </h3>
-                      {doctor.is_bmdc_verified && (
+                      {(doctor.verification_status === 'approved') && (
                         <Badge variant="success" className="flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" /> BMDC Verified
                         </Badge>
@@ -158,10 +168,10 @@ export const DoctorDiscoveryPage: React.FC = () => {
                     </div>
 
                     <p className="text-sm font-semibold text-spandan-700">
-                      {doctor.specialization?.name || 'General Practitioner'}
+                      {doctor.specializations.map((s) => s.name).join(', ') || 'General Practitioner'}
                       {doctor.qualifications && doctor.qualifications.length > 0 && (
                         <span className="text-slate-500 font-normal ml-2">
-                          ({doctor.qualifications.map((q) => q.degree_name).join(', ')})
+                          ({doctor.qualifications.map((q) => q.title).join(', ')})
                         </span>
                       )}
                     </p>
@@ -176,11 +186,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
                       <span>
                         <strong className="text-slate-700">{doctor.years_of_experience}</strong> years experience
                       </span>
-                      {doctor.consultation_fee_default && (
-                        <span>
-                          Fee: <strong className="text-slate-800">৳{doctor.consultation_fee_default}</strong>
-                        </span>
-                      )}
+
                     </div>
                   </div>
                 </div>

@@ -1,38 +1,38 @@
-from app.schemas.common import ApiResponse, PaginatedResponse, ErrorDetails
-from app.schemas.auth import (
-    RegisterPatientRequest,
-    RegisterDoctorRequest,
-    RegisterAssistantRequest,
-    LoginRequest,
-    TokenResponse,
-    RefreshTokenRequest,
-    ChangePasswordRequest,
+from app.schemas.ai import SpecialistRecommendationResponse, SymptomCheckRequest
+from app.schemas.appointment import (
+    AppointmentCreate,
+    AppointmentResponse,
+    AppointmentStatusUpdate,
+    SerialTrackingResponse,
 )
-from app.schemas.user import UserResponse, PatientProfileResponse, PatientProfileUpdate
+from app.schemas.auth import (
+    ChangePasswordRequest,
+    LoginRequest,
+    RefreshTokenRequest,
+    RegisterAssistantRequest,
+    RegisterDoctorRequest,
+    RegisterPatientRequest,
+    TokenResponse,
+)
+from app.schemas.chamber import ChamberCreate, ChamberResponse, ChamberUpdate
+from app.schemas.common import ApiResponse, ErrorDetails, PaginatedResponse
 from app.schemas.doctor import (
     DoctorProfileResponse,
     DoctorProfileUpdate,
-    QualificationResponse,
-    QualificationCreate,
-    SpecializationResponse,
-    SpecializationCreate,
     DoctorVerificationRequest,
+    QualificationCreate,
+    QualificationResponse,
+    SpecializationCreate,
+    SpecializationResponse,
 )
-from app.schemas.chamber import ChamberCreate, ChamberUpdate, ChamberResponse
 from app.schemas.schedule import (
-    ScheduleCreate,
-    ScheduleUpdate,
-    ScheduleResponse,
     QueueStateResponse,
     QueueStateUpdate,
+    ScheduleCreate,
+    ScheduleResponse,
+    ScheduleUpdate,
 )
-from app.schemas.appointment import (
-    AppointmentCreate,
-    AppointmentStatusUpdate,
-    AppointmentResponse,
-    SerialTrackingResponse,
-)
-from app.schemas.ai import SymptomCheckRequest, SpecialistRecommendationResponse
+from app.schemas.user import PatientProfileResponse, PatientProfileUpdate, UserResponse
 
 __all__ = [
     "ApiResponse",

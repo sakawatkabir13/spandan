@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Union
+
 import jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 
 
 def get_password_hash(password: str) -> str:
@@ -41,12 +42,13 @@ def create_refresh_token(
     subject: Union[str, Any],
     role: str,
     expires_delta: Optional[timedelta] = None,
+    token_version: int = 0,
 ) -> str:
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode = {"sub": str(subject), "role": role, "type": "refresh", "exp": expire}
+    to_encode = {"sub": str(subject), "role": role, "type": "refresh", "exp": expire, "ver": token_version}
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 

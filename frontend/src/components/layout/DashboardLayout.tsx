@@ -40,12 +40,14 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         return [
           { name: 'Assigned Chambers', path: '/dashboard/assistant', icon: MapPin },
           { name: 'Queue Management', path: '/dashboard/assistant/queue', icon: Clock },
+          { name: 'My Profile', path: '/dashboard/assistant/profile', icon: UserIcon },
         ];
       case 'administrator':
         return [
           { name: 'System Overview', path: '/dashboard/admin', icon: Activity },
           { name: 'Doctor BMDC Verification', path: '/dashboard/admin/verifications', icon: Stethoscope },
           { name: 'User Management', path: '/dashboard/admin/users', icon: Users },
+          { name: 'My Profile', path: '/dashboard/admin/profile', icon: UserIcon },
         ];
       default:
         return [];

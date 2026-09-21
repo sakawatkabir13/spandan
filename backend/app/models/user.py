@@ -1,7 +1,8 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, String
+
+from sqlalchemy import Boolean, Column, Date, DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -26,6 +27,8 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     phone_number = Column(String, unique=True, index=True, nullable=True)
     password_hash = Column(String, nullable=False)
+    display_name = Column(String, nullable=True)
+    token_version = Column(Integer, default=0, server_default="0", nullable=False)
     role = Column(Enum(UserRole, name="userrole", create_constraint=True), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_phone_verified = Column(Boolean, default=False, nullable=False)
@@ -44,7 +47,7 @@ class User(Base):
             return self.patient_profile.full_name
         if self.doctor_profile and getattr(self.doctor_profile, "full_name", None):
             return self.doctor_profile.full_name
-        return self.email.split("@")[0]
+        return self.display_name or self.email.split("@")[0]
 
 
 class PatientProfile(Base):

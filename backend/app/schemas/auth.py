@@ -1,6 +1,10 @@
-from typing import Optional
+import re
 from datetime import date
+from typing import Optional
+from uuid import UUID
+
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
 from app.models.user import UserRole
 from app.schemas.user import UserResponse
 
@@ -18,6 +22,8 @@ def clean_and_validate_phone(v: str) -> str:
             v_clean = "+880" + v_clean
         else:
             v_clean = "+" + v_clean
+    if not re.fullmatch(r"\+[1-9]\d{9,14}", v_clean):
+        raise ValueError("Please enter a valid phone number")
     return v_clean
 
 
@@ -58,7 +64,7 @@ class RegisterAssistantRequest(BaseModel):
     password: str = Field(..., min_length=8)
     phone_number: str
     full_name: str
-    doctor_id: Optional[str] = None
+    doctor_id: UUID
 
     @field_validator("phone_number")
     @classmethod

@@ -1,10 +1,22 @@
+from app.repositories.ai import RecommendationRepository, recommendation_repo
+from app.repositories.appointment import AppointmentRepository, appointment_repo
 from app.repositories.base import BaseRepository
-from app.repositories.user import user_repo, patient_repo, UserRepository, PatientProfileRepository
-from app.repositories.doctor import doctor_repo, specialization_repo, qualification_repo, DoctorRepository, SpecializationRepository, QualificationRepository
-from app.repositories.chamber import chamber_repo, ChamberRepository
-from app.repositories.schedule import schedule_repo, queue_repo, ScheduleRepository, QueueStateRepository
-from app.repositories.appointment import appointment_repo, AppointmentRepository
-from app.repositories.ai import recommendation_repo, RecommendationRepository
+from app.repositories.chamber import ChamberRepository, chamber_repo
+from app.repositories.doctor import (
+    DoctorRepository,
+    QualificationRepository,
+    SpecializationRepository,
+    doctor_repo,
+    qualification_repo,
+    specialization_repo,
+)
+from app.repositories.schedule import (
+    QueueStateRepository,
+    ScheduleRepository,
+    queue_repo,
+    schedule_repo,
+)
+from app.repositories.user import PatientProfileRepository, UserRepository, patient_repo, user_repo
 
 __all__ = [
     "BaseRepository",

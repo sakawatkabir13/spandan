@@ -54,6 +54,7 @@ apiClient.interceptors.response.use(
       !originalRequest.url?.includes('/auth/login') &&
       !originalRequest.url?.includes('/auth/refresh')
     ) {
+      originalRequest._retry = true;
       if (isRefreshing) {
         return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -67,7 +68,6 @@ apiClient.interceptors.response.use(
           .catch((err) => Promise.reject(err));
       }
 
-      originalRequest._retry = true;
       isRefreshing = true;
 
       const refreshToken = localStorage.getItem('spandan_refresh_token');
@@ -84,7 +84,7 @@ apiClient.interceptors.response.use(
         const refreshResp = await axios.post<ApiResponse<AuthTokens>>(
           `${BASE_URL}/auth/refresh`,
           { refresh_token: refreshToken },
-          { headers: { 'Content-Type': 'application/json' } }
+          { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
         );
 
         const newAccess = refreshResp.data.data.access_token;

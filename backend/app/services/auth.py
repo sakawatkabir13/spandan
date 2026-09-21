@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
-from typing import Optional, Tuple
+from typing import Optional
 from uuid import UUID
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import SpandanException
@@ -11,9 +13,9 @@ from app.core.security import (
     get_password_hash,
     verify_password,
 )
-from app.models.user import User, UserRole, PatientProfile
-from app.models.doctor import DoctorProfile, DoctorVerificationStatus, AssistantAssignment
-from app.repositories.user import user_repo, patient_repo
+from app.models.doctor import AssistantAssignment, DoctorProfile, DoctorVerificationStatus
+from app.models.user import PatientProfile, User, UserRole
+from app.repositories.user import user_repo
 from app.schemas.auth import (
     RegisterAssistantRequest,
     RegisterDoctorRequest,
@@ -79,6 +81,11 @@ class AuthService:
                 code="CONFLICT", message="An account with this phone number already exists.", status_code=409
             )
 
+        existing_registration = await db.scalar(select(DoctorProfile.id).where(
+            DoctorProfile.medical_registration_number == request.medical_registration_number
+        ))
+        if existing_registration:
+            raise SpandanException(code="CONFLICT", message="This medical registration number is already registered.", status_code=409)
         hashed_password = get_password_hash(request.password)
         user = User(
             email=request.email.lower(),
@@ -124,22 +131,16 @@ class AuthService:
             phone_number=request.phone_number,
             password_hash=hashed_password,
             role=UserRole.ASSISTANT,
+            display_name=request.full_name,
             is_active=True,
         )
         db.add(user)
         await db.flush()
 
-        if request.doctor_id:
-            try:
-                doc_id_uuid = UUID(request.doctor_id)
-                assignment = AssistantAssignment(
-                    doctor_id=doc_id_uuid,
-                    assistant_user_id=user.id,
-                    is_active=True,
-                )
-                db.add(assignment)
-            except ValueError:
-                pass
+        doctor = await db.get(DoctorProfile, request.doctor_id)
+        if not doctor:
+            raise SpandanException(code="NOT_FOUND", message="Doctor not found.", status_code=404)
+        db.add(AssistantAssignment(doctor_id=request.doctor_id, assistant_user_id=user.id, is_active=True))
 
         await db.commit()
         loaded_user = await user_repo.get_by_id_with_profiles(db, user.id)
@@ -162,8 +163,8 @@ class AuthService:
         return await user_repo.get_by_id_with_profiles(db, user.id)
 
     def create_tokens(self, user: User) -> TokenResponse:
-        access_token = create_access_token(subject=user.id, role=user.role.value)
-        refresh_token = create_refresh_token(subject=user.id, role=user.role.value)
+        access_token = create_access_token(subject=user.id, role=user.role.value, extra_claims={"ver": user.token_version})
+        refresh_token = create_refresh_token(subject=user.id, role=user.role.value, token_version=user.token_version)
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
@@ -187,6 +188,8 @@ class AuthService:
             )
 
         user = await user_repo.get_by_id_with_profiles(db, user_id)
+        if user and payload.get("ver", 0) != user.token_version:
+            raise SpandanException(code="INVALID_CREDENTIALS", message="Session has expired. Please sign in again.", status_code=401)
         if not user or not user.is_active:
             raise SpandanException(
                 code="ACCOUNT_INACTIVE",

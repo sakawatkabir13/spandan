@@ -1,5 +1,6 @@
 from typing import List
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,6 +33,12 @@ async def get_doctor_chambers(
 ):
     chambers = await chamber_service.get_doctor_chambers(db, doctor_id, only_active=only_active)
     return create_success_response(message="Chambers fetched successfully.", data=chambers)
+
+
+@router.get("/me", response_model=ApiResponse[List[ChamberResponse]])
+async def get_my_chambers(current_user: User = Depends(require_roles(UserRole.DOCTOR)), db: AsyncSession = Depends(get_db)):
+    chambers = await chamber_service.get_doctor_chambers(db, current_user.doctor_profile.id, only_active=False)
+    return create_success_response(message="Your chambers fetched.", data=chambers)
 
 
 @router.get("/{id}", response_model=ApiResponse[ChamberResponse])

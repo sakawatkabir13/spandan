@@ -1,10 +1,13 @@
 from typing import List, Optional
 from uuid import UUID
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.appointment import Appointment, AppointmentStatus
+from app.models.doctor import DoctorProfile
+from app.models.schedule import Schedule
 from app.repositories.base import BaseRepository
 
 
@@ -17,9 +20,12 @@ class AppointmentRepository(BaseRepository[Appointment]):
             select(Appointment)
             .options(
                 selectinload(Appointment.patient),
-                selectinload(Appointment.doctor),
+                selectinload(Appointment.patient),
+                selectinload(Appointment.doctor).selectinload(DoctorProfile.specializations),
+                selectinload(Appointment.doctor).selectinload(DoctorProfile.qualifications),
                 selectinload(Appointment.chamber),
-                selectinload(Appointment.schedule),
+                selectinload(Appointment.schedule).selectinload(Schedule.queue_state),
+                selectinload(Appointment.schedule).selectinload(Schedule.chamber),
             )
             .where(Appointment.id == appointment_id)
         )
@@ -32,9 +38,12 @@ class AppointmentRepository(BaseRepository[Appointment]):
             select(Appointment)
             .options(
                 selectinload(Appointment.patient),
-                selectinload(Appointment.doctor),
+                selectinload(Appointment.patient),
+                selectinload(Appointment.doctor).selectinload(DoctorProfile.specializations),
+                selectinload(Appointment.doctor).selectinload(DoctorProfile.qualifications),
                 selectinload(Appointment.chamber),
-                selectinload(Appointment.schedule),
+                selectinload(Appointment.schedule).selectinload(Schedule.queue_state),
+                selectinload(Appointment.schedule).selectinload(Schedule.chamber),
             )
             .where(Appointment.schedule_id == schedule_id)
         )
@@ -48,9 +57,12 @@ class AppointmentRepository(BaseRepository[Appointment]):
         result = await db.execute(
             select(Appointment)
             .options(
-                selectinload(Appointment.doctor),
+                selectinload(Appointment.patient),
+                selectinload(Appointment.doctor).selectinload(DoctorProfile.specializations),
+                selectinload(Appointment.doctor).selectinload(DoctorProfile.qualifications),
                 selectinload(Appointment.chamber),
-                selectinload(Appointment.schedule),
+                selectinload(Appointment.schedule).selectinload(Schedule.queue_state),
+                selectinload(Appointment.schedule).selectinload(Schedule.chamber),
             )
             .where(Appointment.patient_id == patient_id)
             .order_by(Appointment.created_at.desc())
@@ -61,7 +73,6 @@ class AppointmentRepository(BaseRepository[Appointment]):
         result = await db.execute(
             select(func.max(Appointment.serial_number)).where(
                 Appointment.schedule_id == schedule_id,
-                Appointment.appointment_status != AppointmentStatus.CANCELLED,
             )
         )
         val = result.scalar()

@@ -9,6 +9,7 @@ import { Badge } from '../../components/common/Badge';
 import { Calendar, Clock, MapPin } from 'lucide-react';
 
 export const AssistantDashboard: React.FC = () => {
+  const [loadError, setLoadError] = useState('');
   useAuth();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +22,7 @@ export const AssistantDashboard: React.FC = () => {
           setSchedules(resp.data.data);
         }
       } catch (err) {
-        // ignore
+        setLoadError('Unable to load the latest data. Please refresh to try again.');
       } finally {
         setLoading(false);
       }
@@ -32,6 +33,7 @@ export const AssistantDashboard: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
         <div className="glass-card p-6 border-slate-200">
           <h1 className="text-2xl font-bold text-slate-900">Assistant Queue Console</h1>
           <p className="text-sm text-slate-600">
@@ -70,12 +72,12 @@ export const AssistantDashboard: React.FC = () => {
                     </p>
                     <p className="text-xs text-slate-500 flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
-                      {sched.start_time.slice(0, 5)} - {sched.end_time.slice(0, 5)} | Running Serial #{sched.queue_state?.current_serial || 1}
+                      {sched.start_time.slice(0, 5)} - {sched.end_time.slice(0, 5)} | Running Serial #{sched.queue_state?.current_serial ?? 0}
                     </p>
                   </div>
 
                   <Link
-                    to={`/dashboard/doctor/queue?schedule_id=${sched.id}`}
+                    to={`/dashboard/assistant/queue?schedule_id=${sched.id}`}
                     className="btn-primary py-2.5 px-5 text-xs font-semibold"
                   >
                     Open Live Queue Console

@@ -1,18 +1,18 @@
 from app.db.base import Base
-from app.models.user import User, UserRole, PatientProfile
+from app.models.appointment import Appointment, AppointmentStatus, BookingSource
+from app.models.audit import AuditLog
+from app.models.chamber import Chamber
 from app.models.doctor import (
+    AssistantAssignment,
     DoctorProfile,
+    DoctorSpecialization,
     DoctorVerificationStatus,
     Qualification,
     Specialization,
-    DoctorSpecialization,
-    AssistantAssignment,
 )
-from app.models.chamber import Chamber
-from app.models.schedule import Schedule, ScheduleStatus, QueueState
-from app.models.appointment import Appointment, BookingSource, AppointmentStatus
 from app.models.recommendation import SpecialistRecommendation, UrgencyLevel
-from app.models.audit import AuditLog
+from app.models.schedule import QueueState, Schedule, ScheduleStatus
+from app.models.user import PatientProfile, User, UserRole
 
 __all__ = [
     "Base",

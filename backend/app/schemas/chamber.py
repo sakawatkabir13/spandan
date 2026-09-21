@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ChamberBase(BaseModel):
@@ -21,6 +22,13 @@ class ChamberCreate(ChamberBase):
 
 
 class ChamberUpdate(BaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_required_fields(cls, values):
+        if isinstance(values, dict) and any(key in values and values[key] is None for key in ['name', 'address', 'district', 'area', 'consultation_fee', 'follow_up_fee', 'average_consultation_minutes', 'is_active']):
+            raise ValueError("Required fields cannot be null")
+        return values
+
     name: Optional[str] = Field(None, min_length=2, max_length=150)
     address: Optional[str] = Field(None, min_length=5)
     district: Optional[str] = None

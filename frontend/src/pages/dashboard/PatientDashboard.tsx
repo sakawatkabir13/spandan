@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export const PatientDashboard: React.FC = () => {
+  const [loadError, setLoadError] = useState('');
   useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +38,7 @@ export const PatientDashboard: React.FC = () => {
         await fetchAllTracking(resp.data.data);
       }
     } catch (err) {
-      // ignore
+      setLoadError('Unable to load the latest data. Please refresh to try again.');
     } finally {
       setLoading(false);
     }
@@ -45,7 +46,7 @@ export const PatientDashboard: React.FC = () => {
 
   const fetchAllTracking = async (apps: Appointment[]) => {
     const activeApps = apps.filter(
-      (a) => a.appointment_status !== 'cancelled' && a.appointment_status !== 'completed'
+      (a) => a.appointment_status !== 'cancelled' && a.appointment_status !== 'completed' && a.appointment_status !== 'absent'
     );
     const newMap: Record<string, SerialTrackingInfo> = {};
 
@@ -59,7 +60,7 @@ export const PatientDashboard: React.FC = () => {
             newMap[app.schedule_id] = tResp.data.data;
           }
         } catch (e) {
-          // ignore
+          setLoadError('Unable to load the latest data. Please refresh to try again.');
         }
       })
     );
@@ -75,6 +76,11 @@ export const PatientDashboard: React.FC = () => {
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => { if (!document.hidden) void fetchAllTracking(appointments); }, 15000);
+    return () => window.clearInterval(timer);
+  }, [appointments]);
 
   const handleConfirmCancel = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,9 +102,22 @@ export const PatientDashboard: React.FC = () => {
     }
   };
 
+  const handleConfirmAttendance = async (appointmentId: string) => {
+    try {
+      await apiClient.patch(`/appointments/${appointmentId}/status`, {
+        appointment_status: 'confirmed',
+      });
+      setLoadError('');
+      await fetchAppointments();
+    } catch (error: any) {
+      setLoadError(error.response?.data?.error?.message || 'Unable to confirm attendance.');
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
         {/* Header */}
         <div className="glass-card p-6 border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -148,7 +167,8 @@ export const PatientDashboard: React.FC = () => {
             {appointments.map((app) => {
               const tracking = trackingMap[app.schedule_id];
               const isCancelled = app.appointment_status === 'cancelled';
-              const isCompleted = app.appointment_status === 'completed';
+              const isCompleted = app.appointment_status === 'completed' || app.appointment_status === 'absent';
+              const canCancel = !isCancelled && !isCompleted && app.appointment_status !== 'in_consultation';
 
               return (
                 <div
@@ -186,10 +206,10 @@ export const PatientDashboard: React.FC = () => {
                     </div>
 
                     <h3 className="text-xl font-bold text-slate-900">
-                      {app.doctor?.user?.full_name || 'Doctor Consultation'}
+                      {app.doctor?.full_name || 'Doctor Consultation'}
                     </h3>
                     <p className="text-sm font-semibold text-spandan-700">
-                      {app.doctor?.specialization?.name || 'Medical Specialist'}
+                      {app.doctor?.specializations.map((s) => s.name).join(', ') || 'Medical Specialist'}
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 pt-1">
@@ -254,14 +274,26 @@ export const PatientDashboard: React.FC = () => {
                         </div>
                       </div>
 
+                      {tracking.estimated_consultation_time && <p className="text-xs text-slate-300">Estimated consultation: {new Date(tracking.estimated_consultation_time).toLocaleString('en-GB', { timeZone: 'Asia/Dhaka', dateStyle: 'medium', timeStyle: 'short' })} (Dhaka). Times may change.</p>}
                       <div className="pt-2 text-[11px] text-slate-300 flex items-center justify-between">
                         <span>{tracking.status_message || 'Queue ongoing'}</span>
-                        <button
-                          onClick={() => setCancelTarget(app)}
-                          className="text-red-400 hover:text-red-300 underline font-semibold ml-2"
-                        >
-                          Cancel Serial
-                        </button>
+                        <span className="flex items-center gap-3 ml-2">
+                          {app.appointment_status === 'booked' && (
+                            <button
+                              onClick={() => void handleConfirmAttendance(app.id)}
+                              className="text-emerald-300 hover:text-emerald-200 underline font-semibold"
+                            >
+                              Confirm attendance
+                            </button>
+                          )}
+                          <button
+                            disabled={!canCancel}
+                            onClick={() => setCancelTarget(app)}
+                            className="text-red-400 hover:text-red-300 underline font-semibold"
+                          >
+                            Cancel Serial
+                          </button>
+                        </span>
                       </div>
                     </div>
                   ) : (
@@ -271,13 +303,24 @@ export const PatientDashboard: React.FC = () => {
                           Reason: {app.cancellation_reason || 'Cancelled'}
                         </span>
                       )}
-                      {!isCancelled && !isCompleted && (
-                        <button
-                          onClick={() => setCancelTarget(app)}
-                          className="btn-secondary py-2 px-4 text-xs font-semibold text-red-600 hover:bg-red-50"
-                        >
-                          Cancel Booking
-                        </button>
+                      {canCancel && (
+                        <div className="flex gap-2">
+                          {app.appointment_status === 'booked' && (
+                            <button
+                              onClick={() => void handleConfirmAttendance(app.id)}
+                              className="btn-secondary py-2 px-4 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                            >
+                              Confirm Attendance
+                            </button>
+                          )}
+                          <button
+                            disabled={!canCancel}
+                            onClick={() => setCancelTarget(app)}
+                            className="btn-secondary py-2 px-4 text-xs font-semibold text-red-600 hover:bg-red-50"
+                          >
+                            Cancel Booking
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}

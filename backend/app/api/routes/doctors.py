@@ -1,19 +1,22 @@
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, Query, status
+
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import get_current_active_user, require_roles
-from app.core.exceptions import create_success_response, SpandanException
+from app.api.dependencies.auth import require_roles
+from app.core.exceptions import SpandanException, create_success_response
 from app.db.session import get_db
 from app.models.user import User, UserRole
 from app.schemas.common import ApiResponse
 from app.schemas.doctor import (
     DoctorProfileResponse,
     DoctorProfileUpdate,
+    DoctorVerificationRequest,
     SpecializationResponse,
 )
 from app.services.doctor import doctor_service
+from app.services.profile_photo import store_profile_photo
 
 router = APIRouter(prefix="/doctors", tags=["Doctors"])
 
@@ -57,7 +60,40 @@ async def update_my_doctor_profile(
     return create_success_response(message="Doctor profile updated.", data=profile)
 
 
+@router.post("/me/profile/photo", response_model=ApiResponse[DoctorProfileResponse])
+async def upload_doctor_photo(
+    photo: UploadFile = File(...),
+    current_user: User = Depends(require_roles(UserRole.DOCTOR)),
+    db: AsyncSession = Depends(get_db),
+):
+    profile = await doctor_service.get_doctor_profile_by_user(db, current_user.id)
+    profile.profile_photo_url = await store_profile_photo(photo, profile.profile_photo_url)
+    await db.commit()
+    return create_success_response(
+        message="Profile photo updated.",
+        data=await doctor_service.get_doctor_profile(db, profile.id),
+    )
+
+
+@router.get("/admin/all", response_model=ApiResponse[List[DoctorProfileResponse]])
+async def list_doctors_for_review(current_user: User = Depends(require_roles(UserRole.ADMINISTRATOR)), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+
+    from app.models.doctor import DoctorProfile
+    doctors = await db.scalars(select(DoctorProfile).options(selectinload(DoctorProfile.specializations), selectinload(DoctorProfile.qualifications)).order_by(DoctorProfile.created_at.desc()))
+    return create_success_response(message="Doctor registry fetched.", data=list(doctors.all()))
+
+
+@router.post("/{id}/verify", response_model=ApiResponse[DoctorProfileResponse])
+async def verify_doctor(id: UUID, request: DoctorVerificationRequest, current_user: User = Depends(require_roles(UserRole.ADMINISTRATOR)), db: AsyncSession = Depends(get_db)):
+    profile = await doctor_service.verify_doctor(db, current_user, id, request)
+    return create_success_response(message="Doctor verification updated.", data=profile)
+
+
 @router.get("/{id}", response_model=ApiResponse[DoctorProfileResponse])
 async def get_doctor_by_id(id: UUID, db: AsyncSession = Depends(get_db)):
     profile = await doctor_service.get_doctor_profile(db, id)
+    if profile.verification_status.value != "approved":
+        raise SpandanException(code="NOT_FOUND", message="Doctor profile not found.", status_code=404)
     return create_success_response(message="Doctor profile fetched.", data=profile)

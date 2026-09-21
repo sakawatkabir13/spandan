@@ -7,7 +7,10 @@ export interface User {
   full_name: string;
   role: UserRole;
   is_active: boolean;
-  is_verified: boolean;
+  is_phone_verified: boolean;
+  is_email_verified: boolean;
+  patient_profile?: PatientProfile;
+  doctor_profile?: DoctorProfile;
   profile_picture_url?: string | null;
   created_at: string;
 }
@@ -16,7 +19,7 @@ export interface AuthTokens {
   access_token: string;
   refresh_token: string;
   token_type: string;
-  expires_in: number;
+
 }
 
 export interface LoginResponse {
@@ -24,7 +27,7 @@ export interface LoginResponse {
   access_token: string;
   refresh_token: string;
   token_type: string;
-  expires_in: number;
+
 }
 
 export interface ApiResponse<T> {
@@ -36,22 +39,20 @@ export interface ApiResponse<T> {
     message: string;
     details?: any;
   };
-  timestamp: string;
+
 }
 
 export interface PatientProfile {
   id: string;
   user_id: string;
+  full_name: string;
   date_of_birth?: string | null;
   gender?: string | null;
-  blood_group?: string | null;
-  emergency_contact_name?: string | null;
-  emergency_contact_phone?: string | null;
-  medical_history_summary?: string | null;
-  allergies?: string | null;
+  address?: string | null;
+  emergency_contact?: string | null;
+  profile_photo_url?: string | null;
   created_at: string;
   updated_at: string;
-  user?: User;
 }
 
 export interface Specialization {
@@ -64,29 +65,26 @@ export interface Specialization {
 
 export interface Qualification {
   id: string;
-  doctor_id: string;
-  degree_name: string;
+  title: string;
   institution: string;
-  passing_year: number;
-  country: string;
+  completion_year?: number | null;
 }
 
 export interface DoctorProfile {
   id: string;
   user_id: string;
+  full_name: string;
+  profile_photo_url?: string | null;
   medical_registration_number: string;
-  specialization_id?: string | null;
   current_workplace?: string | null;
   years_of_experience: number;
   biography?: string | null;
-  consultation_fee_default?: number | null;
-  is_bmdc_verified: boolean;
+  verification_status: 'pending' | 'approved' | 'rejected' | 'suspended';
+  verification_notes?: string | null;
   created_at: string;
   updated_at: string;
-  user?: User;
-  specialization?: Specialization | null;
+  specializations: Specialization[];
   qualifications: Qualification[];
-  chambers?: Chamber[];
 }
 
 export interface Chamber {
@@ -106,7 +104,7 @@ export interface Chamber {
   doctor?: DoctorProfile;
 }
 
-export type ScheduleStatus = 'open' | 'full' | 'closed' | 'cancelled';
+export type ScheduleStatus = 'draft' | 'open' | 'full' | 'closed' | 'completed' | 'cancelled';
 
 export interface QueueState {
   id: string;
@@ -126,6 +124,7 @@ export interface Schedule {
   end_time: string;
   maximum_patients: number;
   booked_count?: number;
+  average_consultation_minutes: number;
   status: ScheduleStatus;
   notes?: string | null;
   created_at: string;
@@ -141,9 +140,11 @@ export type AppointmentStatus =
   | 'in_consultation'
   | 'completed'
   | 'cancelled'
-  | 'no_show';
+  | 'waiting'
+  | 'skipped'
+  | 'absent';
 
-export type BookingSource = 'online' | 'walk_in' | 'phone_assistant';
+export type BookingSource = 'online' | 'walk_in' | 'phone' | 'assistant' | 'doctor';
 
 export interface Appointment {
   id: string;
@@ -166,7 +167,7 @@ export interface Appointment {
   doctor?: DoctorProfile;
   chamber?: Chamber;
   schedule?: Schedule;
-  patient?: PatientProfile;
+  patient?: Pick<PatientProfile, 'id' | 'full_name'>;
 }
 
 export interface SerialTrackingInfo {
@@ -178,6 +179,17 @@ export interface SerialTrackingInfo {
   people_ahead?: number | null;
   estimated_waiting_minutes?: number | null;
   estimated_consultation_time?: string | null;
+}
+
+export interface AuditLog {
+  id: string;
+  actor_user_id?: string | null;
+  action: string;
+  entity_type: string;
+  entity_id?: string | null;
+  metadata_json?: Record<string, unknown> | null;
+  ip_address?: string | null;
+  created_at: string;
 }
 
 export type UrgencyLevel = 'routine' | 'soon' | 'urgent' | 'emergency';

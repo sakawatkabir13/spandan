@@ -1,11 +1,12 @@
 from typing import Optional
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.user import User, PatientProfile
 from app.models.doctor import DoctorProfile
+from app.models.user import PatientProfile, User
 from app.repositories.base import BaseRepository
 
 
@@ -16,6 +17,7 @@ class UserRepository(BaseRepository[User]):
     def _profile_options(self):
         return [
             selectinload(User.patient_profile),
+            selectinload(User.assistant_assignments),
             selectinload(User.doctor_profile).selectinload(DoctorProfile.qualifications),
             selectinload(User.doctor_profile).selectinload(DoctorProfile.specializations),
         ]

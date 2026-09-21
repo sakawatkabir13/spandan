@@ -1,7 +1,9 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Literal, Optional
 from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field
+
 from app.models.recommendation import UrgencyLevel
 
 
@@ -27,3 +29,12 @@ class SpecialistRecommendationResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TriageModelResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    recommended_specialization_name: str = Field(min_length=1, max_length=150)
+    alternative_specialization_name: Optional[str] = Field(max_length=150)
+    urgency_level: Literal["routine", "soon", "urgent"]
+    reasoning_summary: str = Field(min_length=1, max_length=1500)
+    safety_message: str = Field(min_length=1, max_length=1500)

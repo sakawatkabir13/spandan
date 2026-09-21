@@ -1,5 +1,24 @@
+import base64
+from pathlib import Path
+
 import pytest
 from httpx import AsyncClient
+
+from app.core.config import Settings
+
+
+def test_production_settings_reject_documented_placeholders():
+    with pytest.raises(ValueError):
+        Settings(
+            APP_ENV="production",
+            DATABASE_URL=(
+                "postgresql+asyncpg://spandan_app:replace-with-password@db:5432/spandan"
+            ),
+            JWT_SECRET_KEY="replace-with-at-least-32-random-characters",
+            GROQ_API_KEY="replace-with-your-groq-secret",
+            CORS_ORIGINS=["https://spandan.example.com"],
+            _env_file=None,
+        )
 
 
 @pytest.mark.asyncio
@@ -45,6 +64,35 @@ async def test_patient_registration_and_login(client: AsyncClient):
     profile_data = profile_response.json()
     assert profile_data["data"]["full_name"] == "Test Patient"
     assert profile_data["data"]["address"] == "Dhaka, Bangladesh"
+
+    # 5. Uploads accept real raster formats, return the public URL, and reject spoofed files.
+    png = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII="
+    )
+    photo_response = await client.post(
+        "/api/v1/patients/me/photo",
+        headers=headers,
+        files={"photo": ("avatar.png", png, "image/png")},
+    )
+    assert photo_response.status_code == 200
+    photo_url = photo_response.json()["data"]["profile_photo_url"]
+    assert (await client.get(photo_url)).status_code == 200
+    invalid_photo = await client.post(
+        "/api/v1/patients/me/photo",
+        headers=headers,
+        files={"photo": ("fake.jpg", b"not an image", "image/jpeg")},
+    )
+    assert invalid_photo.status_code == 400
+    Path(photo_url.removeprefix("/")).unlink(missing_ok=True)
+
+    # 6. Logout revokes both access and refresh tokens server-side.
+    logout_response = await client.post("/api/v1/auth/logout", headers=headers)
+    assert logout_response.status_code == 200
+    assert (await client.get("/api/v1/auth/me", headers=headers)).status_code == 401
+    refresh_response = await client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": login_data["data"]["refresh_token"]}
+    )
+    assert refresh_response.status_code == 401
 
 
 @pytest.mark.asyncio

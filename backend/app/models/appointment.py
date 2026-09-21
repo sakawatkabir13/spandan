@@ -1,7 +1,8 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text
+
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -34,6 +35,7 @@ class AppointmentStatus(str, enum.Enum):
 
 class Appointment(Base):
     __tablename__ = "appointments"
+    __table_args__ = (UniqueConstraint("schedule_id", "serial_number", name="uq_schedule_serial"),)
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     patient_id = Column(UUID(as_uuid=True), ForeignKey("patient_profiles.id", ondelete="CASCADE"), nullable=False, index=True)

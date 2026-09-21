@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs test migrate seed clean
+.PHONY: help up down restart logs test test-frontend check migrate seed clean
 
 help:
 	@echo "Spandan Management Commands:"
@@ -35,3 +35,12 @@ test:
 clean:
 	docker compose down -v
 	rm -rf backend/.pytest_cache backend/htmlcov backend/.coverage
+
+test-frontend:
+	docker compose exec frontend npm test
+
+check:
+	docker compose exec backend ruff check .
+	docker compose exec backend pytest -q
+	docker compose exec frontend npm test
+	docker compose exec frontend npm run build

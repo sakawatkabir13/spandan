@@ -1,8 +1,13 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field
+
+from pydantic import BaseModel, ConfigDict, field_validator
+
 from app.models.appointment import AppointmentStatus, BookingSource
+from app.schemas.chamber import ChamberResponse
+from app.schemas.doctor import DoctorProfileResponse
+from app.schemas.schedule import ScheduleResponse
 
 
 class AppointmentCreate(BaseModel):
@@ -11,6 +16,13 @@ class AppointmentCreate(BaseModel):
     booking_source: BookingSource = BookingSource.ONLINE
     # For walk-in / assistant bookings where patient is not yet a registered online user, or booking for someone else
     patient_id: Optional[UUID] = None
+    patient_phone: Optional[str] = None
+
+    @field_validator("patient_phone")
+    @classmethod
+    def normalize_phone(cls, value):
+        from app.schemas.auth import clean_and_validate_phone
+        return clean_and_validate_phone(value) if value is not None else None
 
 
 class AppointmentStatusUpdate(BaseModel):
@@ -18,6 +30,12 @@ class AppointmentStatusUpdate(BaseModel):
     cancellation_reason: Optional[str] = None
     actual_consultation_started_at: Optional[datetime] = None
     actual_consultation_completed_at: Optional[datetime] = None
+
+
+class AppointmentPatientResponse(BaseModel):
+    id: UUID
+    full_name: str
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AppointmentResponse(BaseModel):
@@ -38,6 +56,10 @@ class AppointmentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     cancelled_at: Optional[datetime] = None
+    doctor: DoctorProfileResponse
+    chamber: ChamberResponse
+    schedule: ScheduleResponse
+    patient: AppointmentPatientResponse
 
     model_config = ConfigDict(from_attributes=True)
 

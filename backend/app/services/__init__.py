@@ -1,9 +1,9 @@
-from app.services.auth import auth_service, AuthService
-from app.services.doctor import doctor_service, DoctorService
-from app.services.chamber import chamber_service, ChamberService
-from app.services.schedule import schedule_service, ScheduleService
-from app.services.appointment import appointment_service, AppointmentService
-from app.services.ai import triage_service, SymptomTriageService
+from app.services.ai import SymptomTriageService, triage_service
+from app.services.appointment import AppointmentService, appointment_service
+from app.services.auth import AuthService, auth_service
+from app.services.chamber import ChamberService, chamber_service
+from app.services.doctor import DoctorService, doctor_service
+from app.services.schedule import ScheduleService, schedule_service
 
 __all__ = [
     "auth_service",

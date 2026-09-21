@@ -27,6 +27,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
   const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
   const [chambers, setChambers] = useState<Chamber[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
 
   // Booking modal state
@@ -50,7 +51,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
       if (chamResp.data.success) setChambers(chamResp.data.data);
       if (schedResp.data.success) setSchedules(schedResp.data.data);
     } catch (err) {
-      // ignore
+      setLoadError('Unable to load doctor information. Please refresh to try again.');
     } finally {
       setLoading(false);
     }
@@ -99,22 +100,31 @@ export const DoctorProfileDetailPage: React.FC = () => {
   };
 
   if (loading) return <MainLayout><LoadingSpinner size="lg" text="Loading doctor chamber details..." /></MainLayout>;
-  if (!doctor) return <MainLayout><Alert type="error" message="Doctor profile not found." /></MainLayout>;
+  if (!doctor) return <MainLayout><Alert type="error" message={loadError || "Doctor profile not found."} /></MainLayout>;
 
   return (
     <MainLayout>
+      {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
       <div className="space-y-8">
         {/* Doctor Header Banner */}
         <div className="glass-card p-6 sm:p-8 border-slate-200 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-start gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white font-extrabold text-3xl shadow-lg shadow-spandan-500/25 flex-shrink-0">
-              {doctor.user?.full_name ? doctor.user.full_name.split(' ').slice(-1)[0][0] : 'DR'}
-            </div>
+            {doctor.profile_photo_url ? (
+              <img
+                src={doctor.profile_photo_url}
+                alt={`${doctor.full_name} profile`}
+                className="w-20 h-20 rounded-2xl object-cover shadow-lg shadow-spandan-500/25 flex-shrink-0"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white font-extrabold text-3xl shadow-lg shadow-spandan-500/25 flex-shrink-0" aria-hidden="true">
+                {doctor.full_name ? doctor.full_name.split(' ').slice(-1)[0][0] : 'DR'}
+              </div>
+            )}
 
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{doctor.user?.full_name}</h1>
-                {doctor.is_bmdc_verified && (
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{doctor.full_name}</h1>
+                {(doctor.verification_status === 'approved') && (
                   <Badge variant="success" className="flex items-center gap-1.5 px-3 py-1 text-xs">
                     <CheckCircle2 className="w-4 h-4" /> BMDC Verified ({doctor.medical_registration_number})
                   </Badge>
@@ -122,7 +132,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
               </div>
 
               <p className="text-base font-semibold text-spandan-700">
-                {doctor.specialization?.name || 'General Practitioner'}
+                {doctor.specializations.map((s) => s.name).join(', ') || 'General Practitioner'}
               </p>
 
               <div className="flex flex-wrap items-center gap-6 text-sm text-slate-600 pt-1">
@@ -150,7 +160,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                 {doctor.biography ||
-                  `${doctor.user?.full_name} is a highly experienced ${doctor.specialization?.name || 'medical specialist'} practicing in private chambers with over ${doctor.years_of_experience} years of expertise. Dedicated to patient-centric care and accurate diagnosis.`}
+                  `${doctor.full_name} is a highly experienced ${doctor.specializations.map((s) => s.name).join(', ') || 'medical specialist'} practicing in private chambers with over ${doctor.years_of_experience} years of expertise. Dedicated to patient-centric care and accurate diagnosis.`}
               </p>
 
               {doctor.qualifications && doctor.qualifications.length > 0 && (
@@ -164,7 +174,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
                         key={q.id}
                         className="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-800"
                       >
-                        <strong className="text-spandan-800">{q.degree_name}</strong> - {q.institution} ({q.passing_year})
+                        <strong className="text-spandan-800">{q.title}</strong> - {q.institution} ({q.completion_year})
                       </div>
                     ))}
                   </div>
@@ -186,7 +196,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
                 <div className="space-y-4">
                   {schedules.map((sched) => {
                     const chamber = chambers.find((c) => c.id === sched.chamber_id) || sched.chamber;
-                    const isOpen = sched.status === 'open';
+                    const isOpen = sched.status === 'open' && new Date(`${sched.schedule_date}T${sched.end_time}+06:00`) > new Date();
                     return (
                       <div
                         key={sched.id}
@@ -243,7 +253,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
                             onClick={() => handleOpenBookingModal(sched)}
                             className="btn-primary py-2 px-4 text-xs font-semibold"
                           >
-                            {isOpen ? 'Book Serial' : 'Schedule Full'}
+                            {isOpen ? 'Book Serial' : sched.status === 'full' ? 'Schedule Full' : 'Booking Closed'}
                           </button>
                         </div>
                       </div>
@@ -339,7 +349,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-1.5">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Doctor:</span>
-                  <strong className="text-slate-800">{doctor.user?.full_name}</strong>
+                  <strong className="text-slate-800">{doctor.full_name}</strong>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Date:</span>

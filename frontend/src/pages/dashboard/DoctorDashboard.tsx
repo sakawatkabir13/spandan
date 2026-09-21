@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 
 export const DoctorDashboard: React.FC = () => {
-  useAuth();
+  const [loadError, setLoadError] = useState('');
+  const { user } = useAuth();
   const [chambers, setChambers] = useState<Chamber[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +40,16 @@ export const DoctorDashboard: React.FC = () => {
   const [schedEnd, setSchedEnd] = useState('21:00');
   const [schedMax, setSchedMax] = useState(30);
   const [schedMinsPerPatient, setSchedMinsPerPatient] = useState(10);
+  const [schedRepeat, setSchedRepeat] = useState(false);
+  const [schedRepeatUntil, setSchedRepeatUntil] = useState('');
+  const [schedWeekdays, setSchedWeekdays] = useState<number[]>([]);
   const [schedSubmitting, setSchedSubmitting] = useState(false);
+  const [scheduleMessage, setScheduleMessage] = useState('');
+
+  const changeSession = async (id: string, status: string) => {
+    try { await apiClient.patch(`/schedules/${id}`, { status }); await fetchData(); }
+    catch (error: any) { setLoadError(error.response?.data?.error?.message || 'Unable to update session.'); }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -51,7 +61,7 @@ export const DoctorDashboard: React.FC = () => {
       if (cResp.data.success) setChambers(cResp.data.data);
       if (sResp.data.success) setSchedules(sResp.data.data);
     } catch (err) {
-      // ignore
+      setLoadError('Unable to load the latest data. Please refresh to try again.');
     } finally {
       setLoading(false);
     }
@@ -94,16 +104,34 @@ export const DoctorDashboard: React.FC = () => {
     }
     setSchedSubmitting(true);
     try {
-      await apiClient.post('/schedules', {
+      const basePayload = {
         chamber_id: schedChamberId,
-        schedule_date: schedDate,
         start_time: `${schedStart}:00`,
         end_time: `${schedEnd}:00`,
         maximum_patients: Number(schedMax),
-        estimated_minutes_per_patient: Number(schedMinsPerPatient),
-      });
+        status: user?.doctor_profile?.verification_status === 'approved' ? 'open' : 'draft',
+        average_consultation_minutes: Number(schedMinsPerPatient),
+      };
+      let message = 'Schedule created successfully.';
+      if (schedRepeat) {
+        if (!schedRepeatUntil || schedWeekdays.length === 0) {
+          setLoadError('Choose at least one weekday and an end date for the recurring schedule.');
+          return;
+        }
+        const response = await apiClient.post<ApiResponse<Schedule[]>>('/schedules/recurring', {
+          ...basePayload,
+          start_date: schedDate,
+          end_date: schedRepeatUntil,
+          weekdays: schedWeekdays,
+        });
+        message = `${response.data.data.length} recurring schedules created successfully.`;
+      } else {
+        await apiClient.post('/schedules', { ...basePayload, schedule_date: schedDate });
+      }
       setScheduleModalOpen(false);
-      fetchData();
+      setScheduleMessage(message);
+      setLoadError('');
+      await fetchData();
     } catch (err: any) {
       alert(err.response?.data?.error?.message || 'Failed to create schedule.');
     } finally {
@@ -114,6 +142,8 @@ export const DoctorDashboard: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
+        {scheduleMessage && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-800">{scheduleMessage}</p>}
         {/* Header */}
         <div className="glass-card p-6 border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -218,6 +248,9 @@ export const DoctorDashboard: React.FC = () => {
                             >
                               Launch Queue Console
                             </Link>
+                            {['open', 'full'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'closed')}>Close Bookings</button>}
+                            {['closed', 'draft'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'open')}>Open Bookings</button>}
+                            {!['cancelled', 'completed'].includes(sched.status) && <button className="btn-danger text-xs" onClick={() => { if (window.confirm('Cancel this session and its unfinished appointments?')) void changeSession(sched.id, 'cancelled'); }}>Cancel Session</button>}
                           </div>
                         </div>
                       );
@@ -396,11 +429,60 @@ export const DoctorDashboard: React.FC = () => {
               <input
                 type="date"
                 required
+                min={new Date().toISOString().slice(0, 10)}
                 value={schedDate}
-                onChange={(e) => setSchedDate(e.target.value)}
+                onChange={(e) => {
+                  setSchedDate(e.target.value);
+                  if (e.target.value && schedWeekdays.length === 0) {
+                    const day = new Date(`${e.target.value}T12:00:00`).getDay();
+                    setSchedWeekdays([(day + 6) % 7]);
+                  }
+                }}
                 className="input-field bg-white"
               />
             </div>
+
+            <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                checked={schedRepeat}
+                onChange={(e) => setSchedRepeat(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-spandan-600"
+              />
+              Repeat this session weekly
+            </label>
+
+            {schedRepeat && (
+              <div className="space-y-3 rounded-xl border border-spandan-100 bg-spandan-50/50 p-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Repeat Until</label>
+                  <input
+                    type="date"
+                    required
+                    min={schedDate || new Date().toISOString().slice(0, 10)}
+                    value={schedRepeatUntil}
+                    onChange={(e) => setSchedRepeatUntil(e.target.value)}
+                    className="input-field bg-white"
+                  />
+                </div>
+                <fieldset>
+                  <legend className="block text-xs font-semibold uppercase text-slate-700 mb-2">Consultation Days</legend>
+                  <div className="flex flex-wrap gap-2">
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label, day) => (
+                      <label key={label} className={`cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold ${schedWeekdays.includes(day) ? 'border-spandan-500 bg-spandan-100 text-spandan-800' : 'border-slate-200 bg-white text-slate-600'}`}>
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={schedWeekdays.includes(day)}
+                          onChange={() => setSchedWeekdays((current) => current.includes(day) ? current.filter((value) => value !== day) : [...current, day])}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -463,7 +545,7 @@ export const DoctorDashboard: React.FC = () => {
                 Cancel
               </button>
               <button type="submit" disabled={schedSubmitting} className="btn-primary py-2 px-5 text-xs font-semibold">
-                {schedSubmitting ? 'Creating...' : 'Create Schedule'}
+                {schedSubmitting ? 'Creating...' : schedRepeat ? 'Create Recurring Schedules' : 'Create Schedule'}
               </button>
             </div>
           </form>

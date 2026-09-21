@@ -1,6 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
-from sqlalchemy import select
+
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -10,6 +11,7 @@ from app.models.doctor import (
     Qualification,
     Specialization,
 )
+from app.models.user import User
 from app.repositories.base import BaseRepository
 
 
@@ -46,7 +48,7 @@ class DoctorRepository(BaseRepository[DoctorProfile]):
         stmt = (
             select(DoctorProfile)
             .options(selectinload(DoctorProfile.qualifications), selectinload(DoctorProfile.specializations))
-            .where(DoctorProfile.verification_status == status)
+            .where(DoctorProfile.verification_status == status, DoctorProfile.user.has(User.is_active.is_(True)))
         )
 
         if specialization_id:
@@ -54,7 +56,12 @@ class DoctorRepository(BaseRepository[DoctorProfile]):
 
         if query:
             q_str = f"%{query.lower()}%"
-            stmt = stmt.where(DoctorProfile.full_name.ilike(q_str))
+            stmt = stmt.where(or_(
+                DoctorProfile.full_name.ilike(q_str),
+                DoctorProfile.current_workplace.ilike(q_str),
+                DoctorProfile.specializations.any(Specialization.name.ilike(q_str)),
+                DoctorProfile.qualifications.any(Qualification.title.ilike(q_str)),
+            ))
 
         stmt = stmt.offset(skip).limit(limit)
         result = await db.execute(stmt)
@@ -66,7 +73,7 @@ class SpecializationRepository(BaseRepository[Specialization]):
         super().__init__(Specialization)
 
     async def get_active_all(self, db: AsyncSession) -> List[Specialization]:
-        result = await db.execute(select(Specialization).where(Specialization.is_active == True))
+        result = await db.execute(select(Specialization).where(Specialization.is_active.is_(True)))
         return list(result.scalars().all())
 
 
