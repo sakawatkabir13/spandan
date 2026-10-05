@@ -130,7 +130,7 @@ flowchart LR
 - **AI triage** — local emergency keyword screening → Groq `openai/gpt-oss-120b` strict structured output → safe fallback when the provider is unavailable.
 - **Doctor verification** — doctors only become publicly visible after admin approval (`PENDING → APPROVED / REJECTED / SUSPENDED`).
 
-See [`AI_TRIAGE_GUIDE.md`](./AI_TRIAGE_GUIDE.md) for the full triage pipeline. For deeper internals — auth flow, queue-engine locking, state machines, ERD, and deployment topology — see [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+For auth flow, queue locking, state machines, the ERD, and deployment topology, see [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
 
 ---
 
@@ -311,11 +311,7 @@ spandan/
 ├── Makefile
 ├── .env.example
 ├── LICENSE
-├── CONTRIBUTING.md
-├── CHANGELOG.md
 ├── SECURITY.md
-├── CODE_OF_CONDUCT.md
-├── AI_TRIAGE_GUIDE.md
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   └── screenshots/
@@ -373,13 +369,17 @@ docker compose down
 
 A healthchecked Postgres ensures Alembic migrations only run after the DB is ready.
 
-For a public deployment, create `.env.production` from `.env.production.example` and follow [`DEPLOYMENT.md`](./DEPLOYMENT.md). Uploaded profile photos currently use a Docker volume, so multi-host deployments need shared object storage.
+For production, create a private `.env.production` from `.env.production.example` and configure the database, JWT/MFA keys, operator email, public URL, and Groq key. Never use demo credentials in production. The existing VPS uses `docker-compose.vps.yml` to preserve its database/upload volumes and bind the frontend to `127.0.0.1:8082` behind host Nginx.
+
+Run `sh ops/release.sh` for tagged builds, encrypted snapshots, migrations, readiness verification, and rollback on release failure. With prebuilt images tagged to the current Git SHA, use `SKIP_BUILD=true sh ops/release.sh`. `sh ops/rollback.sh` restores the preceding production runtime without downgrading data. Preserve `.runtime/backup.key` separately: losing it makes encrypted snapshots unrecoverable.
+
+Schedule `sh ops/run-backup.sh` daily, `sh ops/maintenance.sh` every minute, and `python3 ops/monitor.py` every five minutes. Backup restoration uses `python3 ops/backup.py --restore-archive PATH --destination PRIVATE_DIRECTORY`, followed by `pg_restore` into an isolated database before restoring live data. Configure `S3_BACKUP_BUCKET` and credentials for ongoing off-site copies. Profile photos support optional S3 storage; multi-host deployments require it or another shared store.
 
 ### Completed workflows
 
 Patients can discover approved doctors, view profile photos, book, confirm, or cancel appointments, edit their profile, and track live queue progress. Doctors can manage chambers, create individual or recurring schedules, control bookings, cancel sessions, edit professional details, and create assistants with individual permissions. Assistants can book registered patients and operate assigned queues. Administrators can verify doctors, control user access, and inspect recent audited activity.
 
-Queue tracking refreshes every 15 seconds. Session times use `APP_TIMEZONE` (`Asia/Dhaka` by default). Sessions cannot overlap for the same doctor, booked session times cannot be changed without first cancelling bookings, and cancelled serial numbers are not reused.
+Queue tracking uses aggregate SSE events with a 15-second polling fallback. Session times use `APP_TIMEZONE` (`Asia/Dhaka` by default). Sessions cannot overlap for the same doctor, booked session times cannot be changed without first cancelling bookings, and cancelled serial numbers are not reused.
 
 ---
 
@@ -391,21 +391,19 @@ Queue tracking refreshes every 15 seconds. Session times use `APP_TIMEZONE` (`As
 
 ---
 
-## 🗺️ Roadmap
+## 🗺️ Extended workflows
 
-- [ ] SMS, WhatsApp, or email confirmations and reminders
-- [ ] Patient rescheduling and a cancellation waitlist
-- [ ] Payment, receipt, and refund integration
-- [ ] Password reset, contact verification, and optional administrator MFA
-- [ ] WebSocket or SSE live queue updates
-- [ ] Doctor availability calendar view
-- [ ] Patient PWA shell (install-to-home-screen, offline support)
-- [ ] Telemedicine video call integration
-- [ ] Internationalization (English · বাংলা)
-- [ ] Analytics dashboard for chamber owners
-- [ ] Standards-based clinical-system exchange where FHIR interoperability is required
+- In-app confirmations, queue alerts, cancellation notifications, and reminders; configurable SMTP email and Twilio SMS delivery.
+- Atomic rescheduling, cancellation waitlists, staff walk-in intake, and family/dependent bookings.
+- Cash payments, receipts, and refunds; configurable Stripe checkout and signed payment webhooks.
+- Expiring password recovery and contact verification, authenticator MFA, and security audit events.
+- Doctor availability calendars, holiday closures, chamber/session editing, and recurring-series editing.
+- Installable patient PWA with a generic offline page; patient and API data are never cached offline.
+- Configurable video consultation rooms and authorized FHIR R4 Appointment export.
+- Bengali labels for core patient flows, mobile layouts, and keyboard/accessibility improvements.
+- Chamber analytics, operator status, health-data retention, and privacy export/deletion requests.
 
-The core booking and queue workflows do not require these external services. Payments, messaging, clinical-system exchange, and data-retention rules must be selected by the deploying organization. Spandan is an appointment and chamber-management system, not an electronic medical record.
+Email recovery/verification, SMS, online payments, video consultations, and off-site storage require provider credentials. They remain disabled until configured. Approved doctors must publish real future sessions before patients can book.
 
 Have an idea? [Open a feature request](https://github.com/sakawatkabir13/spandan/issues/new?template=feature_request.yml).
 
@@ -413,7 +411,7 @@ Have an idea? [Open a feature request](https://github.com/sakawatkabir13/spandan
 
 ## 🤝 Contributing
 
-We love contributions! Please read [`CONTRIBUTING.md`](./CONTRIBUTING.md) and follow the [Code of Conduct](./CODE_OF_CONDUCT.md). A starter PR template is provided and our CI runs lint + tests automatically.
+Open a focused pull request with relevant validation. CI checks backend/frontend tests, PostgreSQL migrations and concurrency, browser workflows, dependencies, and production containers.
 
 ---
 
@@ -451,7 +449,7 @@ This project is licensed under the **MIT License** — see the [`LICENSE`](./LIC
 | **Olid Hussan Opu** | Auth, dashboards & admin flows | [@olid-opu](https://github.com/olid-opu) |
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-If you'd like to join in, see the [Contributing guide](./CONTRIBUTING.md).
+Contributions can be proposed through GitHub issues and pull requests.
 
 ---
 
