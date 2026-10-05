@@ -6,6 +6,7 @@ test('email OTP registration and password recovery with session revocation', asy
   const email = `otp-${suffix}@example.com`;
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/register');
+  await expect(page.getByRole('button', { name: 'Send verification code', exact: true })).toBeVisible();
   await page.getByLabel('Full Name', { exact: true }).fill('OTP Browser Patient');
   await page.getByLabel('Email Address', { exact: true }).fill(email);
   await page.getByLabel('Phone Number', { exact: true }).fill('016' + suffix.slice(-8));

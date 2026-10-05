@@ -16,7 +16,7 @@ export function EmailOTPField({ email, code, onChange, disabled = false }: {
     const timer = window.setInterval(() => setRemaining(Math.max(0, Math.ceil((retryAt - Date.now()) / 1000))), 1000);
     return () => window.clearInterval(timer);
   }, [retryAt]);
-  const matches = sentTo === email.trim().toLowerCase();
+  const matches = Boolean(sentTo) && sentTo === email.trim().toLowerCase();
   return <div className="space-y-2 rounded-xl border border-spandan-200 p-4 bg-spandan-50/40">
     <p className="text-sm text-slate-600">{t('Verify your email before creating an account. Codes are sent from community.cuetinsights@gmail.com and expire in 10 minutes.')}</p>
     <button type="button" className="btn-secondary w-full" disabled={disabled || busy || remaining > 0 || !email.trim()} onClick={async event => {
