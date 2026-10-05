@@ -138,7 +138,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
                 <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{doctor.full_name}</h1>
                 {(doctor.verification_status === 'approved') && (
                   <Badge variant="success" className="flex items-center gap-1.5 px-3 py-1 text-xs">
-                    <CheckCircle2 className="w-4 h-4" /> {doctor.is_demo ? 'Academic demo account' : `BMDC Verified (${doctor.medical_registration_number})`}
+                    <CheckCircle2 className="w-4 h-4" /> {doctor.is_demo ? 'Hospital-sourced profile' : `BMDC Verified (${doctor.medical_registration_number})`}
                   </Badge>
                 )}
               </div>
@@ -163,7 +163,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {doctor.is_demo && <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-2"><p className="font-semibold">Academic demonstration only</p><p>Fees, availability, appointment serials and queues below are simulated. This account is automatically approved for the demo; it is not BMDC verification or confirmation from the doctor. No real consultation is arranged.</p>{doctor.source_url && <a className="underline" href={doctor.source_url} target="_blank" rel="noopener noreferrer">Official hospital profile and real contact information</a>}</div>}
+        {doctor.is_demo && <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-2"><p>Spandan schedules are separate from hospital availability. Contact the hospital to confirm consultation fees and appointments; a Spandan booking does not reserve a hospital visit.</p>{doctor.source_url && <a className="underline" href={doctor.source_url} target="_blank" rel="noopener noreferrer">Official hospital profile and real contact information</a>}</div>}
         {/* Qualifications & Biography */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
@@ -179,7 +179,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
               {doctor.qualifications && doctor.qualifications.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-slate-100">
                   <h4 className="font-semibold text-sm text-slate-800 uppercase tracking-wider mb-3">
-                    Academic & Professional Degrees
+                    Qualifications & Professional Degrees
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {doctor.qualifications.map((q) => (

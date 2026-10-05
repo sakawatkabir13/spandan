@@ -132,12 +132,12 @@ export const Home: React.FC = () => {
           </div>
           <h3 className="font-bold text-lg text-slate-900 mb-2">Doctor Profiles & Credentials</h3>
           <p className="text-sm text-slate-600 leading-relaxed">
-            Browse hospital-sourced profiles and their published qualifications. Academic demo accounts are clearly labelled; their schedules and fees are simulated.
+            Browse hospital-sourced profiles, published qualifications and specialties to find the right doctor for your needs.
           </p>
         </div>
       </section>
 
-      {/* Live Demo Widget Showcase */}
+      {/* Queue widget showcase */}
       <section className="bg-gradient-to-r from-spandan-900 to-slate-900 rounded-3xl p-8 sm:p-12 text-white shadow-xl mb-16 flex flex-col md:flex-row items-center justify-between gap-8 border border-spandan-800/40">
         <div className="max-w-md space-y-4">
           <span className="text-xs font-semibold uppercase tracking-widest text-spandan-400 bg-spandan-950/60 px-3 py-1 rounded-full border border-spandan-800">

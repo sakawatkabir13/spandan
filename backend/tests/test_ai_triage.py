@@ -1,11 +1,13 @@
 import pytest
 from httpx import AsyncClient
 
+from tests.helpers import verified_post
+
 
 @pytest.mark.asyncio
 async def test_ai_triage_engine_emergency_rules_and_fallback(client: AsyncClient):
     # 1. Register and login as patient
-    await client.post(
+    await verified_post(client,
         "/api/v1/auth/register/patient",
         json={
             "email": "triage_test@gmail.com",

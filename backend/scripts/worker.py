@@ -2,10 +2,7 @@
 
 import asyncio
 import logging
-import smtplib
-import ssl
 from datetime import datetime, timedelta, timezone
-from email.message import EmailMessage
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -16,32 +13,19 @@ from app.core.time import session_time
 from app.db.session import async_session_maker
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.doctor import DoctorProfile
+from app.models.email_otp import EmailOTP
 from app.models.operations import AccountAction, Notification
 from app.models.recommendation import SpecialistRecommendation
 from app.models.schedule import Schedule, ScheduleStatus
 from app.models.user import PatientProfile, User, UserRole
+from app.services import mail
 from app.services.notifications import notify
 
 logger = logging.getLogger(__name__)
 
 
 def send_email(user, notification):
-    message = EmailMessage()
-    message["From"] = settings.SMTP_FROM
-    message["To"] = user.email
-    message["Subject"] = notification.subject
-    message.set_content(notification.message)
-    if not settings.email_enabled or user.email.endswith((".invalid", "@demo.spandan.example.com")):
-        raise ValueError("Email delivery is unavailable for this recipient")
-    context = ssl.create_default_context()
-    connection = (smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15, context=context)
-                  if settings.SMTP_SSL else smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15))
-    with connection as smtp:
-        if settings.SMTP_STARTTLS:
-            smtp.starttls(context=context)
-        if settings.SMTP_USERNAME:
-            smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-        smtp.send_message(message)
+    mail.send_email(user.email, notification.subject, notification.message)
 
 
 async def run():
@@ -80,8 +64,8 @@ async def run():
                     await notify(
                         db,
                         user,
-                        "Demo appointment reminder" if doctor.is_demo else "Appointment reminder",
-                        (f"Academic demo session: {schedule.schedule_date}, serial {appointment.serial_number}. No real consultation is arranged." if doctor.is_demo else f"Your consultation is on {schedule.schedule_date}, serial {appointment.serial_number}. Please check your queue before travelling."),
+                        "Appointment reminder",
+                        (f"Spandan session: {schedule.schedule_date}, serial {appointment.serial_number}. Contact the hospital to confirm a consultation; this booking does not reserve a hospital visit." if doctor.is_demo else f"Your consultation is on {schedule.schedule_date}, serial {appointment.serial_number}. Please check your queue before travelling."),
                         f"reminder:{appointment.id}",
                     )
         await db.execute(
@@ -90,6 +74,7 @@ async def run():
                 < now - timedelta(days=max(1, settings.SYMPTOM_RETENTION_DAYS))
             )
         )
+        await db.execute(delete(EmailOTP).where(EmailOTP.expires_at < now - timedelta(days=1)))
         await db.execute(
             delete(AccountAction).where(AccountAction.expires_at < now - timedelta(days=1))
         )

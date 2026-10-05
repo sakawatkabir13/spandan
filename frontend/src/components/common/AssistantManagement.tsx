@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apiClient } from "../../api/client";
+import { EmailOTPField } from "./EmailOTPField";
 import { ApiResponse } from "../../types";
 
 interface Assignment {
@@ -17,6 +18,8 @@ export const AssistantManagement: React.FC<{ doctorId: string }> = ({
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailOTP, setEmailOTP] = useState("");
   const load = () =>
     apiClient
       .get<ApiResponse<Assignment[]>>("/assistants")
@@ -36,6 +39,7 @@ export const AssistantManagement: React.FC<{ doctorId: string }> = ({
         doctor_id: doctorId,
       });
       form.reset();
+      setEmail(""); setEmailOTP("");
       setMessage(
         "Assistant created. Give the assistant their sign-in details.",
       );
@@ -85,7 +89,7 @@ export const AssistantManagement: React.FC<{ doctorId: string }> = ({
         </label>
         <label className="text-sm">
           Email
-          <input name="email" type="email" required className="input-field" />
+          <input name="email" type="email" required className="input-field" value={email} onChange={event => { setEmail(event.target.value); setEmailOTP(""); }} />
         </label>
         <label className="text-sm">
           Phone
@@ -107,6 +111,7 @@ export const AssistantManagement: React.FC<{ doctorId: string }> = ({
             className="input-field"
           />
         </label>
+        <div className="sm:col-span-2"><EmailOTPField email={email} code={emailOTP} onChange={setEmailOTP} disabled={busy} /></div>
         <button disabled={busy} className="btn-primary sm:col-span-2">
           Create Assistant
         </button>

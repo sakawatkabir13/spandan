@@ -1,3 +1,4 @@
+import { verifyEmail } from './mailbox';
 import { test, expect, Page } from '@playwright/test';
 
 const password = 'BrowserPassword123!';
@@ -23,6 +24,7 @@ test.describe.serial('Full-stack chamber operations', () => {
     await page.getByLabel('Phone Number', { exact: true }).fill('017' + suffix.slice(-8));
     await page.getByLabel('Password', { exact: true }).fill(password);
     await page.getByLabel('BMDC Registration Number', { exact: true }).fill('TEST-' + suffix);
+    await verifyEmail(page, doctorEmail);
     await page.getByRole('button', { name: 'Register as Doctor' }).click();
     await expect(page).toHaveURL(/dashboard\/doctor/);
     doctorId = await page.evaluate(() => JSON.parse(localStorage.getItem('spandan_user') || '{}').doctor_profile?.id || '');
@@ -59,6 +61,7 @@ test.describe.serial('Full-stack chamber operations', () => {
     await page.getByLabel('Email Address', { exact: true }).fill(patientEmail);
     await page.getByLabel('Phone Number', { exact: true }).fill('018' + suffix.slice(-8));
     await page.getByLabel('Password', { exact: true }).fill(password);
+    await verifyEmail(page, patientEmail);
     await page.getByRole('button', { name: 'Register as Patient' }).click();
     await expect(page).toHaveURL(/dashboard\/patient/);
     // An expired access token must recover through the real refresh endpoint.

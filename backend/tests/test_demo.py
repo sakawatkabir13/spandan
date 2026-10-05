@@ -3,7 +3,6 @@ import hmac
 import json
 import time
 from datetime import timedelta
-from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
@@ -17,6 +16,7 @@ from app.models.doctor import DoctorProfile, Specialization
 from app.models.operations import Payment
 from app.models.schedule import Schedule
 from app.models.user import User
+from app.services.mail import send_email as smtp_send_email
 from scripts.import_directory import load_dataset
 from scripts.seed_demo_directory import save_credentials, seed_demo_accounts
 from tests.test_operations import book
@@ -242,7 +242,7 @@ def test_test_only_keys_and_google_smtp_readiness(monkeypatch):
     assert not config.email_enabled
     config.SMTP_PASSWORD = "synthetic-app-password"
     assert config.email_enabled
-    from scripts import worker
+    from app.services import mail
 
     calls = []
 
@@ -265,18 +265,13 @@ def test_test_only_keys_and_google_smtp_readiness(monkeypatch):
         def send_message(self, message):
             calls.append(message["To"])
 
-    monkeypatch.setattr(worker, "settings", config)
-    monkeypatch.setattr(worker.smtplib, "SMTP", SMTP)
-    worker.send_email(
-        SimpleNamespace(email="patient@example.com"),
-        SimpleNamespace(subject="Test", message="Synthetic test only"),
-    )
+    monkeypatch.setattr(mail, "settings", config)
+    monkeypatch.setattr(mail, "send_email", smtp_send_email)
+    monkeypatch.setattr(mail.smtplib, "SMTP", SMTP)
+    mail.send_email("patient@example.com", "Test", "Synthetic test only")
     assert "patient@example.com" in calls
     with pytest.raises(ValueError):
-        worker.send_email(
-            SimpleNamespace(email="fixture@demo.spandan.example.com"),
-            SimpleNamespace(subject="Test", message="Test"),
-        )
+        mail.send_email("fixture@demo.spandan.example.com", "Test", "Test")
 
 
 async def test_cancel_pending_stripe_checkout_allows_rescheduling(client, db_session, monkeypatch):

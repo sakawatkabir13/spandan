@@ -56,7 +56,7 @@ export const AdminDashboard: React.FC = () => {
     try {
       await apiClient.post(`/doctors/${doctor.id}/verify`, {
         status: verify ? 'approved' : 'rejected',
-        verification_notes: notes || (verify ? (doctor.is_demo ? 'Academic demo approval only; not BMDC verification.' : 'BMDC verified by System Administrator') : 'Verification rejected'),
+        verification_notes: notes || (verify ? (doctor.is_demo ? 'Directory account approved; practitioner credentials require separate verification.' : 'BMDC verified by System Administrator') : 'Verification rejected'),
       });
       await fetchDoctors();
       return true;
@@ -127,16 +127,16 @@ export const AdminDashboard: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-2">
                         <h4 className="font-bold text-base text-slate-900">{doc.full_name}</h4>
                         <Badge variant={(doc.verification_status === 'approved') ? 'success' : 'warning'}>
-                          {doc.is_demo ? `ACADEMIC DEMO · ${doc.verification_status.toUpperCase()}` : (doc.verification_status === 'approved') ? 'VERIFIED BMDC' : doc.verification_status.toUpperCase()}
+                          {doc.is_demo ? `DIRECTORY ACCOUNT · ${doc.verification_status.toUpperCase()}` : (doc.verification_status === 'approved') ? 'VERIFIED BMDC' : doc.verification_status.toUpperCase()}
                         </Badge>
                       </div>
 
                       <p className="text-sm font-semibold text-spandan-700">
-                        {doc.specializations.map((s) => s.name).join(', ')} | {doc.is_demo ? 'Demo identifier' : 'BMDC Reg'}: <strong className="text-slate-900">{doc.medical_registration_number}</strong>
+                        {doc.specializations.map((s) => s.name).join(', ')} | {doc.is_demo ? 'Account ID' : 'BMDC Reg'}: <strong className="text-slate-900">{doc.is_demo ? doc.id.slice(0, 8).toUpperCase() : doc.medical_registration_number}</strong>
                       </p>
 
                       <p className="text-xs text-slate-500">
-                        Workplace: {doc.current_workplace || 'Private Practice'} | Experience: {doc.years_of_experience} years
+                        Workplace: {doc.current_workplace || 'Private Practice'}{!doc.is_demo && <> | Experience: {doc.years_of_experience} years</>}
                       </p>
                     </div>
                   </div>
@@ -148,7 +148,7 @@ export const AdminDashboard: React.FC = () => {
                           onClick={() => handleVerify(doc, true)}
                           className="btn-primary py-2 px-4 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 shadow-none flex items-center gap-1.5"
                         >
-                          <CheckCircle2 className="w-4 h-4" /> {doc.is_demo ? 'Approve demo' : 'Approve BMDC'}
+                          <CheckCircle2 className="w-4 h-4" /> {doc.is_demo ? 'Approve account' : 'Approve BMDC'}
                         </button>
                         <button
                           onClick={() => setRejectTarget(doc)}

@@ -155,9 +155,7 @@ async def checkout(appointment_id: UUID, user=Depends(get_current_active_user), 
             "metadata[payment_id]": str(payment.id),
             "line_items[0][price_data][currency]": payment.currency,
             "line_items[0][price_data][unit_amount]": str(amount),
-            "line_items[0][price_data][product_data][name]": "Spandan academic demo consultation"
-            if appointment.doctor.is_demo
-            else "Spandan test consultation",
+            "line_items[0][price_data][product_data][name]": "Spandan consultation",
             "line_items[0][quantity]": "1",
         },
         f"checkout:{payment.id}:{payment.checkout_attempt}",
@@ -239,7 +237,7 @@ async def demo_payment(
     appointment = await authorize(db, user, appointment_id)
     if not settings.DEMO_MODE or not appointment.doctor.is_demo:
         raise SpandanException(
-            "NOT_FOUND", "Demo payments are unavailable for this appointment.", 404
+            "NOT_FOUND", "Payment simulation is unavailable for this appointment.", 404
         )
     await db.execute(
         select(Schedule.id).where(Schedule.id == appointment.schedule_id).with_for_update()
@@ -279,7 +277,7 @@ async def demo_payment(
     )
     await db.commit()
     return create_success_response(
-        "Demo payment recorded. No money was charged and no Stripe transaction was created.",
+        "Test payment recorded. No money was charged and no Stripe transaction was created.",
         {"outcome": "success"},
     )
 

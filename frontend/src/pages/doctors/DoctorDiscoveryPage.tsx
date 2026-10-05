@@ -182,7 +182,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
                       </h3>
                       {(doctor.verification_status === 'approved') && (
                         <Badge variant="success" className="flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> {doctor.is_demo ? t('Academic demo account') : 'BMDC Verified'}
+                          <CheckCircle2 className="w-3 h-3" /> {doctor.is_demo ? t('Hospital-sourced profile') : 'BMDC Verified'}
                         </Badge>
                       )}
                     </div>

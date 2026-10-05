@@ -13,7 +13,7 @@ test('public directory covers Bangladesh and does not offer unconfirmed booking'
   await expect(page.getByRole('heading', { name: 'Dr. Ayesha Rafiq Chowdhury', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Call hospital: +8809610009640' })).toHaveAttribute('href', 'tel:+8809610009640');
   await expect(page.getByRole('link', { name: 'Official hospital source' })).toHaveAttribute('href', /ibnsinahospitalsylhet.com.bd/);
-  await expect(page.getByText('Real appointments must be confirmed with the hospital', { exact: false })).toBeVisible();
+  await expect(page.getByText('Contact the hospital to confirm fees, hours and appointments', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Book Serial' })).toHaveCount(0);
   await expect(page.getByText('BMDC Verified', { exact: true })).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });

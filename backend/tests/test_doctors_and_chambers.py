@@ -3,6 +3,8 @@ from datetime import date, timedelta
 import pytest
 from httpx import AsyncClient
 
+from tests.helpers import verified_post
+
 
 @pytest.mark.asyncio
 async def test_specialization_and_doctor_discovery(client: AsyncClient, db_session):
@@ -16,7 +18,7 @@ async def test_specialization_and_doctor_discovery(client: AsyncClient, db_sessi
         "current_workplace": "NICVD",
         "years_of_experience": 15,
     }
-    await client.post("/api/v1/auth/register/doctor", json=reg_payload)
+    await verified_post(client, "/api/v1/auth/register/doctor", json=reg_payload)
 
     # Login as doctor
     login_resp = await client.post(

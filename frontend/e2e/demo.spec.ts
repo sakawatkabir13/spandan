@@ -1,10 +1,11 @@
+import { verifyEmail } from './mailbox';
 import { test, expect } from '@playwright/test';
 
 test('sourced profile to demo booking, declined payment, receipt and cancellation on mobile', async ({ page }) => {
   const suffix = String(Date.now());
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/doctors');
-  await expect(page.getByRole('complementary', { name: 'Academic demo notice' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Academic demo notice' })).toHaveCount(0);
   const specs = (await (await page.request.get('/api/v1/doctors/specializations')).json()).data;
   await page.goto(`/doctors?specialization_id=${specs.find((s: { name: string }) => s.name === 'ENT').id}`);
   await expect(page.getByLabel('Specialty', { exact: true })).toHaveValue('ENT');
@@ -12,17 +13,19 @@ test('sourced profile to demo booking, declined payment, receipt and cancellatio
   await expect(page.getByRole('status').filter({ hasText: '44 public hospital listings' })).toBeVisible();
   await page.getByLabel('Specialty', { exact: true }).selectOption('Ophthalmology');
   await expect(page.getByRole('status').filter({ hasText: '1 public hospital listings' })).toBeVisible();
-  await page.getByRole('link', { name: 'Book demo appointment', exact: true }).click();
+  await page.getByRole('link', { name: 'Book appointment', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Prof. Dr. Nazmun Nahar', exact: true })).toBeVisible();
-  await expect(page.getByText('Academic demo account', { exact: true })).toBeVisible();
+  await expect(page.getByText('Hospital-sourced profile', { exact: true })).toBeVisible();
   await expect(page.getByText('BMDC Verified', { exact: false })).toHaveCount(0);
+  await expect(page.locator('body')).not.toContainText(/\bdemo\b|academic demonstration/i);
   await expect(page.getByRole('link', { name: 'Official hospital profile and real contact information' })).toHaveAttribute('href', /evercarebd.com\/en\/dhaka\/doctors\/prof-dr-nazmun-nahar/);
   const doctorUrl = page.url();
   await page.goto('/register');
-  await page.getByLabel('Full Name', { exact: true }).fill('Academic Demo Patient');
+  await page.getByLabel('Full Name', { exact: true }).fill('Booking Test Patient');
   await page.getByLabel('Email Address', { exact: true }).fill(`demo-patient-${suffix}@example.com`);
   await page.getByLabel('Phone Number', { exact: true }).fill('019' + suffix.slice(-8));
   await page.getByLabel('Password', { exact: true }).fill('DemoPatientPassword123!');
+  await verifyEmail(page, `demo-patient-${suffix}@example.com`);
   await page.getByRole('button', { name: 'Register as Patient', exact: true }).click();
   await expect(page).toHaveURL(/dashboard\/patient/);
   await page.goto(doctorUrl);
@@ -37,11 +40,11 @@ test('sourced profile to demo booking, declined payment, receipt and cancellatio
   await page.getByRole('button', { name: 'Simulate successful payment', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'No money was charged' })).toBeVisible();
   await page.getByRole('button', { name: 'View receipt', exact: true }).click();
-  await expect(page.getByText('TEST / DEMO RECEIPT', { exact: false })).toBeVisible();
+  await expect(page.getByText('TEST RECEIPT', { exact: false })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.goto('/dashboard/patient');
   await page.getByRole('button', { name: /Cancel/i }).first().click();
-  await page.getByLabel('Cancellation reason', { exact: true }).fill('Academic demo workflow complete');
+  await page.getByLabel('Cancellation reason', { exact: true }).fill('Booking workflow complete');
   await page.getByRole('dialog').getByRole('button', { name: 'Yes, Cancel Serial', exact: true }).click();
   await expect(page.getByText('CANCELLED', { exact: true }).first()).toBeVisible();
 });

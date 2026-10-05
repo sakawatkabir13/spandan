@@ -14,6 +14,7 @@ from app.models.audit import AuditLog
 from app.models.user import User
 from app.repositories.user import user_repo
 from app.services.account_security import cipher, consume_action, issue_action, validate_mfa
+from app.services.email_otp import consume_email_otp, issue_email_otp
 
 router = APIRouter(prefix="/auth", tags=["Account recovery and verification"])
 
@@ -33,6 +34,15 @@ class MfaRequest(BaseModel):
     code: str | None = Field(None, pattern="^[0-9]{6}$")
 
 
+@router.post("/registration-code")
+async def registration_code(request: RecoveryRequest, db=Depends(get_db)):
+    if await user_repo.get_by_email(db, request.email):
+        raise SpandanException("CONFLICT", "An account with this email already exists. Sign in or reset your password.", 409)
+    await issue_email_otp(db, request.email, "registration")
+    await db.commit()
+    return create_success_response("A six-digit verification code has been sent. Check your inbox and spam folder.")
+
+
 @router.post("/forgot-password")
 async def forgot_password(request: RecoveryRequest, db=Depends(get_db)):
     from app.core.config import settings
@@ -44,10 +54,9 @@ async def forgot_password(request: RecoveryRequest, db=Depends(get_db)):
             503,
         )
     user = await user_repo.get_by_email(db, request.email)
-    if user and user.is_active:
-        await issue_action(db, user, "reset")
-        await db.commit()
-    return create_success_response("If an active account exists, a recovery link will be sent.")
+    await issue_email_otp(db, request.email, "reset", deliver=bool(user and user.is_active and not user.email.endswith((".invalid", "@demo.spandan.example.com"))))
+    await db.commit()
+    return create_success_response("If an active account exists, a six-digit reset code has been sent. Check your inbox and spam folder.")
 
 
 @router.post("/verify/{purpose}/request")
@@ -66,18 +75,26 @@ async def complete_action(request: CompleteAction, db=Depends(get_db)):
     user = await user_repo.get_by_email(db, request.email)
     if not user or not user.is_active:
         raise SpandanException("INVALID_TOKEN", "This link or code is invalid or expired.")
-    await consume_action(db, user, request.purpose, request.token)
     if request.purpose == "reset":
         if not request.new_password:
             raise SpandanException(
                 "VALIDATION_ERROR", "A new password of at least 12 characters is required."
             )
+        if len(request.token) != 6 or not request.token.isascii() or not request.token.isdigit():
+            raise SpandanException("INVALID_OTP", "Enter the six-digit code from your email.", 400)
+        await consume_email_otp(db, user.email, "reset", request.token)
+        user = await db.scalar(select(User).where(User.id == user.id).with_for_update().execution_options(populate_existing=True))
+        if not user.is_active:
+            raise SpandanException("INVALID_OTP", "This code is invalid or expired.", 400)
+        user.is_email_verified = True
         user.password_hash = get_password_hash(request.new_password)
         user.token_version += 1
-    elif request.purpose == "email":
-        user.is_email_verified = True
     else:
-        user.is_phone_verified = True
+        await consume_action(db, user, request.purpose, request.token)
+        if request.purpose == "email":
+            user.is_email_verified = True
+        else:
+            user.is_phone_verified = True
     db.add(
         AuditLog(
             actor_user_id=user.id,

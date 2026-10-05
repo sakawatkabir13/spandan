@@ -24,6 +24,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.services.audit import audit
+from app.services.email_otp import consume_email_otp
 
 
 def utcnow() -> datetime:
@@ -45,6 +46,7 @@ class AuthService:
                 code="CONFLICT", message="An account with this phone number already exists.", status_code=409
             )
 
+        await consume_email_otp(db, request.email, "registration", request.email_otp)
         hashed_password = get_password_hash(request.password)
         user = User(
             email=request.email.lower(),
@@ -52,6 +54,7 @@ class AuthService:
             password_hash=hashed_password,
             role=UserRole.PATIENT,
             is_active=True,
+            is_email_verified=True,
         )
         db.add(user)
         await db.flush()
@@ -89,6 +92,7 @@ class AuthService:
         ))
         if existing_registration:
             raise SpandanException(code="CONFLICT", message="This medical registration number is already registered.", status_code=409)
+        await consume_email_otp(db, request.email, "registration", request.email_otp)
         hashed_password = get_password_hash(request.password)
         user = User(
             email=request.email.lower(),
@@ -96,6 +100,7 @@ class AuthService:
             password_hash=hashed_password,
             role=UserRole.DOCTOR,
             is_active=True,
+            is_email_verified=True,
         )
         db.add(user)
         await db.flush()
@@ -129,6 +134,7 @@ class AuthService:
                 code="CONFLICT", message="An account with this phone number already exists.", status_code=409
             )
 
+        await consume_email_otp(db, request.email, "registration", request.email_otp)
         hashed_password = get_password_hash(request.password)
         user = User(
             email=request.email.lower(),
@@ -137,6 +143,7 @@ class AuthService:
             role=UserRole.ASSISTANT,
             display_name=request.full_name,
             is_active=True,
+            is_email_verified=True,
         )
         db.add(user)
         await db.flush()

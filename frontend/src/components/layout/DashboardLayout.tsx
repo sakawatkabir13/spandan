@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { DemoBanner } from '../common/DemoBanner';
 import { Navbar } from '../common/Navbar';
 import { Footer } from '../common/Footer';
 import {
@@ -60,7 +59,6 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
-      <DemoBanner />
       <a className="sr-only focus:not-sr-only focus:p-3" href="#main-content">Skip to content</a>
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
         {/* Sidebar */}

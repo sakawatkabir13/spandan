@@ -2,9 +2,9 @@ import asyncio
 import hashlib
 import hmac
 import json
+import re
 import time
-from datetime import timedelta
-from urllib.parse import parse_qs, urlparse
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -14,8 +14,10 @@ from app.core.config import settings
 from app.core.time import local_now
 from app.db.session import get_db
 from app.main import app
-from app.models.operations import AccountAction, Notification, Payment
+from app.models.email_otp import EmailOTP
+from app.models.operations import Payment
 from app.services.account_security import totp
+from tests.helpers import verified_post
 from tests.test_workflows import admin, register, session
 
 
@@ -105,8 +107,7 @@ async def test_recovery_expiry_attempt_limit_and_session_revocation(
     assert (
         await client.post("/api/v1/auth/forgot-password", json={"email": user["email"]})
     ).status_code == 200
-    notice = await db_session.scalar(select(Notification).where(Notification.channel == "email"))
-    token = parse_qs(urlparse(notice.message).query)["token"][0]
+    token = re.search(r"code is ([0-9]{6})", client.mailbox[-1][2])[1]
     payload = {
         "email": user["email"],
         "purpose": "reset",
@@ -116,21 +117,21 @@ async def test_recovery_expiry_attempt_limit_and_session_revocation(
     assert (await client.post("/api/v1/auth/account-action", json=payload)).status_code == 200
     assert (await client.get("/api/v1/auth/me", headers=patient)).status_code == 401
     assert (await client.post("/api/v1/auth/account-action", json=payload)).status_code == 400
-    action = await db_session.scalar(select(AccountAction))
+    action = await db_session.scalar(select(EmailOTP).where(EmailOTP.purpose == "reset"))
     action.consumed_at = None
-    action.created_at = local_now() - timedelta(minutes=2)
+    action.created_at = datetime.now(timezone.utc) - timedelta(minutes=2)
     await db_session.commit()
     for _ in range(5):
         assert (
             await client.post(
-                "/api/v1/auth/account-action", json={**payload, "token": "invalidtoken"}
+                "/api/v1/auth/account-action", json={**payload, "token": "999999" if token != "999999" else "888888"}
             )
         ).status_code == 400
     assert (await client.post("/api/v1/auth/account-action", json=payload)).status_code == 400
     await db_session.refresh(action)
     assert action.attempts == 5
     action.attempts = 0
-    action.expires_at = local_now() - timedelta(seconds=1)
+    action.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
     await db_session.commit()
     assert (await client.post("/api/v1/auth/account-action", json=payload)).status_code == 400
 
@@ -350,7 +351,7 @@ async def test_queue_only_permission_and_location_fee_filters(client, db_session
     staff, doctor, schedule, _ = await session(client, db_session)
     patient, _ = await register(client, "patient", "queueonly")
     booking = await book(client, patient, schedule)
-    response = await client.post(
+    response = await verified_post(client,
         "/api/v1/auth/register/assistant",
         headers=staff,
         json={

@@ -83,7 +83,7 @@ async def ensure_demo_sessions(db, start_date=None, days=7):
             db.add(
                 QueueState(
                     schedule_id=schedule.id,
-                    status_message="Academic demo queue; no real consultation.",
+                    status_message="Contact the hospital directly to arrange a consultation.",
                 )
             )
             added += 1
@@ -132,7 +132,7 @@ async def seed_demo_accounts(db, rows, credentials, start_date=None, days=7):
             is_demo=True,
             source_url=listing.source_url,
             current_workplace=listing.institution,
-            biography=f"Public hospital qualifications: {listing.qualifications or 'Not provided by source'}.\nHospital department: {listing.specialty}.\nAcademic demo account. Fees, schedules, queues and appointments on Spandan are simulated; contact the hospital for real services.",
+            biography=f"Public hospital qualifications: {listing.qualifications or 'Not provided by source'}.\nHospital department: {listing.specialty}.\nContact the hospital directly to confirm fees and arrange a consultation. Spandan schedules do not reserve a hospital visit.",
             verification_status=DoctorVerificationStatus.APPROVED,
             verification_notes="Automatically approved for academic demonstration only. No BMDC verification or doctor ownership confirmation.",
             specializations=[spec],
@@ -145,10 +145,10 @@ async def seed_demo_accounts(db, rows, credentials, start_date=None, days=7):
         db.add(
             Chamber(
                 doctor_id=doctor.id,
-                name="Academic demo chamber",
-                address=f"Simulated appointment only. Public hospital address: {listing.address or listing.institution}",
+                name="Spandan chamber",
+                address=f"Hospital reference address: {listing.address or listing.institution}",
                 district=listing.district,
-                area="Academic demonstration",
+                area=listing.district,
                 phone_number=None,
                 consultation_fee=500,
                 follow_up_fee=300,

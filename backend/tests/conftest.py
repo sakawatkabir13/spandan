@@ -44,6 +44,19 @@ async def prepare_database():
     await test_engine.dispose()
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def mailbox(monkeypatch):
+    from app.core.config import settings
+    from app.services import mail
+
+    messages = []
+    monkeypatch.setattr(settings, "SMTP_HOST", "test.invalid")
+    monkeypatch.setattr(settings, "SMTP_USERNAME", "")
+    monkeypatch.setattr(settings, "SMTP_PASSWORD", "")
+    monkeypatch.setattr(mail, "send_email", lambda recipient, subject, body: messages.append((recipient, subject, body)))
+    return messages
+
+
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with test_async_session_maker() as session:
@@ -51,12 +64,13 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest_asyncio.fixture
-async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+async def client(db_session: AsyncSession, mailbox) -> AsyncGenerator[AsyncClient, None]:
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        ac.mailbox = mailbox
         yield ac
     app.dependency_overrides.clear()

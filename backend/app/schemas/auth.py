@@ -29,6 +29,7 @@ def clean_and_validate_phone(v: str) -> str:
 
 class RegisterPatientRequest(BaseModel):
     email: EmailStr
+    email_otp: str = Field(..., pattern=r"^[0-9]{6}$")
     password: str = Field(..., min_length=8, description="Must be at least 8 characters")
     phone_number: str = Field(..., description="Bangladeshi +880 format e.g. +8801712345678")
     full_name: str = Field(..., min_length=2, max_length=100)
@@ -45,6 +46,7 @@ class RegisterPatientRequest(BaseModel):
 
 class RegisterDoctorRequest(BaseModel):
     email: EmailStr
+    email_otp: str = Field(..., pattern=r"^[0-9]{6}$")
     password: str = Field(..., min_length=8)
     phone_number: str
     full_name: str = Field(..., min_length=2)
@@ -61,6 +63,7 @@ class RegisterDoctorRequest(BaseModel):
 
 class RegisterAssistantRequest(BaseModel):
     email: EmailStr
+    email_otp: str = Field(..., pattern=r"^[0-9]{6}$")
     password: str = Field(..., min_length=8)
     phone_number: str
     full_name: str

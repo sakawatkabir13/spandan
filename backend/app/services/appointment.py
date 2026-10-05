@@ -198,7 +198,7 @@ class AppointmentService:
         )
         from app.services.notifications import notify
         patient_user = await db.get(User, patient.user_id)
-        await notify(db, patient_user, "Demo appointment booked" if doctor.is_demo else "Appointment booked", f"Your {'academic demo' if doctor.is_demo else 'Spandan'} booking is recorded for {schedule.schedule_date}, serial {serial}." + (" This is simulated; no real consultation is arranged." if doctor.is_demo else ""), f"booking:{appointment.id}")
+        await notify(db, patient_user, "Appointment booked", f"Your Spandan booking is recorded for {schedule.schedule_date}, serial {serial}." + (" Contact the hospital to arrange a consultation; this booking does not reserve a hospital visit." if doctor.is_demo else ""), f"booking:{appointment.id}")
         from sqlalchemy import select
 
         from app.models.operations import WaitlistEntry

@@ -124,7 +124,7 @@ jobs:
       - run: alembic upgrade head && python -m scripts.seed_e2e
         working-directory: backend
       - run: |
-          (cd backend && uvicorn app.main:app --host 127.0.0.1 --port 18000 > /tmp/backend.log 2>&1) &
+          (cd backend && python -m scripts.e2e_server > /tmp/backend.log 2>&1) &
           (cd frontend && npm run dev -- --host 127.0.0.1 --port 5175 > /tmp/frontend.log 2>&1) &
           python - <<'PY'
           import time, urllib.request

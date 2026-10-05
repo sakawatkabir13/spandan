@@ -10,7 +10,7 @@ import { DirectoryDoctor } from '../../types';
 export function DirectoryNotice() {
   const { t } = useLanguage();
   return <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-    {t('These are public hospital listings. Spandan has not independently verified these doctors or confirmed their availability. Contact the hospital to confirm fees, hours and appointments. Real appointments must be confirmed with the hospital. Where available, Spandan offers separately labelled simulated bookings for academic demonstration.')}
+    {t('Doctor information comes from hospital websites. Contact the hospital to confirm fees, hours and appointments.')}
   </p>;
 }
 
@@ -84,7 +84,7 @@ export function DirectoryBrowser({ initialQuery = '', specializationId = '' }: {
         <p className="flex gap-2 text-sm"><Building2 className="w-4 h-4 shrink-0" aria-hidden="true" />{doctor.institution}</p>
         <p className="flex gap-2 text-sm text-slate-600"><MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />{doctor.district}, {doctor.division}</p>
         <div className="flex flex-wrap gap-3 pt-2 mt-auto"><Link className="btn-secondary text-sm" to={`/directory/${doctor.id}`}>{t('View hospital listing')}</Link>{doctor.appointment_phone && <a className="btn-secondary text-sm" href={`tel:${doctor.appointment_phone}`}><Phone className="w-4 h-4" aria-hidden="true" />{doctor.appointment_phone}</a>}</div>
-        {doctor.booking_status === 'demo_only' && doctor.demo_doctor_id && <Link className="btn-primary text-sm" to={`/doctors/${doctor.demo_doctor_id}`}>{t('Book demo appointment')}</Link>}
+        {doctor.booking_status === 'demo_only' && doctor.demo_doctor_id && <Link className="btn-primary text-sm" to={`/doctors/${doctor.demo_doctor_id}`}>{t('Book appointment')}</Link>}
         <SourceLink doctor={doctor} />
       </article>)}</div>
       {total > size && <nav aria-label={t('Directory results pages')} className="flex gap-3 items-center"><button className="btn-secondary" disabled={page === 0} onClick={() => setPage(p => p - 1)}>{t('Previous')}</button><span>{t('Page')} {page + 1} / {Math.ceil(total / size)}</span><button className="btn-secondary" disabled={(page + 1) * size >= total} onClick={() => setPage(p => p + 1)}>{t('Next')}</button></nav>}

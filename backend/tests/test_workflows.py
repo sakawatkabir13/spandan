@@ -12,6 +12,7 @@ from app.models.doctor import AssistantAssignment, DoctorProfile, DoctorVerifica
 from app.models.user import User, UserRole
 from app.schemas.ai import SymptomCheckRequest
 from app.services.ai import triage_service
+from tests.helpers import verified_post
 
 
 async def register(client, role, suffix):
@@ -24,7 +25,7 @@ async def register(client, role, suffix):
     ).zfill(8)
     if role == "doctor":
         payload["medical_registration_number"] = f"BMDC-{suffix}"
-    response = await client.post(f"/api/v1/auth/register/{role}", json=payload)
+    response = await verified_post(client, f"/api/v1/auth/register/{role}", json=payload)
     assert response.status_code == 201, response.text
     data = response.json()["data"]
     return {"Authorization": f"Bearer {data['access_token']}"}, data["user"]
@@ -172,11 +173,11 @@ async def test_staff_permissions_and_assistant_registration(client, db_session):
         full_name="Assistant",
         doctor_id=str(doctor.id),
     )
-    assert (await client.post("/api/v1/auth/register/assistant", json=payload)).status_code == 401
+    assert (await verified_post(client, "/api/v1/auth/register/assistant", json=payload)).status_code == 401
     assert (
-        await client.post("/api/v1/auth/register/assistant", headers=other, json=payload)
+        await verified_post(client, "/api/v1/auth/register/assistant", headers=other, json=payload)
     ).status_code == 403
-    response = await client.post("/api/v1/auth/register/assistant", headers=staff, json=payload)
+    response = await verified_post(client, "/api/v1/auth/register/assistant", headers=staff, json=payload)
     assert response.status_code == 201, response.text
     assistant = {"Authorization": f"Bearer {response.json()['data']['access_token']}"}
     assert len((await client.get("/api/v1/schedules/me", headers=assistant)).json()["data"]) == 1
@@ -267,7 +268,7 @@ async def test_public_triage_and_bad_phone(client):
     )
     assert triage.status_code == 201
     assert triage.json()["data"]["patient_id"] is None
-    invalid = await client.post(
+    invalid = await verified_post(client,
         "/api/v1/auth/register/patient",
         json=dict(
             email="bad@example.com",

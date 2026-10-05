@@ -3,11 +3,13 @@ from datetime import date, timedelta
 import pytest
 from httpx import AsyncClient
 
+from tests.helpers import verified_post
+
 
 @pytest.mark.asyncio
 async def test_appointment_booking_concurrency_and_tracking(client: AsyncClient, db_session):
     # 1. Register a doctor and create chamber + schedule (max 2 patients for test capacity)
-    await client.post(
+    await verified_post(client,
         "/api/v1/auth/register/doctor",
         json={
             "email": "dr.booking@spandan.com.bd",
@@ -57,7 +59,7 @@ async def test_appointment_booking_concurrency_and_tracking(client: AsyncClient,
     schedule_id = sched_resp.json()["data"]["id"]
 
     # 2. Register Patient 1
-    await client.post(
+    await verified_post(client,
         "/api/v1/auth/register/patient",
         json={
             "email": "pat1@gmail.com",
@@ -92,7 +94,7 @@ async def test_appointment_booking_concurrency_and_tracking(client: AsyncClient,
     assert book_resp_double.json()["error"]["code"] == "CONFLICT"
 
     # 3. Register Patient 2
-    await client.post(
+    await verified_post(client,
         "/api/v1/auth/register/patient",
         json={
             "email": "pat2@gmail.com",
@@ -117,7 +119,7 @@ async def test_appointment_booking_concurrency_and_tracking(client: AsyncClient,
     assert app2_data["serial_number"] == 2
 
     # 4. Capacity limit reached: Register Patient 3 -> should get rejected due to SCHEDULE_FULL or SCHEDULE_CLOSED
-    await client.post(
+    await verified_post(client,
         "/api/v1/auth/register/patient",
         json={
             "email": "pat3@gmail.com",

@@ -5,6 +5,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.core.config import Settings
+from tests.helpers import verified_post
 
 
 def test_production_settings_reject_documented_placeholders():
@@ -32,7 +33,7 @@ async def test_patient_registration_and_login(client: AsyncClient):
         "gender": "Male",
         "address": "Dhaka, Bangladesh",
     }
-    response = await client.post("/api/v1/auth/register/patient", json=reg_payload)
+    response = await verified_post(client, "/api/v1/auth/register/patient", json=reg_payload)
     assert response.status_code == 201
     data = response.json()
     assert data["success"] is True
@@ -106,7 +107,7 @@ async def test_doctor_registration(client: AsyncClient):
         "current_workplace": "NICVD Dhaka",
         "years_of_experience": 10,
     }
-    response = await client.post("/api/v1/auth/register/doctor", json=reg_payload)
+    response = await verified_post(client, "/api/v1/auth/register/doctor", json=reg_payload)
     assert response.status_code == 201
     data = response.json()
     assert data["success"] is True

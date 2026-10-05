@@ -6,6 +6,7 @@ import { MainLayout } from '../../components/layout/MainLayout';
 import { Alert } from '../../components/common/Alert';
 import { Activity, ArrowRight, Lock, Mail, Phone, Stethoscope, User as UserIcon } from 'lucide-react';
 import { errorMessage } from '../../api/errors';
+import { EmailOTPField } from '../../components/common/EmailOTPField';
 
 export const RegisterPage: React.FC = () => {
   const { t } = useLanguage();
@@ -13,6 +14,7 @@ export const RegisterPage: React.FC = () => {
 
   // Common fields
   const [email, setEmail] = useState('');
+  const [emailOTP, setEmailOTP] = useState('');
   const [password, setPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [fullName, setFullName] = useState('');
@@ -37,6 +39,7 @@ export const RegisterPage: React.FC = () => {
       if (tab === 'patient') {
         await registerPatient({
           email,
+          email_otp: emailOTP,
           password,
           phone_number: phoneNumber,
           full_name: fullName,
@@ -45,6 +48,7 @@ export const RegisterPage: React.FC = () => {
       } else {
         await registerDoctor({
           email,
+          email_otp: emailOTP,
           password,
           phone_number: phoneNumber,
           full_name: fullName,
@@ -132,7 +136,7 @@ export const RegisterPage: React.FC = () => {
                     required
                     placeholder="name@gmail.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => { setEmail(e.target.value); setEmailOTP(''); }}
                     className="input-field pl-10"
                   />
                 </div>
@@ -161,7 +165,10 @@ export const RegisterPage: React.FC = () => {
                 <input aria-label="Password"
                   type="password"
                   required
-                  placeholder="At least 8 characters with letters and digits"
+                  minLength={8}
+                  maxLength={128}
+                  autoComplete="new-password"
+                  placeholder="At least 8 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field pl-10"
@@ -224,6 +231,8 @@ export const RegisterPage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            <EmailOTPField email={email} code={emailOTP} onChange={setEmailOTP} disabled={loading} />
 
             <button
               type="submit"
