@@ -36,15 +36,16 @@ export function ToolsPage() {
       if (tab === 'analytics') { setAnalytics((await apiClient.get('/analytics')).data.data); if (admin) setSystem((await apiClient.get('/system/status')).data.data); return; }
       const endpoint = { notifications: '/notifications', family: '/dependents', waitlist: '/waitlist', privacy: '/privacy/requests', calendar: '/schedules/me' }[tab];
       setRows(endpoint ? (await apiClient.get(endpoint)).data.data : []);
-      if (tab === 'billing' && params.get('appointment_id')) {
-        const id = params.get('appointment_id');
+      if (tab === 'billing' && (params.get('appointment_id') || payment?.appointment_id)) {
+        const id = params.get('appointment_id') || payment?.appointment_id;
         setPayment({ ...(await apiClient.get(`/payments/appointment/${id}`)).data.data, appointment_id: id });
       }
     } catch (error) { setMessage(errorMessage(error)); }
   };
-  useEffect(() => { setMessage(''); setRows([]); void load(); }, [tab]);
+  useEffect(() => { setMessage(''); setRows([]); void load(); }, [tab, params.get('appointment_id')]);
   const act = async (path: string, data: any = {}, method = 'post') => {
     setBusy(true); setMessage('');
+    if (tab === 'billing' && method !== 'get') setReceipt(null);
     try { const r = await apiClient.request({ url: path, method, data }); setMessage(r.data.message); await load(); return r.data.data; }
     catch (error) { setMessage(errorMessage(error)); }
     finally { setBusy(false); }

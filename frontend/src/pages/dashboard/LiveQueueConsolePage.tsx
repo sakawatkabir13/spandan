@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { ApiResponse, Appointment, Schedule } from '../../types';
@@ -50,6 +50,7 @@ export const LiveQueueConsolePage: React.FC = () => {
           setStatusMsg(sResp.data.data.queue_state.status_message || '');
         }
       }
+      setLoadError('');
       if (aResp.data.success) {
         setAppointments(aResp.data.data);
       }
@@ -236,6 +237,7 @@ export const LiveQueueConsolePage: React.FC = () => {
                 onChange={(e) => setStatusMsg(e.target.value)}
                 className="input-field bg-white"
               />
+              <p className="text-xs text-slate-500 mt-1">This message is public. Keep patient names and medical details private.</p>
             </div>
 
             <div className="md:col-span-2">
@@ -317,7 +319,7 @@ export const LiveQueueConsolePage: React.FC = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2.5">
                           <h4 className="font-bold text-sm sm:text-base text-slate-900">
-                            {app.patient?.full_name || 'Patient Name'}
+                            {app.attendee_name || app.patient?.full_name || 'Patient Name'}
                           </h4>
                           <Badge
                             variant={
@@ -344,6 +346,11 @@ export const LiveQueueConsolePage: React.FC = () => {
                         <p className="text-xs text-slate-500">
                           Booked via {app.booking_source}
                         </p>
+                        <Link className="text-xs underline" to={`/dashboard/${user?.role === 'administrator' ? 'admin' : user?.role}/tools?tab=billing&appointment_id=${app.id}`}>Payment & receipt</Link>
+                        {app.consultation_mode === 'video' && ['doctor', 'administrator'].includes(user?.role || '') && !['cancelled', 'completed', 'absent'].includes(status) && <button className="btn-secondary text-xs" onClick={async () => {
+                          try { const response = await apiClient.get(`/appointments/${app.id}/video`); window.open(response.data.data.url, '_blank', 'noopener,noreferrer'); }
+                          catch (error) { setLoadError(errorMessage(error)); }
+                        }}>Join video consultation</button>}
                         {app.patient_note && (
                           <p className="text-xs text-amber-800 bg-amber-50 px-2 py-1 rounded italic max-w-lg">
                             Note: "{app.patient_note}"

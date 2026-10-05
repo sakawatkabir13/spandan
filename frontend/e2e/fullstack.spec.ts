@@ -84,6 +84,11 @@ test.describe.serial('Full-stack chamber operations', () => {
     await page.getByLabel('Cancellation reason').fill('Browser workflow test');
     await page.getByRole('dialog').getByRole('button', { name: 'Yes, Cancel Serial' }).click();
     await expect(page.getByText('CANCELLED', { exact: true }).first()).toBeVisible();
+    await page.goto(`/doctors/${doctorId}`);
+    await page.getByRole('button', { name: 'Book Serial', exact: true }).click();
+    await page.getByLabel(/^Booking for/).selectOption({ label: 'Browser Child (Child)' });
+    await page.getByRole('button', { name: 'Confirm & Get Serial Number', exact: true }).click();
+    await expect(page.getByText('Booking Confirmed!', { exact: true })).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/doctors');
     await page.getByRole('button', { name: 'Change language' }).click();
@@ -96,6 +101,7 @@ test.describe.serial('Full-stack chamber operations', () => {
   test('staff walk-in intake and queue advance', async ({ page }) => {
     await login(page, doctorEmail);
     await page.goto(`/dashboard/doctor/queue?schedule_id=${scheduleId}`);
+    await expect(page.getByText('Browser Child', { exact: true })).toBeVisible();
     await page.getByLabel('New patient name').fill('Browser Walk-in');
     await page.getByLabel('Phone number', { exact: true }).fill('019' + suffix.slice(-8));
     await page.getByRole('button', { name: 'Register & book walk-in' }).click();
@@ -103,5 +109,14 @@ test.describe.serial('Full-stack chamber operations', () => {
     await expect(page.getByText('Browser Walk-in').first()).toBeVisible();
     await page.getByRole('button', { name: /Call Next/i }).click();
     await expect(page.getByText('IN CONSULTATION', { exact: true }).first()).toBeVisible();
+    await page.getByRole('link', { name: 'Payment & receipt', exact: true }).last().click();
+    const appointmentId = new URL(page.url()).searchParams.get('appointment_id')!;
+    await page.goto('/dashboard/doctor/tools?tab=billing');
+    await page.getByLabel('Appointment ID', { exact: true }).fill(appointmentId);
+    await page.getByRole('button', { name: 'Find payment', exact: true }).click();
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: 'Record cash received', exact: true }).click();
+    await page.getByRole('button', { name: 'View receipt', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Print receipt', exact: true })).toBeVisible();
   });
 });
