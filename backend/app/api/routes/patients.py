@@ -38,6 +38,8 @@ async def update_patient_profile(
             code="NOT_FOUND", message="Patient profile not found.", status_code=status.HTTP_404_NOT_FOUND
         )
     update_data = request.model_dump(exclude_unset=True)
+    from app.services.audit import audit
+    audit(db, current_user, "patient.profile_updated", profile, update_data.keys())
     updated_profile = await patient_repo.update(db, profile, update_data)
     return create_success_response(message="Patient profile updated.", data=updated_profile)
 

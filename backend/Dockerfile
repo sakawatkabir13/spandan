@@ -14,10 +14,13 @@ EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 FROM base AS production
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 COPY requirements-prod.lock ./
 RUN pip install --no-cache-dir --require-hashes -r requirements-prod.lock
 COPY . .
 RUN pip install --no-cache-dir --no-deps --no-build-isolation . \
+    && pip uninstall -y pip setuptools wheel \
     && addgroup --system --gid 10001 spandan \
     && adduser --system --uid 10001 --ingroup spandan --home /app spandan \
     && mkdir -p /app/uploads \

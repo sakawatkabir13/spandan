@@ -7,8 +7,12 @@ from app.api.routes import (
     auth,
     chambers,
     doctors,
+    events,
+    operations,
     patients,
+    payments,
     schedules,
+    security,
     users,
 )
 
@@ -24,4 +28,8 @@ api_router.include_router(ai.router)
 __all__ = ["api_router"]
 
 api_router.include_router(users.router)
+api_router.include_router(security.router)
+api_router.include_router(operations.router)
+api_router.include_router(payments.router)
+api_router.include_router(events.router)
 api_router.include_router(assistants.router)

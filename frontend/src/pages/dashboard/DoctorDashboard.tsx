@@ -7,6 +7,7 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
+import { ChamberEditor, ScheduleEditor } from '../../components/common/ManagementEditors';
 import {
   Calendar,
   Clock,
@@ -45,6 +46,8 @@ export const DoctorDashboard: React.FC = () => {
   const [schedWeekdays, setSchedWeekdays] = useState<number[]>([]);
   const [schedSubmitting, setSchedSubmitting] = useState(false);
   const [scheduleMessage, setScheduleMessage] = useState('');
+  const [editingChamber, setEditingChamber] = useState<Chamber | null>(null);
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
 
   const changeSession = async (id: string, status: string) => {
     try { await apiClient.patch(`/schedules/${id}`, { status }); await fetchData(); }
@@ -248,6 +251,8 @@ export const DoctorDashboard: React.FC = () => {
                             >
                               Launch Queue Console
                             </Link>
+                            {!['cancelled', 'completed'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => setEditingSchedule(sched)}>Edit Session</button>}
+                            {!['cancelled', 'completed'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'completed')}>Complete Session</button>}
                             {['open', 'full'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'closed')}>Close Bookings</button>}
                             {['closed', 'draft'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'open')}>Open Bookings</button>}
                             {!['cancelled', 'completed'].includes(sched.status) && <button className="btn-danger text-xs" onClick={() => { if (window.confirm('Cancel this session and its unfinished appointments?')) void changeSession(sched.id, 'cancelled'); }}>Cancel Session</button>}
@@ -277,6 +282,7 @@ export const DoctorDashboard: React.FC = () => {
                     {chambers.map((c) => (
                       <div key={c.id} className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-1.5">
                         <h4 className="font-bold text-sm text-slate-900">{c.name}</h4>
+                        <button className="btn-secondary text-xs" onClick={() => setEditingChamber(c)}>Edit Chamber</button>
                         <p className="text-xs text-slate-600">{c.address}</p>
                         <p className="text-xs text-slate-500">
                           {c.area}, {c.district}
@@ -295,13 +301,15 @@ export const DoctorDashboard: React.FC = () => {
         )}
 
         {/* Add Chamber Modal */}
+        <Modal isOpen={!!editingChamber} onClose={() => setEditingChamber(null)} title="Edit Chamber">{editingChamber && <ChamberEditor chamber={editingChamber} saved={() => { setEditingChamber(null); void fetchData(); }} />}</Modal>
+        <Modal isOpen={!!editingSchedule} onClose={() => setEditingSchedule(null)} title="Edit Session">{editingSchedule && <ScheduleEditor schedule={editingSchedule} saved={() => { setEditingSchedule(null); void fetchData(); }} />}</Modal>
         <Modal isOpen={chamberModalOpen} onClose={() => setChamberModalOpen(false)} title="Register New Chamber">
           <form onSubmit={handleCreateChamber} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
                 Chamber / Center Name
               </label>
-              <input
+              <input aria-label="Chamber name"
                 type="text"
                 required
                 placeholder="e.g. Popular Diagnostic Dhanmondi / Labaid Specialist"
@@ -314,7 +322,7 @@ export const DoctorDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Area / Thana</label>
-                <input
+                <input aria-label="Area"
                   type="text"
                   required
                   placeholder="e.g. Dhanmondi / Mirpur / Gulshan"
@@ -325,7 +333,7 @@ export const DoctorDashboard: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">District / City</label>
-                <input
+                <input aria-label="District"
                   type="text"
                   required
                   value={chamDistrict}
@@ -337,7 +345,7 @@ export const DoctorDashboard: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Street Address</label>
-              <input
+              <input aria-label="Street address"
                 type="text"
                 required
                 placeholder="e.g. House #16, Road #2, Dhanmondi R/A"
@@ -352,7 +360,7 @@ export const DoctorDashboard: React.FC = () => {
                 <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
                   Consultation Fee (৳)
                 </label>
-                <input
+                <input aria-label="Consultation fee"
                   type="number"
                   required
                   min={100}
@@ -382,7 +390,7 @@ export const DoctorDashboard: React.FC = () => {
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
                 Chamber Reception Phone (Optional)
               </label>
-              <input
+              <input aria-label="Chamber phone"
                 type="text"
                 placeholder="+8801712345678"
                 value={chamPhone}
@@ -426,7 +434,7 @@ export const DoctorDashboard: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Date</label>
-              <input
+              <input aria-label="Date"
                 type="date"
                 required
                 min={new Date().toISOString().slice(0, 10)}

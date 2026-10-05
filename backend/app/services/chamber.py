@@ -9,6 +9,7 @@ from app.models.user import User, UserRole
 from app.repositories.chamber import chamber_repo
 from app.repositories.doctor import doctor_repo
 from app.schemas.chamber import ChamberCreate, ChamberUpdate
+from app.services.audit import audit
 
 
 class ChamberService:
@@ -24,7 +25,12 @@ class ChamberService:
             )
         obj_in = request.model_dump()
         obj_in["doctor_id"] = doc_profile.id
-        return await chamber_repo.create(db, obj_in)
+        chamber = Chamber(**obj_in)
+        db.add(chamber)
+        await db.flush()
+        audit(db, current_user, "chamber.created", chamber, obj_in.keys())
+        await db.commit()
+        return chamber
 
     async def get_doctor_chambers(
         self, db: AsyncSession, doctor_id: UUID, only_active: bool = True
@@ -58,7 +64,18 @@ class ChamberService:
                     status_code=403,
                 )
         update_data = request.model_dump(exclude_unset=True)
+        if update_data.get("is_active") is False:
+            await self.ensure_deactivation(db, chamber_id)
+        audit(db, current_user, "chamber.updated", chamber, update_data.keys())
         return await chamber_repo.update(db, chamber, update_data)
+
+    async def ensure_deactivation(self, db, chamber_id):
+        from sqlalchemy import select
+
+        from app.models.schedule import Schedule, ScheduleStatus
+        active = await db.scalar(select(Schedule.id).where(Schedule.chamber_id == chamber_id, Schedule.status.in_([ScheduleStatus.OPEN, ScheduleStatus.FULL])).limit(1))
+        if active:
+            raise SpandanException("CONFLICT", "Close or cancel active sessions before deactivating this chamber.", 409)
 
     async def delete_chamber(
         self, db: AsyncSession, current_user: User, chamber_id: UUID
@@ -78,6 +95,7 @@ class ChamberService:
         active = await db.scalar(select(Schedule.id).where(Schedule.chamber_id == chamber_id, Schedule.status.in_([ScheduleStatus.OPEN, ScheduleStatus.FULL])).limit(1))
         if active:
             raise SpandanException(code="CONFLICT", message="Close or cancel active sessions before removing this chamber.", status_code=409)
+        audit(db, current_user, "chamber.deactivated", chamber, ["is_active"])
         await chamber_repo.update(db, chamber, {"is_active": False})
         return True
 

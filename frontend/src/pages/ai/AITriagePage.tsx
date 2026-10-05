@@ -22,6 +22,7 @@ export const AITriagePage: React.FC = () => {
   const [age, setAge] = useState<string>('');
   const [gender, setGender] = useState<string>('Not Specified');
   const [durationDays, setDurationDays] = useState<string>('');
+  const [consent, setConsent] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +59,7 @@ export const AITriagePage: React.FC = () => {
     try {
       const resp = await apiClient.post<ApiResponse<SpecialistRecommendation>>('/ai/symptom-check', {
         symptoms_text: symptomsText,
+        provider_consent: consent,
         age: age ? Number(age) : undefined,
         gender: gender !== 'Not Specified' ? gender : undefined,
         duration_days: durationDays ? Number(durationDays) : undefined,
@@ -77,6 +79,8 @@ export const AITriagePage: React.FC = () => {
 
   return (
     <MainLayout>
+      <label className="block max-w-4xl mx-auto my-4 rounded-xl border p-4 text-sm"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I consent to sharing the symptoms I submit with Groq for specialty guidance. Avoid identifying details. Symptom records are retained for 30 days; contact community.cuetinsights@gmail.com for privacy requests.</label>
+      {result?.model_identifier === 'fallback-general-medicine' && <p role="status" className="max-w-4xl mx-auto rounded-xl bg-amber-50 p-4 text-amber-900">AI inference is temporarily unavailable. This result is a general fallback recommendation.</p>}
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Banner */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-spandan-950 to-slate-900 text-white p-8 shadow-xl border border-slate-800">

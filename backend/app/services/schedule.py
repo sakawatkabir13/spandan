@@ -27,6 +27,9 @@ from app.services.permissions import require_doctor_access
 
 class ScheduleService:
     async def validate_session(self, db, schedule, exclude_id=None):
+        from app.models.operations import AvailabilityException
+        if schedule.status not in (ScheduleStatus.CANCELLED, ScheduleStatus.COMPLETED) and await db.scalar(select(AvailabilityException.id).where(AvailabilityException.doctor_id == schedule.doctor_id, AvailabilityException.exception_date == schedule.schedule_date)):
+            raise SpandanException("CONFLICT", "This doctor has a holiday or closure on the selected date.", 409)
         if schedule.end_time <= schedule.start_time:
             raise SpandanException(
                 code="VALIDATION_ERROR", message="Session end time must be after start time."
@@ -137,9 +140,12 @@ class ScheduleService:
                 message="A maximum of 100 sessions can be created at once.",
             )
 
+        import uuid
+        series_id = uuid.uuid4()
         created: List[Schedule] = []
         for schedule_date in dates:
             schedule = Schedule(
+                series_id=series_id,
                 chamber_id=request.chamber_id,
                 doctor_id=chamber.doctor_id,
                 schedule_date=schedule_date,
@@ -221,7 +227,7 @@ class ScheduleService:
         )
 
     async def update_schedule(
-        self, db: AsyncSession, current_user: User, schedule_id: UUID, request: ScheduleUpdate
+        self, db: AsyncSession, current_user: User, schedule_id: UUID, request: ScheduleUpdate, *, commit: bool = True
     ) -> Schedule:
         existing = await self.get_schedule(db, schedule_id)
         require_doctor_access(current_user, existing.doctor_id, "can_manage_schedules")
@@ -230,6 +236,8 @@ class ScheduleService:
         )
         schedule = await schedule_repo.get_by_id_with_queue(db, schedule_id, lock=True)
         changes = request.model_dump(exclude_unset=True)
+        if schedule.status in (ScheduleStatus.CANCELLED, ScheduleStatus.COMPLETED):
+            raise SpandanException("CONFLICT", "Cancelled or completed sessions cannot be reopened or edited.", 409)
         if any(v is None for k, v in changes.items() if k != "cancellation_reason"):
             raise SpandanException(
                 code="VALIDATION_ERROR", message="Session fields cannot be null."
@@ -253,6 +261,7 @@ class ScheduleService:
             )
         await self.validate_session(db, schedule, schedule.id)
         if schedule.status == ScheduleStatus.CANCELLED:
+            from app.services.notifications import notify
             for appointment in await appointment_repo.get_by_schedule_id(db, schedule_id):
                 if appointment.appointment_status not in (
                     AppointmentStatus.COMPLETED,
@@ -263,6 +272,16 @@ class ScheduleService:
                         request.cancellation_reason or "Session cancelled by chamber."
                     )
                     appointment.cancelled_at = local_now()
+                    patient_user = await db.get(User, appointment.patient.user_id)
+                    await notify(db, patient_user, "Session cancelled", f"The session on {schedule.schedule_date} has been cancelled. Please choose another session.", f"session-cancel:{appointment.id}")
+            schedule.queue_state.current_serial = 0
+            schedule.queue_state.status_message = "Session cancelled."
+        elif schedule.status == ScheduleStatus.COMPLETED:
+            appointments = await appointment_repo.get_by_schedule_id(db, schedule_id)
+            if any(a.appointment_status not in (AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED, AppointmentStatus.ABSENT) for a in appointments):
+                raise SpandanException("CONFLICT", "Complete or resolve every patient before completing the session.", 409)
+            schedule.queue_state.current_serial = 0
+            schedule.queue_state.status_message = "Session completed."
         elif schedule.status in (ScheduleStatus.OPEN, ScheduleStatus.FULL):
             schedule.status = (
                 ScheduleStatus.FULL if count >= schedule.maximum_patients else ScheduleStatus.OPEN
@@ -279,7 +298,10 @@ class ScheduleService:
                 },
             )
         )
-        await db.commit()
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
         return await schedule_repo.get_by_id_with_queue(db, schedule.id)
 
     async def queue_for_update(self, db, user, schedule_id):
@@ -350,6 +372,9 @@ class ScheduleService:
             queue.status_message = (
                 f"Consultation in progress for Serial #{next_patient.serial_number}."
             )
+            from app.services.notifications import notify
+            patient_user = await db.get(User, next_patient.patient.user_id)
+            await notify(db, patient_user, "Your serial has been called", f"Serial {next_patient.serial_number} has been called. Please follow the chamber's instructions.", f"called:{next_patient.id}")
         else:
             queue.current_serial = 0
             queue.status_message = "No patients waiting."

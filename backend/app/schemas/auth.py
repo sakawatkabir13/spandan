@@ -75,6 +75,7 @@ class RegisterAssistantRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    mfa_code: Optional[str] = None
 
 
 class TokenResponse(BaseModel):

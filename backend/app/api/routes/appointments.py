@@ -70,8 +70,16 @@ async def update_appointment_status(
 @router.get("/track/{schedule_id}", response_model=ApiResponse[SerialTrackingResponse])
 async def track_serial(
     schedule_id: UUID,
+    appointment_id: Optional[UUID] = None,
     current_user: Optional[User] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
-    tracking = await appointment_service.get_serial_tracking(db, schedule_id, current_user=current_user)
+    tracking = await appointment_service.get_serial_tracking(db, schedule_id, current_user=current_user, appointment_id=appointment_id)
     return create_success_response(message="Serial tracking info fetched.", data=tracking)
+
+
+@router.get("/{id}", response_model=ApiResponse[AppointmentResponse])
+async def get_appointment(id: UUID, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)):
+    from app.api.routes.payments import authorize
+    appointment = await authorize(db, current_user, id)
+    return create_success_response(message="Appointment fetched.", data=appointment)

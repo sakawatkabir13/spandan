@@ -79,7 +79,7 @@ def utcnow() -> datetime:
 
 class AppointmentService:
     async def book_appointment(
-        self, db: AsyncSession, current_user: User, request: AppointmentCreate
+        self, db: AsyncSession, current_user: User, request: AppointmentCreate, *, commit: bool = True
     ) -> Appointment:
         # All booking, cancellation and queue writers lock this row before reading capacity.
         schedule = await schedule_repo.get_by_id_with_queue(db, request.schedule_id, lock=True)
@@ -135,7 +135,21 @@ class AppointmentService:
                 message="Registered patient not found. Please ask the patient to register first.",
                 status_code=404,
             )
-        if await appointment_repo.check_patient_already_booked(db, schedule.id, patient.id):
+        from sqlalchemy import select
+
+        from app.models.user import PatientProfile
+        await db.execute(select(PatientProfile.id).where(PatientProfile.id == patient.id).with_for_update())
+        if not await db.scalar(select(User.is_active).where(User.id == patient.user_id)):
+            raise SpandanException('ACCOUNT_INACTIVE', 'This patient account is inactive.', 403)
+        if request.dependent_id:
+            from app.models.operations import Dependent
+            dependent = await db.get(Dependent, request.dependent_id)
+            if not dependent or dependent.patient_id != patient.id or not dependent.is_active:
+                raise SpandanException("FORBIDDEN", "Choose an active family member from this patient account.", 403)
+        from app.core.config import settings
+        if request.consultation_mode == "video" and not settings.VIDEO_BASE_URL:
+            raise SpandanException("VIDEO_UNAVAILABLE", "Video consultations are not configured for this deployment.", 503)
+        if await appointment_repo.check_patient_already_booked(db, schedule.id, patient.id, request.dependent_id):
             raise SpandanException(
                 code="CONFLICT",
                 message="Patient already has an active appointment for this schedule.",
@@ -152,6 +166,8 @@ class AppointmentService:
         )
         appointment = Appointment(
             patient_id=patient.id,
+            dependent_id=request.dependent_id,
+            consultation_mode=request.consultation_mode,
             doctor_id=schedule.doctor_id,
             chamber_id=schedule.chamber_id,
             schedule_id=schedule.id,
@@ -179,7 +195,19 @@ class AppointmentService:
                 },
             )
         )
-        await db.commit()
+        from app.services.notifications import notify
+        patient_user = await db.get(User, patient.user_id)
+        await notify(db, patient_user, "Appointment booked", f"Your Spandan booking is confirmed for {schedule.schedule_date}, serial {serial}.", f"booking:{appointment.id}")
+        from sqlalchemy import select
+
+        from app.models.operations import WaitlistEntry
+        entry = await db.scalar(select(WaitlistEntry).where(WaitlistEntry.schedule_id == schedule.id, WaitlistEntry.patient_id == patient.id))
+        if entry:
+            entry.status = "booked"
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
         return await appointment_repo.get_by_id_with_details(db, appointment.id)
 
     async def get_patient_appointments(
@@ -194,7 +222,7 @@ class AppointmentService:
         schedule = await schedule_repo.get_by_id(db, schedule_id)
         if not schedule:
             raise SpandanException(code="NOT_FOUND", message="Schedule not found.", status_code=404)
-        require_doctor_access(current_user, schedule.doctor_id, "can_manage_appointments")
+        require_doctor_access(current_user, schedule.doctor_id, "can_read_queue")
         return await appointment_repo.get_by_schedule_id(db, schedule_id, active_only=active_only)
 
     async def update_status(
@@ -240,9 +268,12 @@ class AppointmentService:
                     status_code=403,
                 )
         else:
-            require_doctor_access(current_user, appointment.doctor_id, "can_manage_appointments")
-            if target in (AppointmentStatus.IN_CONSULTATION, AppointmentStatus.COMPLETED):
-                require_doctor_access(current_user, appointment.doctor_id, "can_update_queue")
+            capability = "can_update_queue" if target in (
+                AppointmentStatus.IN_CONSULTATION, AppointmentStatus.COMPLETED,
+                AppointmentStatus.CHECKED_IN, AppointmentStatus.WAITING,
+                AppointmentStatus.SKIPPED, AppointmentStatus.ABSENT,
+            ) else "can_manage_appointments"
+            require_doctor_access(current_user, appointment.doctor_id, capability)
         previous = appointment.appointment_status
         if previous == target:
             return await appointment_repo.get_by_id_with_details(db, appointment.id)
@@ -312,6 +343,11 @@ class AppointmentService:
         if request.actual_consultation_completed_at:
             appointment.actual_consultation_completed_at = request.actual_consultation_completed_at
         appointment.appointment_status = target
+        from app.services.notifications import notify
+        patient_user = await db.get(User, appointment.patient.user_id)
+        await notify(db, patient_user, "Appointment updated", f"Serial {appointment.serial_number} is now {target.value.replace('_', ' ')}.", f"status:{appointment.id}:{target.value}")
+        if target == AppointmentStatus.CANCELLED:
+            await self.notify_waitlist(db, schedule)
         queue.updated_by_user_id = current_user.id
         db.add(
             AuditLog(
@@ -330,8 +366,19 @@ class AppointmentService:
         await db.commit()
         return await appointment_repo.get_by_id_with_details(db, appointment.id)
 
+    async def notify_waitlist(self, db, schedule):
+        from sqlalchemy import select
+
+        from app.models.operations import WaitlistEntry
+        from app.services.notifications import notify
+        for entry in await db.scalars(select(WaitlistEntry).where(WaitlistEntry.schedule_id == schedule.id, WaitlistEntry.status == "waiting").order_by(WaitlistEntry.created_at)):
+            patient = await patient_repo.get_by_id(db, entry.patient_id)
+            user = await db.get(User, patient.user_id)
+            if user and user.is_active:
+                await notify(db, user, "A booking space is available", f"A place may now be available for the session on {schedule.schedule_date}. Open the doctor profile to book. Availability is not reserved.")
+
     async def get_serial_tracking(
-        self, db: AsyncSession, schedule_id: UUID, current_user: Optional[User] = None
+        self, db: AsyncSession, schedule_id: UUID, current_user: Optional[User] = None, appointment_id: Optional[UUID] = None
     ) -> SerialTrackingResponse:
         schedule = await schedule_repo.get_by_id_with_queue(db, schedule_id)
         if not schedule:
@@ -348,7 +395,7 @@ class AppointmentService:
             appointments = await appointment_repo.get_by_schedule_id(
                 db, schedule_id, active_only=True
             )
-            own = next((a for a in appointments if profile and a.patient_id == profile.id), None)
+            own = next((a for a in appointments if profile and a.patient_id == profile.id and (appointment_id is None or a.id == appointment_id)), None)
             if own:
                 ahead = sum(
                     1

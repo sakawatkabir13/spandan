@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  login: (email: string, password: string, mfa_code?: string) => Promise<User>;
   registerPatient: (data: any) => Promise<User>;
   registerDoctor: (data: any) => Promise<User>;
   logout: (revokeServerSession?: boolean) => Promise<void>;
@@ -72,10 +72,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifyToken();
   }, []);
 
-  const login = async (email: string, password: string): Promise<User> => {
+  const login = async (email: string, password: string, mfa_code?: string): Promise<User> => {
     const resp = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', {
       email,
       password,
+      mfa_code: mfa_code || undefined,
     });
     const data = resp.data.data;
     const normalized = normalizeUser(data.user) as User;

@@ -12,6 +12,7 @@ class SymptomCheckRequest(BaseModel):
     age: Optional[int] = Field(None, ge=0, le=120)
     gender: Optional[str] = None
     duration_days: Optional[int] = Field(None, ge=0)
+    provider_consent: bool = False
 
 
 class SpecialistRecommendationResponse(BaseModel):

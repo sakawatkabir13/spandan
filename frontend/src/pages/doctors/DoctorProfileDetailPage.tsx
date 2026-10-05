@@ -1,3 +1,4 @@
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '../../api/client';
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export const DoctorProfileDetailPage: React.FC = () => {
+  const { t } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -34,8 +36,15 @@ export const DoctorProfileDetailPage: React.FC = () => {
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [patientNote, setPatientNote] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [videoEnabled, setVideoEnabled] = useState(false);
+  useEffect(() => { apiClient.get('/service-capabilities').then(r => setVideoEnabled(r.data.data.video)).catch(() => setVideoEnabled(false)); }, []);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookedResult, setBookedResult] = useState<any | null>(null);
+  const [dependents, setDependents] = useState<any[]>([]);
+  const [dependentId, setDependentId] = useState('');
+  const [mode, setMode] = useState('in_person');
+  const [notice, setNotice] = useState('');
+  useEffect(() => { if (user?.role === 'patient') apiClient.get('/dependents').then(r => setDependents(r.data.data)).catch(() => {}); }, [user?.id]);
 
   const fetchDoctorDetails = async () => {
     if (!id) return;
@@ -85,6 +94,8 @@ export const DoctorProfileDetailPage: React.FC = () => {
       const resp = await apiClient.post<ApiResponse<any>>('/appointments', {
         schedule_id: selectedSchedule.id,
         patient_note: patientNote || undefined,
+        dependent_id: dependentId || undefined,
+        consultation_mode: mode,
         booking_source: 'online',
       });
       if (resp.data.success) {
@@ -106,6 +117,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
     <MainLayout>
       {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
       <div className="space-y-8">
+        {notice && <p role="status" className="rounded-xl bg-spandan-50 p-4">{notice}</p>}
         {/* Doctor Header Banner */}
         <div className="glass-card p-6 sm:p-8 border-slate-200 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-start gap-5">
@@ -253,8 +265,9 @@ export const DoctorProfileDetailPage: React.FC = () => {
                             onClick={() => handleOpenBookingModal(sched)}
                             className="btn-primary py-2 px-4 text-xs font-semibold"
                           >
-                            {isOpen ? 'Book Serial' : sched.status === 'full' ? 'Schedule Full' : 'Booking Closed'}
+                            {isOpen ? t('Book Serial') : sched.status === 'full' ? 'Schedule Full' : 'Booking Closed'}
                           </button>
+                          {sched.status === 'full' && user?.role === 'patient' && <button className="btn-secondary text-xs" onClick={async () => { try { const r = await apiClient.post(`/waitlist/${sched.id}`); setNotice(r.data.message); } catch (e: any) { setNotice(e.response?.data?.error?.message || 'Unable to join waitlist.'); } }}>Join cancellation waitlist</button>}
                         </div>
                       </div>
                     );
@@ -310,7 +323,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
               <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto shadow-inner">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900">Booking Confirmed!</h3>
+              <h3 className="text-2xl font-bold text-slate-900">{t('Booking Confirmed!')}</h3>
               <div className="bg-spandan-50 p-4 rounded-2xl border border-spandan-200 text-slate-800 space-y-2">
                 <p className="text-sm font-medium">Your assigned serial number is:</p>
                 <div className="text-4xl font-extrabold text-spandan-700">#{bookedResult.serial_number}</div>
@@ -366,6 +379,8 @@ export const DoctorProfileDetailPage: React.FC = () => {
               </div>
 
               {bookingError && <Alert type="error" message={bookingError} />}
+              <label className="block text-sm">{t('Booking for')}<select value={dependentId} onChange={e => setDependentId(e.target.value)} className="input-field"><option value="">{t('Myself')}</option>{dependents.map(d => <option key={d.id} value={d.id}>{d.full_name} ({d.relationship_name})</option>)}</select></label>
+              <label className="block text-sm">{t('Consultation')}<select value={mode} onChange={e => setMode(e.target.value)} className="input-field"><option value="in_person">{t('At the chamber')}</option>{videoEnabled && <option value="video">Video consultation</option>}</select></label>
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
@@ -385,15 +400,13 @@ export const DoctorProfileDetailPage: React.FC = () => {
                   type="button"
                   onClick={() => setSelectedSchedule(null)}
                   className="btn-secondary py-2 px-4 text-xs font-semibold"
-                >
-                  Cancel
-                </button>
+                >{t('Cancel')}</button>
                 <button
                   type="submit"
                   disabled={bookingLoading}
                   className="btn-primary py-2 px-5 text-xs font-semibold"
                 >
-                  {bookingLoading ? 'Assigning Serial...' : 'Confirm & Get Serial Number'}
+                  {bookingLoading ? 'Assigning Serial...' : t('Confirm & Get Serial Number')}
                 </button>
               </div>
             </form>

@@ -25,6 +25,9 @@ def utcnow() -> datetime:
 
 
 async def seed_data(db: AsyncSession) -> None:
+    from app.core.config import settings
+    if settings.APP_ENV == 'production':
+        raise RuntimeError('Demo seeding is prohibited in production')
     # Check if admin already exists
     existing_admin = await db.execute(select(User).where(User.email == "admin@spandan.com.bd"))
     if existing_admin.scalar_one_or_none():

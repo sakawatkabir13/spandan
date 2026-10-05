@@ -99,6 +99,7 @@ class ScheduleUpdate(BaseModel):
 class ScheduleResponse(ScheduleBase):
     id: UUID
     doctor_id: UUID
+    series_id: Optional[UUID] = None
     status: ScheduleStatus
     cancellation_reason: Optional[str] = None
     created_at: datetime

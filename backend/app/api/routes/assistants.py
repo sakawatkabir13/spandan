@@ -73,5 +73,7 @@ async def update_assignment(
     require_doctor_access(current_user, assignment.doctor_id, "can_manage_appointments")
     for key, value in request.model_dump().items():
         setattr(assignment, key, value)
+    from app.services.audit import audit
+    audit(db, current_user, "assistant.permissions_updated", assignment, request.model_fields_set)
     await db.commit()
     return create_success_response(message="Assistant permissions updated.", data=assignment)

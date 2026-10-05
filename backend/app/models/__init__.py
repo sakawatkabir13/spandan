@@ -10,6 +10,15 @@ from app.models.doctor import (
     Qualification,
     Specialization,
 )
+from app.models.operations import (
+    AccountAction,
+    AvailabilityException,
+    Dependent,
+    Notification,
+    Payment,
+    PrivacyRequest,
+    WaitlistEntry,
+)
 from app.models.recommendation import SpecialistRecommendation, UrgencyLevel
 from app.models.schedule import QueueState, Schedule, ScheduleStatus
 from app.models.user import PatientProfile, User, UserRole
@@ -35,4 +44,5 @@ __all__ = [
     "SpecialistRecommendation",
     "UrgencyLevel",
     "AuditLog",
+    "AccountAction", "AvailabilityException", "Dependent", "Notification", "Payment", "PrivacyRequest", "WaitlistEntry",
 ]

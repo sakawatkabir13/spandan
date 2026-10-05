@@ -46,6 +46,7 @@ class UserResponse(BaseModel):
     is_active: bool
     is_phone_verified: bool
     is_email_verified: bool
+    mfa_enabled: bool = False
     created_at: datetime
     last_login_at: Optional[datetime] = None
     patient_profile: Optional[PatientProfileResponse] = None

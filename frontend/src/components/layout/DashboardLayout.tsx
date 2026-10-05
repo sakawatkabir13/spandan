@@ -54,11 +54,12 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const links = getSidebarLinks();
+  const links = [...getSidebarLinks(), { name: 'Account & Chamber Tools', path: `/dashboard/${user.role === 'administrator' ? 'admin' : user.role}/tools`, icon: Users }];
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
+      <a className="sr-only focus:not-sr-only focus:p-3" href="#main-content">Skip to content</a>
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
         <aside className="w-full md:w-64 flex-shrink-0">
@@ -99,7 +100,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         </aside>
 
         {/* Main Dashboard Area */}
-        <div className="flex-1 min-w-0 animate-fade-in">{children}</div>
+        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 animate-fade-in">{children}</main>
       </div>
       <Footer />
     </div>

@@ -1,7 +1,8 @@
+from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -44,6 +45,8 @@ class DoctorRepository(BaseRepository[DoctorProfile]):
         status: DoctorVerificationStatus = DoctorVerificationStatus.APPROVED,
         skip: int = 0,
         limit: int = 50,
+        max_fee: Optional[float] = None,
+        available_on: Optional[date] = None,
     ) -> List[DoctorProfile]:
         stmt = (
             select(DoctorProfile)
@@ -63,7 +66,19 @@ class DoctorRepository(BaseRepository[DoctorProfile]):
                 DoctorProfile.qualifications.any(Qualification.title.ilike(q_str)),
             ))
 
-        stmt = stmt.offset(skip).limit(limit)
+        from app.models.chamber import Chamber
+        from app.models.schedule import Schedule, ScheduleStatus
+        chamber_filters = [Chamber.is_active.is_(True)]
+        if district:
+            chamber_filters.append(Chamber.district.ilike(f"%{district}%"))
+        if max_fee is not None:
+            chamber_filters.append(Chamber.consultation_fee <= max_fee)
+        if available_on:
+            chamber_filters.append(Chamber.schedules.any(and_(Schedule.schedule_date == available_on, Schedule.status == ScheduleStatus.OPEN)))
+        if district or max_fee is not None or available_on:
+            stmt = stmt.where(DoctorProfile.chambers.any(and_(*chamber_filters)))
+
+        stmt = stmt.order_by(DoctorProfile.full_name, DoctorProfile.id).offset(skip).limit(limit)
         result = await db.execute(stmt)
         return list(result.scalars().unique().all())
 

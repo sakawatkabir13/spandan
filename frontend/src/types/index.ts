@@ -148,6 +148,9 @@ export type BookingSource = 'online' | 'walk_in' | 'phone' | 'assistant' | 'doct
 
 export interface Appointment {
   id: string;
+  dependent_id?: string | null;
+  attendee_name?: string;
+  consultation_mode?: 'in_person' | 'video';
   patient_id: string;
   doctor_id: string;
   chamber_id: string;

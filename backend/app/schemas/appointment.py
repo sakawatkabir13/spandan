@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -17,6 +17,8 @@ class AppointmentCreate(BaseModel):
     # For walk-in / assistant bookings where patient is not yet a registered online user, or booking for someone else
     patient_id: Optional[UUID] = None
     patient_phone: Optional[str] = None
+    dependent_id: Optional[UUID] = None
+    consultation_mode: Literal["in_person", "video"] = "in_person"
 
     @field_validator("patient_phone")
     @classmethod
@@ -41,6 +43,9 @@ class AppointmentPatientResponse(BaseModel):
 class AppointmentResponse(BaseModel):
     id: UUID
     patient_id: UUID
+    dependent_id: Optional[UUID] = None
+    consultation_mode: str = "in_person"
+    attendee_name: Optional[str] = None
     doctor_id: UUID
     chamber_id: UUID
     schedule_id: UUID

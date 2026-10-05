@@ -13,7 +13,10 @@ def require_doctor_access(user: User, doctor_id: UUID, capability: str) -> None:
     if user.role == UserRole.ASSISTANT and any(
         assignment.doctor_id == doctor_id
         and assignment.is_active
-        and getattr(assignment, capability, False)
+        and (
+            getattr(assignment, capability, False)
+            or (capability == "can_read_queue" and (assignment.can_manage_appointments or assignment.can_update_queue))
+        )
         for assignment in user.assistant_assignments
     ):
         return

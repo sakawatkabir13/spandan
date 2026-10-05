@@ -15,6 +15,18 @@ IMAGE_SIGNATURES = {
 }
 
 
+async def remove_profile_photo(url):
+    if not url:
+        return
+    if url.startswith('/uploads/profiles/'):
+        path = Path(settings.UPLOAD_DIR) / 'profiles' / Path(url).name
+        await asyncio.to_thread(path.unlink, missing_ok=True)
+    elif settings.S3_BUCKET and settings.S3_PUBLIC_URL and url.startswith(settings.S3_PUBLIC_URL.rstrip('/') + '/profiles/'):
+        import boto3
+        client = boto3.client('s3', region_name=settings.S3_REGION, endpoint_url=settings.S3_ENDPOINT_URL or None)
+        await asyncio.to_thread(client.delete_object, Bucket=settings.S3_BUCKET, Key='profiles/' + url.rsplit('/', 1)[-1])
+
+
 def _detect_extension(data: bytes) -> Optional[str]:
     return next((extension for extension, matches in IMAGE_SIGNATURES.items() if matches(data)), None)
 
@@ -43,6 +55,19 @@ async def store_profile_photo(file: UploadFile, previous_url: Optional[str]) -> 
     directory = Path(settings.UPLOAD_DIR) / "profiles"
     await asyncio.to_thread(directory.mkdir, parents=True, exist_ok=True)
     filename = f"{uuid4().hex}.{extension}"
+    if settings.S3_BUCKET:
+        from urllib.parse import urlparse
+
+        import boto3
+        if not settings.S3_PUBLIC_URL or urlparse(settings.S3_PUBLIC_URL).scheme != "https":
+            raise SpandanException("STORAGE_UNAVAILABLE", "An HTTPS object storage URL is required.", 503)
+        client = boto3.client("s3", region_name=settings.S3_REGION, endpoint_url=settings.S3_ENDPOINT_URL or None)
+        key = f"profiles/{filename}"
+        await asyncio.to_thread(client.put_object, Bucket=settings.S3_BUCKET, Key=key, Body=data, ContentType=file.content_type, ServerSideEncryption="AES256")
+        prefix = settings.S3_PUBLIC_URL.rstrip("/") + "/profiles/"
+        if previous_url and previous_url.startswith(prefix):
+            await asyncio.to_thread(client.delete_object, Bucket=settings.S3_BUCKET, Key="profiles/" + previous_url[len(prefix):])
+        return f"{settings.S3_PUBLIC_URL.rstrip('/')}/{key}"
     destination = directory / filename
     await asyncio.to_thread(destination.write_bytes, data)
 

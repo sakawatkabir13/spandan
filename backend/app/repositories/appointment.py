@@ -88,12 +88,13 @@ class AppointmentRepository(BaseRepository[Appointment]):
         return result.scalar() or 0
 
     async def check_patient_already_booked(
-        self, db: AsyncSession, schedule_id: UUID, patient_id: UUID
+        self, db: AsyncSession, schedule_id: UUID, patient_id: UUID, dependent_id: Optional[UUID] = None
     ) -> bool:
         result = await db.execute(
             select(Appointment).where(
                 Appointment.schedule_id == schedule_id,
                 Appointment.patient_id == patient_id,
+                Appointment.dependent_id == dependent_id,
                 Appointment.appointment_status != AppointmentStatus.CANCELLED,
             )
         )

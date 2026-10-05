@@ -39,6 +39,9 @@ class Appointment(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     patient_id = Column(UUID(as_uuid=True), ForeignKey("patient_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    dependent_id = Column(UUID(as_uuid=True), ForeignKey("dependents.id"), nullable=True)
+    consultation_mode = Column(String(20), nullable=False, default="in_person", server_default="in_person")
+    video_room = Column(String(100), nullable=True)
     doctor_id = Column(UUID(as_uuid=True), ForeignKey("doctor_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     chamber_id = Column(UUID(as_uuid=True), ForeignKey("chambers.id", ondelete="CASCADE"), nullable=False, index=True)
     schedule_id = Column(UUID(as_uuid=True), ForeignKey("schedules.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -65,6 +68,11 @@ class Appointment(Base):
     cancelled_at = Column(DateTime(timezone=True), nullable=True)
 
     patient = relationship("PatientProfile", back_populates="appointments")
+    dependent = relationship("Dependent", lazy="selectin")
     doctor = relationship("DoctorProfile", back_populates="appointments")
     chamber = relationship("Chamber", back_populates="appointments")
     schedule = relationship("Schedule", back_populates="appointments")
+
+    @property
+    def attendee_name(self):
+        return self.dependent.full_name if self.dependent else self.patient.full_name

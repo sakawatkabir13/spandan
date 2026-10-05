@@ -1,3 +1,4 @@
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
@@ -7,6 +8,8 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
+import { useLiveQueue } from '../../hooks/useLiveQueue';
+import { AppointmentActions } from '../../components/common/AppointmentActions';
 import {
   Activity,
   Calendar,
@@ -15,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export const PatientDashboard: React.FC = () => {
+  const { t } = useLanguage();
   const [loadError, setLoadError] = useState('');
   useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -28,9 +32,11 @@ export const PatientDashboard: React.FC = () => {
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+  const liveSchedule = appointments.find(a => !['cancelled', 'completed', 'absent'].includes(a.appointment_status))?.schedule_id;
+  const live = useLiveQueue(liveSchedule, () => fetchAppointments(false));
 
-  const fetchAppointments = async () => {
-    setLoading(true);
+  const fetchAppointments = async (initial = true) => {
+    if (initial) setLoading(true);
     try {
       const resp = await apiClient.get<ApiResponse<Appointment[]>>('/appointments/me');
       if (resp.data.success) {
@@ -54,10 +60,10 @@ export const PatientDashboard: React.FC = () => {
       activeApps.map(async (app) => {
         try {
           const tResp = await apiClient.get<ApiResponse<SerialTrackingInfo>>(
-            `/appointments/track/${app.schedule_id}`
+            `/appointments/track/${app.schedule_id}?appointment_id=${app.id}`
           );
           if (tResp.data.success) {
-            newMap[app.schedule_id] = tResp.data.data;
+            newMap[app.id] = tResp.data.data;
           }
         } catch (e) {
           setLoadError('Unable to load the latest data. Please refresh to try again.');
@@ -78,7 +84,7 @@ export const PatientDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const timer = window.setInterval(() => { if (!document.hidden) void fetchAllTracking(appointments); }, 15000);
+    const timer = window.setInterval(() => { if (!document.hidden) void fetchAppointments(false); }, 15000);
     return () => window.clearInterval(timer);
   }, [appointments]);
 
@@ -117,11 +123,12 @@ export const PatientDashboard: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        <p role="status" className="text-sm text-slate-500">{live.connected ? 'Live queue connected' : 'Live connection unavailable; refreshing every 15 seconds'}</p>
         {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
         {/* Header */}
         <div className="glass-card p-6 border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">My Appointments & Live Serials</h1>
+            <h1 className="text-2xl font-bold text-slate-900">{t('My Appointments & Live Serials')}</h1>
             <p className="text-sm text-slate-600">
               Track real-time chamber queue progress right from home before departing.
             </p>
@@ -133,9 +140,7 @@ export const PatientDashboard: React.FC = () => {
               disabled={refreshing}
               className="btn-secondary py-2 px-4 text-xs font-semibold"
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh Serials
-            </button>
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />{t('Refresh Serials')}</button>
             <Link to="/doctors" className="btn-primary py-2 px-4 text-xs font-semibold">
               + Book New Serial
             </Link>
@@ -157,15 +162,13 @@ export const PatientDashboard: React.FC = () => {
               <Link to="/doctors" className="btn-primary text-sm">
                 Find Doctors Now
               </Link>
-              <Link to="/ai-triage" className="btn-secondary text-sm">
-                AI Symptom Checker
-              </Link>
+              <Link to="/ai-triage" className="btn-secondary text-sm">{t('AI Symptom Checker')}</Link>
             </div>
           </div>
         ) : (
           <div className="space-y-6">
             {appointments.map((app) => {
-              const tracking = trackingMap[app.schedule_id];
+              const tracking = trackingMap[app.id];
               const isCancelled = app.appointment_status === 'cancelled';
               const isCompleted = app.appointment_status === 'completed' || app.appointment_status === 'absent';
               const canCancel = !isCancelled && !isCompleted && app.appointment_status !== 'in_consultation';
@@ -238,6 +241,7 @@ export const PatientDashboard: React.FC = () => {
                       )}
                     </div>
 
+                    <AppointmentActions appointment={app} updated={() => void fetchAppointments(false)} />
                     {app.patient_note && (
                       <div className="text-xs text-slate-600 bg-slate-100/80 p-2.5 rounded-xl italic mt-2">
                         "Your note: {app.patient_note}"
@@ -282,17 +286,13 @@ export const PatientDashboard: React.FC = () => {
                             <button
                               onClick={() => void handleConfirmAttendance(app.id)}
                               className="text-emerald-300 hover:text-emerald-200 underline font-semibold"
-                            >
-                              Confirm attendance
-                            </button>
+                            >{t('Confirm attendance')}</button>
                           )}
                           <button
                             disabled={!canCancel}
                             onClick={() => setCancelTarget(app)}
                             className="text-red-400 hover:text-red-300 underline font-semibold"
-                          >
-                            Cancel Serial
-                          </button>
+                          >{t('Cancel Serial')}</button>
                         </span>
                       </div>
                     </div>
@@ -347,7 +347,7 @@ export const PatientDashboard: React.FC = () => {
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
                   Reason for Cancellation
                 </label>
-                <input
+                <input aria-label="Cancellation reason"
                   type="text"
                   required
                   placeholder="e.g. Schedule conflict, feeling better..."
@@ -362,15 +362,13 @@ export const PatientDashboard: React.FC = () => {
                   type="button"
                   onClick={() => setCancelTarget(null)}
                   className="btn-secondary py-2 px-4 text-xs font-semibold"
-                >
-                  Keep Appointment
-                </button>
+                >{t('Keep Appointment')}</button>
                 <button
                   type="submit"
                   disabled={cancelLoading}
                   className="btn-danger py-2 px-5 text-xs font-semibold"
                 >
-                  {cancelLoading ? 'Cancelling...' : 'Yes, Cancel Serial'}
+                  {cancelLoading ? 'Cancelling...' : t('Yes, Cancel Serial')}
                 </button>
               </div>
             </form>

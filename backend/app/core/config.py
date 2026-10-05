@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     JWT_SECRET_KEY: str = "spandan-super-secret-jwt-key-for-development-only-change-in-prod"
     JWT_ALGORITHM: str = "HS256"
+    MFA_ENCRYPTION_KEY: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
@@ -43,9 +44,31 @@ class Settings(BaseSettings):
     GROQ_MODEL: str = "openai/gpt-oss-120b"
     GROQ_TIMEOUT_SECONDS: float = 20.0
     GROQ_MAX_RETRIES: int = 2
+    GROQ_TOTAL_TIMEOUT_SECONDS: float = 25.0
 
     UPLOAD_DIR: str = "uploads"
     MAX_UPLOAD_SIZE_MB: int = 5
+    OPERATOR_NAME: str = "Spandan"
+    OPERATOR_EMAIL: str = "community.cuetinsights@gmail.com"
+    SYMPTOM_RETENTION_DAYS: int = 30
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "community.cuetinsights@gmail.com"
+    SMTP_STARTTLS: bool = True
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_FROM: str = ""
+    S3_BUCKET: str = ""
+    S3_BACKUP_BUCKET: str = ""
+    S3_ENDPOINT_URL: str = ""
+    S3_REGION: str = "ap-south-1"
+    S3_PUBLIC_URL: str = ""
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    PAYMENT_CURRENCY: str = "bdt"
+    VIDEO_BASE_URL: str = ""
     EMERGENCY_CONTACT_NUMBER: str = "999"
 
     @field_validator("ALLOWED_HOSTS", mode="before")

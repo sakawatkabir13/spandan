@@ -1,3 +1,4 @@
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { apiClient } from '../../api/client';
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export const DoctorDiscoveryPage: React.FC = () => {
+  const { t } = useLanguage();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialSpec = queryParams.get('specialization_id') || '';
@@ -26,6 +28,11 @@ export const DoctorDiscoveryPage: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedSpec, setSelectedSpec] = useState(initialSpec);
+  const [district, setDistrict] = useState('');
+  const [fee, setFee] = useState('');
+  const [availableOn, setAvailableOn] = useState('');
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     const fetchSpecs = async () => {
@@ -45,10 +52,17 @@ export const DoctorDiscoveryPage: React.FC = () => {
       const params = new URLSearchParams();
       if (searchQuery) params.append('query', searchQuery);
       if (selectedSpec) params.append('specialization_id', selectedSpec);
+      if (district) params.append('district', district);
+      if (fee) params.append('max_fee', fee);
+      if (availableOn) params.append('available_on', availableOn);
+      params.append('skip', String(page * 20));
+      params.append('limit', '21');
 
       const resp = await apiClient.get<ApiResponse<DoctorProfile[]>>(`/doctors?${params.toString()}`);
       if (resp.data.success) {
-        setDoctors(resp.data.data);
+        setHasMore(resp.data.data.length > 20);
+        setDoctors(resp.data.data.slice(0, 20));
+        setLoadError('');
       }
     } catch (err) {
       setLoadError('Unable to load doctor information. Please refresh to try again.');
@@ -59,11 +73,11 @@ export const DoctorDiscoveryPage: React.FC = () => {
 
   useEffect(() => {
     fetchDoctors();
-  }, [selectedSpec]);
+  }, [selectedSpec, page]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchDoctors();
+    if (page) setPage(0); else fetchDoctors();
   };
 
   return (
@@ -72,7 +86,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
       <div className="space-y-8">
         {/* Header & Filter Bar */}
         <div className="glass-card p-6 border-slate-200 shadow-md">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Find Verified Doctor Chambers</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">{t('Find Verified Doctor Chambers')}</h1>
           <p className="text-sm text-slate-600 mb-6">
             Search by specialty, doctor name, or hospital to book instant online serials and track live chambers.
           </p>
@@ -93,10 +107,10 @@ export const DoctorDiscoveryPage: React.FC = () => {
               <Stethoscope className="w-4 h-4 text-spandan-600 absolute left-3.5 top-3.5 pointer-events-none" />
               <select
                 value={selectedSpec}
-                onChange={(e) => setSelectedSpec(e.target.value)}
+                onChange={(e) => { setPage(0); setSelectedSpec(e.target.value); }}
                 className="input-field pl-10 bg-white cursor-pointer"
               >
-                <option value="">All Specializations</option>
+                <option value="">{t('All Specializations')}</option>
                 {specializations.map((spec) => (
                   <option key={spec.id} value={spec.id}>
                     {spec.name}
@@ -105,14 +119,16 @@ export const DoctorDiscoveryPage: React.FC = () => {
               </select>
             </div>
 
+            <label className="md:col-span-4 text-sm">{t('District')}<input value={district} onChange={e => setDistrict(e.target.value)} className="input-field" /></label>
+            <label className="md:col-span-4 text-sm">{t('Maximum fee (৳)')}<input type="number" min={0} value={fee} onChange={e => setFee(e.target.value)} className="input-field" /></label>
+            <label className="md:col-span-4 text-sm">{t('Available on')}<input type="date" value={availableOn} onChange={e => setAvailableOn(e.target.value)} className="input-field" /></label>
             <div className="md:col-span-2">
-              <button type="submit" className="btn-primary w-full py-2.5 font-semibold">
-                Filter Results
-              </button>
+              <button type="submit" className="btn-primary w-full py-2.5 font-semibold">{t('Filter Results')}</button>
             </div>
           </form>
         </div>
 
+        <nav aria-label="Doctor results pages" className="flex gap-3 items-center"><button className="btn-secondary" disabled={loading || page === 0} onClick={() => setPage(p => p - 1)}>{t('Previous')}</button><span>Page {page + 1}</span><button className="btn-secondary" disabled={loading || !hasMore} onClick={() => setPage(p => p + 1)}>{t('Next')}</button></nav>
         {/* Doctor List */}
         {loading ? (
           <LoadingSpinner size="lg" text="Searching doctors..." />
@@ -195,9 +211,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
                   <Link
                     to={`/doctors/${doctor.id}`}
                     className="btn-primary py-2.5 px-5 text-sm font-semibold whitespace-nowrap"
-                  >
-                    View Chambers & Book
-                    <ArrowRight className="w-4 h-4" />
+                  >{t('View Chambers & Book')}<ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               </div>

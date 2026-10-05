@@ -17,6 +17,7 @@ from app.schemas.auth import (
 )
 from app.schemas.common import ApiResponse
 from app.schemas.user import UserResponse
+from app.services.audit import audit
 from app.services.auth import auth_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -54,7 +55,7 @@ async def register_assistant(
 
 @router.post("/login", response_model=ApiResponse[TokenResponse])
 async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
-    user = await auth_service.authenticate(db, request.email, request.password)
+    user = await auth_service.authenticate(db, request.email, request.password, request.mfa_code)
     if not user:
         raise SpandanException(
             code="INVALID_CREDENTIALS",
@@ -77,6 +78,7 @@ async def logout(
 ):
     # Incrementing the version immediately revokes every access and refresh token for this user.
     current_user.token_version += 1
+    audit(db, current_user, "auth.logout", current_user)
     await db.commit()
     return create_success_response(message="Logged out successfully.")
 
@@ -98,6 +100,7 @@ async def change_password(
             message="Current password is incorrect.",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
+    audit(db, current_user, "auth.password_changed", current_user)
     current_user.password_hash = get_password_hash(request.new_password)
     current_user.token_version += 1
     await db.commit()

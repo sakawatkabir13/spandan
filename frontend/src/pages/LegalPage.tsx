@@ -10,8 +10,9 @@ const documents: Record<LegalDocument, { title: string; sections: Array<[string,
     sections: [
       ['Information we process', 'Spandan processes account details, contact information, doctor credentials, appointment records, queue activity, and the symptoms you choose to submit. Symptoms sent to AI triage are shared with the configured AI provider to generate a specialty recommendation.'],
       ['How information is used', 'We use this information to authenticate users, verify practitioners, operate appointments and queues, provide requested recommendations, prevent abuse, and maintain service reliability.'],
-      ['Storage and access', 'Access is limited by role. Production operators must configure encryption, restricted database access, backups, retention periods, and a process for access or deletion requests under applicable law.'],
-      ['Your choices', 'Do not submit information that is unnecessary for booking or specialty guidance. Contact the organization operating this deployment to request access, correction, or deletion of eligible personal data.'],
+      ['Storage and access', 'Account and appointment access is restricted by role. Symptom submissions are deleted from the active database after 30 days; operational notifications after 90 days. Appointment and payment records are retained for chamber administration. Encrypted recovery backups may retain older records until the backup retention period expires.'],
+      ['Your choices', 'Use Account & Chamber Tools to export your data or request deletion. Eligible patient accounts are anonymized after active appointments are resolved. Contact community.cuetinsights@gmail.com for corrections, staff record review, and privacy questions. Do not submit unnecessary identifying or clinical information.'],
+      ['AI consent and external services', 'Groq receives the symptoms you submit only when you consent to external processing. Emergency screening runs locally. Configured email, SMS, payment, video, and storage providers receive only the information required for those services.'],
     ],
   },
   terms: {
@@ -20,7 +21,8 @@ const documents: Record<LegalDocument, { title: string; sections: Array<[string,
       ['Service purpose', 'Spandan helps patients discover verified doctor profiles, request appointment serials, and follow chamber queues. Doctors and assistants are responsible for keeping schedules and queue information accurate.'],
       ['Account responsibilities', 'Provide accurate information, protect your credentials, and use only the permissions assigned to your role. Automated access, harassment, impersonation, and misuse of health or appointment data are prohibited.'],
       ['Availability', 'Appointment times and queue estimates can change because of clinical needs, cancellations, connectivity, or chamber operations. A booking does not guarantee a specific consultation time or medical outcome.'],
-      ['Operator details', 'The organization deploying Spandan must publish its legal name, contact details, refund or cancellation policy, governing law, and data retention policy before offering the service publicly.'],
+      ['Operator contact', 'Spandan support: community.cuetinsights@gmail.com. Contact the operator for account, chamber, payment, and privacy enquiries.'],
+      ['Cancellations and payments', 'Patients can cancel eligible appointments or reschedule to an available session with the same doctor. A cancellation does not automatically refund a payment. Ask the chamber to review and record your refund; cash refunds must be returned by the chamber. Online payments and video consultations are available only when enabled by the operator.'],
     ],
   },
   medical: {
@@ -42,7 +44,7 @@ export const LegalPage: React.FC<{ document: LegalDocument }> = ({ document }) =
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-12 sm:px-6">
         <article className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-10 shadow-sm">
           <h1 className="text-3xl font-bold text-slate-900">{content.title}</h1>
-          <p className="mt-2 text-sm text-slate-500">Effective 19 September 2026</p>
+          <p className="mt-2 text-sm text-slate-500">Effective 5 October 2026</p>
           <div className="mt-8 space-y-7">
             {content.sections.map(([heading, body]) => (
               <section key={heading}>

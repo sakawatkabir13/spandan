@@ -22,6 +22,7 @@ from app.schemas.auth import (
     RegisterPatientRequest,
     TokenResponse,
 )
+from app.services.audit import audit
 
 
 def utcnow() -> datetime:
@@ -63,6 +64,7 @@ class AuthService:
             emergency_contact=request.emergency_contact,
         )
         db.add(patient_profile)
+        audit(db, user, "account.registered", user)
         await db.commit()
         loaded_user = await user_repo.get_by_id_with_profiles(db, user.id)
         return self.create_tokens(loaded_user)
@@ -107,6 +109,7 @@ class AuthService:
             verification_status=DoctorVerificationStatus.PENDING,
         )
         db.add(doctor_profile)
+        audit(db, user, "account.registered", user)
         await db.commit()
         loaded_user = await user_repo.get_by_id_with_profiles(db, user.id)
         return self.create_tokens(loaded_user)
@@ -142,14 +145,17 @@ class AuthService:
             raise SpandanException(code="NOT_FOUND", message="Doctor not found.", status_code=404)
         db.add(AssistantAssignment(doctor_id=request.doctor_id, assistant_user_id=user.id, is_active=True))
 
+        audit(db, user, "account.registered", user)
         await db.commit()
         loaded_user = await user_repo.get_by_id_with_profiles(db, user.id)
         return self.create_tokens(loaded_user)
 
     async def authenticate(
-        self, db: AsyncSession, email: str, password: str
+        self, db: AsyncSession, email: str, password: str, mfa_code: Optional[str] = None
     ) -> Optional[User]:
         user = await user_repo.get_by_email(db, email)
+        if user:
+            user = await db.scalar(select(User).where(User.id == user.id).with_for_update().execution_options(populate_existing=True))
         if not user or not verify_password(password, user.password_hash):
             return None
         if not user.is_active:
@@ -158,7 +164,13 @@ class AuthService:
                 message="Your account has been deactivated or suspended.",
                 status_code=403,
             )
+        if user.mfa_enabled:
+            from app.services.account_security import validate_mfa
+            user = await db.scalar(select(User).where(User.id == user.id).with_for_update().execution_options(populate_existing=True))
+            validate_mfa(user, mfa_code)
         user.last_login_at = utcnow()
+        from app.models.audit import AuditLog
+        db.add(AuditLog(actor_user_id=user.id, action="account.login", entity_type="user", entity_id=str(user.id)))
         await db.commit()
         return await user_repo.get_by_id_with_profiles(db, user.id)
 

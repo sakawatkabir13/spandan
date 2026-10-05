@@ -15,7 +15,10 @@ from app.db.session import get_db
 from app.main import app
 
 # We use an in-memory SQLite database for rapid, isolated unit/integration tests
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+# An explicit name guard prevents these destructive fixtures touching a live database.
+if not TEST_DATABASE_URL.startswith("sqlite") and not TEST_DATABASE_URL.rsplit('/', 1)[-1].startswith("spandan_test"):
+    raise RuntimeError("Integration database name must start with spandan_test")
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, future=True)
 test_async_session_maker = async_sessionmaker(
@@ -28,9 +31,9 @@ async def prepare_database():
     # If running against SQLite in-memory, map PostgreSQL specific types to cross-database types
     for table in Base.metadata.tables.values():
         for column in table.columns:
-            if isinstance(column.type, PG_UUID):
+            if TEST_DATABASE_URL.startswith("sqlite") and isinstance(column.type, PG_UUID):
                 column.type = Uuid(as_uuid=True)
-            elif isinstance(column.type, PG_JSONB):
+            elif TEST_DATABASE_URL.startswith("sqlite") and isinstance(column.type, PG_JSONB):
                 column.type = JSON()
 
     async with test_engine.begin() as conn:
@@ -38,6 +41,7 @@ async def prepare_database():
     yield
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    await test_engine.dispose()
 
 
 @pytest_asyncio.fixture

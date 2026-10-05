@@ -1,11 +1,14 @@
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { Alert } from '../../components/common/Alert';
 import { Activity, ArrowRight, Lock, Mail, Phone, Stethoscope, User as UserIcon } from 'lucide-react';
+import { errorMessage } from '../../api/errors';
 
 export const RegisterPage: React.FC = () => {
+  const { t } = useLanguage();
   const [tab, setTab] = useState<'patient' | 'doctor'>('patient');
 
   // Common fields
@@ -52,7 +55,7 @@ export const RegisterPage: React.FC = () => {
         navigate('/dashboard/doctor');
       }
     } catch (err: any) {
-      const msg = err.response?.data?.error?.message || 'Registration failed. Please check your inputs.';
+      const msg = errorMessage(err, 'Registration could not be completed. Please try again.');
       setError(msg);
     } finally {
       setLoading(false);
@@ -67,8 +70,8 @@ export const RegisterPage: React.FC = () => {
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white mx-auto shadow-md shadow-spandan-500/20">
               <Activity className="w-7 h-7 animate-pulse" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Create your Spandan account</h1>
-            <p className="text-sm text-slate-500">Choose your account type below to get started</p>
+            <h1 className="text-2xl font-bold text-slate-900">{t('Create your Spandan account')}</h1>
+            <p className="text-sm text-slate-500">{t('Choose your account type below to get started')}</p>
           </div>
 
           {/* Toggle Tabs */}
@@ -85,9 +88,7 @@ export const RegisterPage: React.FC = () => {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <UserIcon className="w-4 h-4" />
-              Patient Account
-            </button>
+              <UserIcon className="w-4 h-4" />{t('Patient Account')}</button>
             <button
               type="button"
               onClick={() => {
@@ -100,21 +101,17 @@ export const RegisterPage: React.FC = () => {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Stethoscope className="w-4 h-4" />
-              Doctor Practitioner
-            </button>
+              <Stethoscope className="w-4 h-4" />{t('Doctor Practitioner')}</button>
           </div>
 
           {error && <Alert type="error" title="Registration Error" message={error} onClose={() => setError(null)} />}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                Full Name
-              </label>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Full Name')}</label>
               <div className="relative">
                 <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input
+                <input aria-label="Full Name"
                   type="text"
                   required
                   placeholder={tab === 'patient' ? 'e.g. Rahat Karim' : 'e.g. Dr. Tanvir Ahmed'}
@@ -127,12 +124,10 @@ export const RegisterPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  Email Address
-                </label>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Email Address')}</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                  <input
+                  <input aria-label="Email Address"
                     type="email"
                     required
                     placeholder="name@gmail.com"
@@ -144,12 +139,10 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  Phone Number
-                </label>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Phone Number')}</label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                  <input
+                  <input aria-label="Phone Number"
                     type="text"
                     required
                     placeholder="01712345678 or +8801712345678"
@@ -162,12 +155,10 @@ export const RegisterPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                Password
-              </label>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Password')}</label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input
+                <input aria-label="Password"
                   type="password"
                   required
                   placeholder="At least 8 characters with letters and digits"
@@ -190,7 +181,7 @@ export const RegisterPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     BMDC Registration Number (Required)
                   </label>
-                  <input
+                  <input aria-label="BMDC Registration Number"
                     type="text"
                     required
                     placeholder="e.g. A-12345 or BMDC-A-10101"
@@ -208,7 +199,7 @@ export const RegisterPage: React.FC = () => {
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
                       Current Hospital / Workplace
                     </label>
-                    <input
+                    <input aria-label="Current Hospital / Workplace"
                       type="text"
                       placeholder="e.g. BSMMU / Dhaka Medical"
                       value={workplace}
@@ -220,7 +211,7 @@ export const RegisterPage: React.FC = () => {
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
                       Years of Experience
                     </label>
-                    <input
+                    <input aria-label="Years of Experience"
                       type="number"
                       required
                       min={0}
@@ -239,16 +230,14 @@ export const RegisterPage: React.FC = () => {
               disabled={loading}
               className="btn-primary w-full py-3 mt-4 font-semibold shadow-md"
             >
-              {loading ? 'Creating account...' : `Register as ${tab === 'patient' ? 'Patient' : 'Doctor'}`}
+              {loading ? t('Creating account...') : t(tab === 'patient' ? 'Register as Patient' : 'Register as Doctor')}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
           <div className="pt-4 border-t border-slate-100 text-center text-sm text-slate-600">
             Already registered?{' '}
-            <Link to="/login" className="font-semibold text-spandan-600 hover:text-spandan-700 underline">
-              Sign in
-            </Link>
+            <Link to="/login" className="font-semibold text-spandan-600 hover:text-spandan-700 underline">{t('Sign in')}</Link>
           </div>
         </div>
       </div>

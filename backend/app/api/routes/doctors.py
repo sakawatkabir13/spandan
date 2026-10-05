@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
@@ -10,6 +11,7 @@ from app.db.session import get_db
 from app.models.user import User, UserRole
 from app.schemas.common import ApiResponse
 from app.schemas.doctor import (
+    DoctorPrivateProfileResponse,
     DoctorProfileResponse,
     DoctorProfileUpdate,
     DoctorVerificationRequest,
@@ -33,15 +35,19 @@ async def search_doctors(
     query: Optional[str] = Query(None, description="Search by name"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
+    district: Optional[str] = Query(None, max_length=100),
+    max_fee: Optional[float] = Query(None, ge=0),
+    available_on: Optional[date] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     doctors = await doctor_service.search_doctors(
-        db, specialization_id=specialization_id, query=query, skip=skip, limit=limit
+        db, specialization_id=specialization_id, query=query, skip=skip, limit=limit,
+        district=district, max_fee=max_fee, available_on=available_on,
     )
     return create_success_response(message="Doctors fetched.", data=doctors)
 
 
-@router.get("/me/profile", response_model=ApiResponse[DoctorProfileResponse])
+@router.get("/me/profile", response_model=ApiResponse[DoctorPrivateProfileResponse])
 async def get_my_doctor_profile(
     current_user: User = Depends(require_roles(UserRole.DOCTOR)),
     db: AsyncSession = Depends(get_db),
@@ -50,7 +56,7 @@ async def get_my_doctor_profile(
     return create_success_response(message="Doctor profile fetched.", data=profile)
 
 
-@router.patch("/me/profile", response_model=ApiResponse[DoctorProfileResponse])
+@router.patch("/me/profile", response_model=ApiResponse[DoctorPrivateProfileResponse])
 async def update_my_doctor_profile(
     request: DoctorProfileUpdate,
     current_user: User = Depends(require_roles(UserRole.DOCTOR)),
@@ -60,7 +66,7 @@ async def update_my_doctor_profile(
     return create_success_response(message="Doctor profile updated.", data=profile)
 
 
-@router.post("/me/profile/photo", response_model=ApiResponse[DoctorProfileResponse])
+@router.post("/me/profile/photo", response_model=ApiResponse[DoctorPrivateProfileResponse])
 async def upload_doctor_photo(
     photo: UploadFile = File(...),
     current_user: User = Depends(require_roles(UserRole.DOCTOR)),
@@ -75,7 +81,7 @@ async def upload_doctor_photo(
     )
 
 
-@router.get("/admin/all", response_model=ApiResponse[List[DoctorProfileResponse]])
+@router.get("/admin/all", response_model=ApiResponse[List[DoctorPrivateProfileResponse]])
 async def list_doctors_for_review(current_user: User = Depends(require_roles(UserRole.ADMINISTRATOR)), db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
@@ -85,7 +91,7 @@ async def list_doctors_for_review(current_user: User = Depends(require_roles(Use
     return create_success_response(message="Doctor registry fetched.", data=list(doctors.all()))
 
 
-@router.post("/{id}/verify", response_model=ApiResponse[DoctorProfileResponse])
+@router.post("/{id}/verify", response_model=ApiResponse[DoctorPrivateProfileResponse])
 async def verify_doctor(id: UUID, request: DoctorVerificationRequest, current_user: User = Depends(require_roles(UserRole.ADMINISTRATOR)), db: AsyncSession = Depends(get_db)):
     profile = await doctor_service.verify_doctor(db, current_user, id, request)
     return create_success_response(message="Doctor verification updated.", data=profile)
@@ -94,6 +100,7 @@ async def verify_doctor(id: UUID, request: DoctorVerificationRequest, current_us
 @router.get("/{id}", response_model=ApiResponse[DoctorProfileResponse])
 async def get_doctor_by_id(id: UUID, db: AsyncSession = Depends(get_db)):
     profile = await doctor_service.get_doctor_profile(db, id)
-    if profile.verification_status.value != "approved":
+    owner = await db.get(User, profile.user_id)
+    if profile.verification_status.value != "approved" or not owner or not owner.is_active:
         raise SpandanException(code="NOT_FOUND", message="Doctor profile not found.", status_code=404)
     return create_success_response(message="Doctor profile fetched.", data=profile)

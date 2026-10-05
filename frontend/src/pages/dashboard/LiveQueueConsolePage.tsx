@@ -6,6 +6,8 @@ import { ApiResponse, Appointment, Schedule } from '../../types';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Badge } from '../../components/common/Badge';
+import { useLiveQueue } from '../../hooks/useLiveQueue';
+import { errorMessage } from '../../api/errors';
 import {
   Activity,
   ArrowRight,
@@ -32,6 +34,7 @@ export const LiveQueueConsolePage: React.FC = () => {
   const [delayMins, setDelayMins] = useState<number>(0);
   const [statusMsg, setStatusMsg] = useState<string>('');
   const [updatingQueue, setUpdatingQueue] = useState(false);
+  const live = useLiveQueue(scheduleId || undefined, () => fetchQueueData(false));
 
   const fetchQueueData = async (updateForm = true) => {
     if (!scheduleId) return;
@@ -162,6 +165,7 @@ export const LiveQueueConsolePage: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+        <p role="status" className="text-sm text-slate-500">{live.connected ? 'Live queue connected' : 'Live connection unavailable; refreshing every 15 seconds'}</p>
         {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-slate-900 via-spandan-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
@@ -250,6 +254,12 @@ export const LiveQueueConsolePage: React.FC = () => {
           <h2 className="text-lg font-bold">Book a Patient at the Chamber</h2>
           <p className="text-sm text-slate-600">Enter the phone number on the patient's registered account. New patients can create an account from the Register page.</p>
           {bookingMessage && <p role="status" className="text-sm text-spandan-800">{bookingMessage}</p>}
+          <form className="grid sm:grid-cols-4 gap-3" onSubmit={async e => { e.preventDefault(); const form = e.currentTarget; setUpdatingQueue(true); try { await apiClient.post('/appointments/intake', { ...Object.fromEntries(new FormData(form)), schedule_id: scheduleId }); form.reset(); setBookingMessage('Walk-in patient registered and booked.'); await fetchQueueData(false); } catch (error) { setBookingMessage(errorMessage(error)); } finally { setUpdatingQueue(false); } }}>
+            <label>New patient name<input name="full_name" required minLength={2} className="input-field" /></label>
+            <label>Phone number<input name="phone_number" type="tel" required className="input-field" /></label>
+            <label>Email (optional)<input name="email" type="email" className="input-field" /></label>
+            <button disabled={updatingQueue} className="btn-secondary">Register & book walk-in</button>
+          </form>
           <form onSubmit={bookOffline} className="grid sm:grid-cols-3 gap-3">
             <label className="text-sm">Patient phone<input name="patient_phone" type="tel" required className="input-field" /></label>
             <label className="text-sm">Booking source<select name="booking_source" className="input-field"><option value="walk_in">Walk-in</option><option value="phone">Phone</option><option value="assistant">Assistant</option></select></label>

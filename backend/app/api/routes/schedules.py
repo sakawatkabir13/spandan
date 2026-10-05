@@ -23,6 +23,24 @@ from app.services.schedule import schedule_service
 router = APIRouter(prefix="/schedules", tags=["Schedules & Queue"])
 
 
+@router.patch("/series/{series_id}", response_model=ApiResponse[List[ScheduleResponse]])
+async def update_series(series_id: UUID, request: ScheduleUpdate, from_date: date = Query(...), current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+
+    from app.core.exceptions import SpandanException
+    from app.models.schedule import Schedule, ScheduleStatus
+    from app.services.permissions import require_doctor_access
+    rows = list((await db.scalars(select(Schedule).where(Schedule.series_id == series_id, Schedule.schedule_date >= from_date, Schedule.status.notin_([ScheduleStatus.CANCELLED, ScheduleStatus.COMPLETED])).order_by(Schedule.schedule_date))).all())
+    if not rows:
+        raise SpandanException("NOT_FOUND", "No future sessions in this series.", 404)
+    require_doctor_access(current_user, rows[0].doctor_id, "can_manage_schedules")
+    updated = []
+    for row in rows:
+        updated.append(await schedule_service.update_schedule(db, current_user, row.id, request, commit=False))
+    await db.commit()
+    return create_success_response("Recurring series updated.", data=updated)
+
+
 @router.post("", response_model=ApiResponse[ScheduleResponse], status_code=status.HTTP_201_CREATED)
 async def create_schedule(
     request: ScheduleCreate,

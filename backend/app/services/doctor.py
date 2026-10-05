@@ -41,6 +41,9 @@ class DoctorService:
         query: Optional[str] = None,
         skip: int = 0,
         limit: int = 50,
+        district: Optional[str] = None,
+        max_fee: Optional[float] = None,
+        available_on=None,
     ) -> List[DoctorProfile]:
         return await doctor_repo.search_doctors(
             db,
@@ -49,6 +52,9 @@ class DoctorService:
             status=DoctorVerificationStatus.APPROVED,
             skip=skip,
             limit=limit,
+            district=district,
+            max_fee=max_fee,
+            available_on=available_on,
         )
 
     async def update_profile(
@@ -87,6 +93,8 @@ class DoctorService:
                 )
                 profile.qualifications.append(qual)
 
+        from app.services.audit import audit
+        audit(db, doctor_user, "doctor.profile_updated", profile, update_data.model_fields_set)
         await db.commit()
         return await doctor_repo.get_by_id_with_details(db, profile.id)
 

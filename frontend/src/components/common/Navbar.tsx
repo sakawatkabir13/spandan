@@ -2,8 +2,10 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Activity, LogOut, Search, Sparkles, User as UserIcon } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const Navbar: React.FC = () => {
+  const { language, setLanguage, t } = useLanguage();
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -31,7 +33,7 @@ export const Navbar: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
+        <Link to="/" className="flex items-center gap-2 group shrink-0">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white shadow-md shadow-spandan-500/20 group-hover:scale-105 transition duration-200">
             <Activity className="w-6 h-6 animate-pulse" />
           </div>
@@ -39,7 +41,7 @@ export const Navbar: React.FC = () => {
             <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-slate-900 via-spandan-800 to-spandan-600 bg-clip-text text-transparent">
               Spandan
             </span>
-            <span className="text-[10px] font-medium tracking-widest text-spandan-600 -mt-1">
+            <span className="hidden sm:block text-[10px] font-medium tracking-widest text-spandan-600 -mt-1">
               Find Care. Book Easily
             </span>
           </div>
@@ -48,23 +50,24 @@ export const Navbar: React.FC = () => {
         <nav className="hidden md:flex items-center gap-6 font-medium text-slate-600 text-sm">
           <Link to="/doctors" className="hover:text-spandan-600 transition flex items-center gap-1.5">
             <Search className="w-4 h-4 text-slate-400" />
-            Find Doctors
+            {t('Find Doctors')}
           </Link>
           <Link
             to="/ai-triage"
             className="hover:text-spandan-600 transition flex items-center gap-1.5 bg-spandan-50 text-spandan-700 px-3 py-1 rounded-full border border-spandan-200"
           >
             <Sparkles className="w-4 h-4 text-spandan-500" />
-            AI Symptom Checker
+            {t('AI Symptom Checker')}
           </Link>
         </nav>
 
         <div className="flex items-center gap-3">
+          <button aria-label="Change language" className="text-sm font-semibold" onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}>{language === 'en' ? 'বাংলা' : 'English'}</button>
           {isAuthenticated && user ? (
             <div className="flex items-center gap-3">
               <Link
                 to={getDashboardPath()}
-                className="btn-secondary text-sm py-2 px-4 shadow-none border-spandan-200 bg-spandan-50/50 hover:bg-spandan-100/50 text-spandan-800"
+                className="btn-secondary text-sm py-2 px-2 sm:px-4 shadow-none border-spandan-200 bg-spandan-50/50 hover:bg-spandan-100/50 text-spandan-800"
               >
                 <UserIcon className="w-4 h-4" />
                 <span className="hidden sm:inline">{user.full_name?.split(' ')[0] || 'Dashboard'}</span>
@@ -83,15 +86,16 @@ export const Navbar: React.FC = () => {
           ) : (
             <div className="flex items-center gap-2">
               <Link to="/login" className="btn-secondary text-sm py-2 px-4">
-                Login
+                {t('Login')}
               </Link>
               <Link to="/register" className="btn-primary text-sm py-2 px-4">
-                Register
+                {t('Register')}
               </Link>
             </div>
           )}
         </div>
       </div>
+      <nav aria-label="Mobile navigation" className="md:hidden flex gap-4 px-4 pb-3 text-sm"><Link to="/doctors">{t('Find Doctors')}</Link><Link to="/ai-triage">{t('AI Symptom Checker')}</Link></nav>
     </header>
   );
 };

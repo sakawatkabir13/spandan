@@ -22,6 +22,33 @@ jobs:
       - run: pip install --require-hashes -r requirements.lock
       - run: ruff check .
       - run: pytest -q
+      - run: pip install pip-audit && pip-audit --disable-pip -r requirements-prod.lock
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test-only-spandan
+          POSTGRES_DB: spandan_test
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:test-only-spandan@localhost:5432/spandan_test
+      TEST_DATABASE_URL: postgresql+asyncpg://postgres:test-only-spandan@localhost:5432/spandan_test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --require-hashes -r requirements.lock
+      - run: alembic upgrade head
+      - run: alembic check
+      - run: pytest -q
 
   frontend:
     runs-on: ubuntu-latest
@@ -43,9 +70,70 @@ jobs:
 
   containers:
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [backend, frontend, postgres]
     steps:
       - uses: actions/checkout@v4
       - run: docker compose --env-file .env.production.example -f docker-compose.prod.yml config --quiet
       - run: docker build --target production -t spandan-backend:ci backend
       - run: docker build --target production -t spandan-frontend:ci frontend
+      - uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: spandan-backend:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+      - uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: spandan-frontend:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+  browser:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, postgres]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test-only-spandan
+          POSTGRES_DB: spandan_test_browser
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:test-only-spandan@localhost:5432/spandan_test_browser
+      GROQ_API_KEY: ''
+      VITE_PROXY_TARGET: http://127.0.0.1:18000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install --require-hashes -r backend/requirements.lock
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: alembic upgrade head && python -m scripts.seed_e2e
+        working-directory: backend
+      - run: |
+          (cd backend && uvicorn app.main:app --host 127.0.0.1 --port 18000 > /tmp/backend.log 2>&1) &
+          (cd frontend && npm run dev -- --host 127.0.0.1 --port 5175 > /tmp/frontend.log 2>&1) &
+          python - <<'PY'
+          import time, urllib.request
+          for attempt in range(60):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:18000/health/ready', timeout=2)
+                  urllib.request.urlopen('http://127.0.0.1:5175', timeout=2)
+                  break
+              except Exception:
+                  time.sleep(1)
+          else:
+              raise RuntimeError('Browser test servers did not become ready')
+          PY
+          cd frontend && npx playwright test

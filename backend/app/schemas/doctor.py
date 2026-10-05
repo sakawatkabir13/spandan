@@ -47,13 +47,16 @@ class DoctorProfileResponse(BaseModel):
     current_workplace: Optional[str] = None
     years_of_experience: int
     verification_status: DoctorVerificationStatus
-    verification_notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     qualifications: List[QualificationResponse] = []
     specializations: List[SpecializationResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DoctorPrivateProfileResponse(DoctorProfileResponse):
+    verification_notes: Optional[str] = None
 
 
 class DoctorProfileUpdate(BaseModel):

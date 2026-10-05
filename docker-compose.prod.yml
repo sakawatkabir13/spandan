@@ -18,6 +18,7 @@ services:
       - private
 
   backend:
+    image: spandan-backend:${RELEASE_TAG:-production}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -49,6 +50,31 @@ services:
       GROQ_MODEL: openai/gpt-oss-120b
       GROQ_TIMEOUT_SECONDS: ${GROQ_TIMEOUT_SECONDS:-20}
       GROQ_MAX_RETRIES: ${GROQ_MAX_RETRIES:-2}
+      GROQ_TOTAL_TIMEOUT_SECONDS: ${GROQ_TOTAL_TIMEOUT_SECONDS:-25}
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:-}
+      OPERATOR_NAME: ${OPERATOR_NAME:-Spandan}
+      OPERATOR_EMAIL: ${OPERATOR_EMAIL:-community.cuetinsights@gmail.com}
+      SYMPTOM_RETENTION_DAYS: ${SYMPTOM_RETENTION_DAYS:-30}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-community.cuetinsights@gmail.com}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM: ${TWILIO_FROM:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      PAYMENT_CURRENCY: ${PAYMENT_CURRENCY:-bdt}
+      VIDEO_BASE_URL: ${VIDEO_BASE_URL:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-ap-south-1}
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
+      S3_BACKUP_BUCKET: ${S3_BACKUP_BUCKET:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       UPLOAD_DIR: /app/uploads
       MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-5}
       MAX_REQUEST_SIZE_BYTES: ${MAX_REQUEST_SIZE_BYTES:-6291456}
@@ -71,6 +97,7 @@ services:
       - private
 
   frontend:
+    image: spandan-frontend:${RELEASE_TAG:-production}
     build:
       context: ./frontend
       dockerfile: Dockerfile

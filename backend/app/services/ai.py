@@ -84,12 +84,22 @@ class SymptomTriageService:
             return rec
 
         # 2. Fetch active specializations from DB to guide LLM
+        if settings.GROQ_API_KEY and not request.provider_consent:
+            from app.core.exceptions import SpandanException
+            raise SpandanException("CONSENT_REQUIRED", "Consent is required before sending symptoms to the AI provider.")
         specs = await specialization_repo.get_active_all(db)
         spec_names = [s.name for s in specs]
         spec_map = {s.name.lower(): s.id for s in specs}
 
         # 3. Call Groq API or fallback
-        triage_result = await self._call_groq_or_fallback(request, spec_names)
+        try:
+            triage_result = await asyncio.wait_for(
+                self._call_groq_or_fallback(request, spec_names),
+                timeout=settings.GROQ_TOTAL_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Groq overall deadline exceeded; using fallback")
+            triage_result = self._get_fallback_triage()
 
         # Map name to ID if exists
         rec_spec_name = triage_result.get("recommended_specialization_name", "General Medicine")
@@ -170,7 +180,7 @@ You MUST respond ONLY with valid JSON matching exactly this structure:
                 {"role": "user", "content": prompt},
             ],
             "temperature": 0.2,
-            "max_completion_tokens": 600,
+            "max_completion_tokens": 1200,
             "reasoning_effort": "low",
             "seed": 7,
             "response_format": {

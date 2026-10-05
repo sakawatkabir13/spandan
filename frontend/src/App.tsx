@@ -18,6 +18,8 @@ import { AdminDashboard } from './pages/dashboard/AdminDashboard';
 import { UserManagementPage } from './pages/dashboard/UserManagementPage';
 import { ProfilePage } from './pages/dashboard/ProfilePage';
 import { LegalPage } from './pages/LegalPage';
+import { AccountActionPage } from './pages/auth/AccountActionPage';
+import { ToolsPage } from './pages/dashboard/ToolsPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> = ({
   children,
@@ -63,6 +65,8 @@ const AppRoutes: React.FC = () => {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<AccountActionPage />} />
+      <Route path="/account-action" element={<AccountActionPage />} />
       <Route path="/doctors" element={<DoctorDiscoveryPage />} />
       <Route path="/doctors/:id" element={<DoctorProfileDetailPage />} />
       <Route path="/ai-triage" element={<AITriagePage />} />
@@ -71,6 +75,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/medical-disclaimer" element={<LegalPage document="medical" />} />
 
       {/* Patient Routes */}
+      <Route path="/dashboard/:role/tools" element={<ProtectedRoute><ToolsPage /></ProtectedRoute>} />
       <Route
         path="/dashboard/patient"
         element={
@@ -123,6 +128,7 @@ const AppRoutes: React.FC = () => {
       />
 
       {/* Assistant Routes */}
+      <Route path="/dashboard/admin/queue" element={<ProtectedRoute roles={['administrator']}><LiveQueueConsolePage /></ProtectedRoute>} />
       <Route
         path="/dashboard/assistant"
         element={

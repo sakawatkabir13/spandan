@@ -1,13 +1,17 @@
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { Alert } from '../../components/common/Alert';
 import { Activity, ArrowRight, Lock, Mail } from 'lucide-react';
+import { errorMessage } from '../../api/errors';
 
 export const LoginPage: React.FC = () => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -24,14 +28,14 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const user = await login(email, password);
+      const user = await login(email, password, mfaCode);
       if (user.role === 'patient') navigate('/dashboard/patient');
       else if (user.role === 'doctor') navigate('/dashboard/doctor');
       else if (user.role === 'assistant') navigate('/dashboard/assistant');
       else if (user.role === 'administrator') navigate('/dashboard/admin');
       else navigate('/');
     } catch (err: any) {
-      const msg = err.response?.data?.error?.message || 'Invalid email or password. Please try again.';
+      const msg = errorMessage(err, 'Unable to sign in. Please try again.');
       setError(msg);
     } finally {
       setLoading(false);
@@ -46,7 +50,7 @@ export const LoginPage: React.FC = () => {
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white mx-auto shadow-md shadow-spandan-500/20">
               <Activity className="w-7 h-7 animate-pulse" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Welcome back to Spandan</h1>
+            <h1 className="text-2xl font-bold text-slate-900">{t('Welcome back to Spandan')}</h1>
             <p className="text-sm text-slate-500">
               {initialRoleHint === 'doctor'
                 ? 'Doctor Chamber Portal Login'
@@ -58,12 +62,10 @@ export const LoginPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                Email Address
-              </label>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">{t('Email Address')}</label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input
+                <input aria-label="Email Address"
                   type="email"
                   required
                   placeholder="you@example.com"
@@ -76,13 +78,11 @@ export const LoginPage: React.FC = () => {
 
             <div>
               <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-                  Password
-                </label>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">{t('Password')}</label>
               </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input
+                <input aria-label="Password"
                   type="password"
                   required
                   placeholder="••••••••"
@@ -93,12 +93,14 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
+            <label className="block text-sm">Authenticator code (if enabled)<input aria-label="Authenticator code" value={mfaCode} onChange={e => setMfaCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={6} className="input-field" /></label>
+            <Link to="/forgot-password" className="block underline text-sm">{t('Forgot your password?')}</Link>
             <button
               type="submit"
               disabled={loading}
               className="btn-primary w-full py-3 mt-2 font-semibold shadow-md"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? t('Signing in...') : t('Sign In')}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

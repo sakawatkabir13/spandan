@@ -6,6 +6,16 @@ __pycache__/
 
 # Environments & Virtual Envs
 .env
+.env.*
+!.env.example
+!.env.production.example
+PROJECT_STATUS_*.md
+test-results/
+playwright-report/
+backups/
+.runtime/
+*.egg-info/
+*.pem
 .venv
 env/
 venv/
