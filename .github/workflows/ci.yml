@@ -76,18 +76,19 @@ jobs:
       - run: docker compose --env-file .env.production.example -f docker-compose.prod.yml config --quiet
       - run: docker build --target production -t spandan-backend:ci backend
       - run: docker build --target production -t spandan-frontend:ci frontend
-      - uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
-        with:
-          image-ref: spandan-backend:ci
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: '1'
-      - uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
-        with:
-          image-ref: spandan-frontend:ci
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: '1'
+      - name: Scan production image archives
+        run: |
+          mkdir -p /tmp/spandan-scan /tmp/trivy-cache
+          docker save spandan-backend:ci -o /tmp/spandan-scan/backend.tar
+          docker save spandan-frontend:ci -o /tmp/spandan-scan/frontend.tar
+          for archive in backend frontend; do
+            docker run --rm \
+              -v /tmp/spandan-scan:/scan:ro \
+              -v /tmp/trivy-cache:/root/.cache/trivy \
+              aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa \
+              image --scanners vuln --severity CRITICAL,HIGH --ignore-unfixed \
+              --exit-code 1 --input "/scan/$archive.tar"
+          done
 
   browser:
     runs-on: ubuntu-latest
