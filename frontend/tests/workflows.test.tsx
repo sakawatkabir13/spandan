@@ -62,7 +62,7 @@ describe("API-backed workflows", () => {
         ) as any,
     );
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/doctors?view=booking"]}>
         <DoctorDiscoveryPage />
       </MemoryRouter>,
     );

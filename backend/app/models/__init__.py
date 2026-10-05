@@ -2,6 +2,7 @@ from app.db.base import Base
 from app.models.appointment import Appointment, AppointmentStatus, BookingSource
 from app.models.audit import AuditLog
 from app.models.chamber import Chamber
+from app.models.directory import DirectoryDoctor
 from app.models.doctor import (
     AssistantAssignment,
     DoctorProfile,
@@ -29,6 +30,7 @@ __all__ = [
     "UserRole",
     "PatientProfile",
     "DoctorProfile",
+    "DirectoryDoctor",
     "DoctorVerificationStatus",
     "Qualification",
     "Specialization",

@@ -211,3 +211,23 @@ export interface SpecialistRecommendation {
   model_identifier?: string | null;
   created_at: string;
 }
+
+// Public hospital facts have no authenticated doctor account or bookable sessions.
+export interface DirectoryDoctor {
+  id: string;
+  full_name: string;
+  native_name: string | null;
+  specialty: string;
+  qualifications: string | null;
+  institution: string;
+  division: string;
+  district: string;
+  address: string | null;
+  appointment_phone: string | null;
+  published_hours: string | null;
+  source_url: string;
+  contact_source_url: string | null;
+  source_checked_on: string;
+  is_active: boolean;
+  booking_status: 'contact_hospital';
+}

@@ -12,7 +12,7 @@
 
 ## How Has This Been Tested?
 
-- [ ] Backend: `make test` passes
+- [ ] Backend: `docker compose exec backend pytest -q` passes
 - [ ] Frontend: `npm run lint` and `npm test` pass
 - [ ] Added new tests for the change
 - [ ] Manually verified in local Docker stack
@@ -20,10 +20,9 @@
 ## Checklist
 
 - [ ] My code follows the project's style guidelines (`ruff` / `eslint`).
-- [ ] I have updated `README.md` and/or `CHANGELOG.md` if user-facing behavior changed.
+- [ ] I have updated `README.md` if user-facing behavior changed.
 - [ ] I have added/updated database migrations if the schema changed.
 - [ ] I have not committed any secrets or `.env` files.
-- [ ] I have read [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Screenshots / Logs
 

@@ -5,6 +5,7 @@ import { apiClient } from '../../api/client';
 import { ApiResponse, DoctorProfile, Specialization } from '../../types';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { DirectoryBrowser } from './DirectoryBrowser';
 import { Badge } from '../../components/common/Badge';
 import {
   ArrowRight,
@@ -19,6 +20,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialSpec = queryParams.get('specialization_id') || '';
+  const bookable = queryParams.get('view') === 'booking' || !!initialSpec;
   const initialQuery = queryParams.get('query') || '';
 
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
@@ -43,8 +45,8 @@ export const DoctorDiscoveryPage: React.FC = () => {
         setLoadError('Unable to load doctor information. Please refresh to try again.');
       }
     };
-    fetchSpecs();
-  }, []);
+    if (bookable) fetchSpecs();
+  }, [bookable]);
 
   const fetchDoctors = async () => {
     setLoading(true);
@@ -72,8 +74,8 @@ export const DoctorDiscoveryPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDoctors();
-  }, [selectedSpec, page]);
+    if (bookable) fetchDoctors();
+  }, [selectedSpec, page, bookable]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +84,8 @@ export const DoctorDiscoveryPage: React.FC = () => {
 
   return (
     <MainLayout>
+      <nav aria-label={t('Doctor directory options')} className="flex flex-wrap gap-3 mb-6"><Link to="/doctors?view=directory" aria-current={!bookable ? 'page' : undefined} className={!bookable ? 'btn-primary' : 'btn-secondary'}>{t('Public hospital directory')}</Link><Link to="/doctors?view=booking" aria-current={bookable ? 'page' : undefined} className={bookable ? 'btn-primary' : 'btn-secondary'}>{t('Book on Spandan')}</Link></nav>
+      {!bookable ? <DirectoryBrowser initialQuery={initialQuery} /> : <>
       {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
       <div className="space-y-8">
         {/* Header & Filter Bar */}
@@ -219,6 +223,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
           </div>
         )}
       </div>
+      </>}
     </MainLayout>
   );
 };

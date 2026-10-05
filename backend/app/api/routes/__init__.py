@@ -6,6 +6,7 @@ from app.api.routes import (
     assistants,
     auth,
     chambers,
+    directory,
     doctors,
     events,
     operations,
@@ -33,3 +34,5 @@ api_router.include_router(operations.router)
 api_router.include_router(payments.router)
 api_router.include_router(events.router)
 api_router.include_router(assistants.router)
+
+api_router.include_router(directory.router)

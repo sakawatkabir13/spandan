@@ -1,3 +1,4 @@
+import { DirectoryDetailPage } from './pages/doctors/DirectoryDetailPage';
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -68,6 +69,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/forgot-password" element={<AccountActionPage />} />
       <Route path="/account-action" element={<AccountActionPage />} />
       <Route path="/doctors" element={<DoctorDiscoveryPage />} />
+      <Route path="/directory/:id" element={<DirectoryDetailPage />} />
       <Route path="/doctors/:id" element={<DoctorProfileDetailPage />} />
       <Route path="/ai-triage" element={<AITriagePage />} />
       <Route path="/privacy" element={<LegalPage document="privacy" />} />

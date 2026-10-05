@@ -90,7 +90,7 @@ test.describe.serial('Full-stack chamber operations', () => {
     await page.getByRole('button', { name: 'Confirm & Get Serial Number', exact: true }).click();
     await expect(page.getByText('Booking Confirmed!', { exact: true })).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/doctors');
+    await page.goto('/doctors?view=booking');
     await page.getByRole('button', { name: 'Change language' }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'bn');
     await expect(page.getByRole('heading', { name: 'যাচাইকৃত ডাক্তারের চেম্বার খুঁজুন' })).toBeVisible();

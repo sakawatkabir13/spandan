@@ -30,11 +30,11 @@ export function ToolsPage() {
   const [payment, setPayment] = useState<Row | null>(null);
   const patient = user?.role === 'patient';
   const admin = user?.role === 'administrator';
-  const tabs = ['notifications', 'security', 'privacy', ...(patient ? ['family', 'waitlist', 'billing'] : ['calendar', 'analytics', 'billing'])];
+  const tabs = ['notifications', 'security', 'privacy', ...(patient ? ['family', 'waitlist', 'billing'] : ['calendar', 'analytics', 'billing']), ...(admin ? ['directory'] : [])];
   const load = async () => {
     try {
       if (tab === 'analytics') { setAnalytics((await apiClient.get('/analytics')).data.data); if (admin) setSystem((await apiClient.get('/system/status')).data.data); return; }
-      const endpoint = { notifications: '/notifications', family: '/dependents', waitlist: '/waitlist', privacy: '/privacy/requests', calendar: '/schedules/me' }[tab];
+      const endpoint = { notifications: '/notifications', family: '/dependents', waitlist: '/waitlist', privacy: '/privacy/requests', calendar: '/schedules/me', directory: admin ? '/directory/admin/doctors' : undefined }[tab];
       setRows(endpoint ? (await apiClient.get(endpoint)).data.data : []);
       if (tab === 'billing' && (params.get('appointment_id') || payment?.appointment_id)) {
         const id = params.get('appointment_id') || payment?.appointment_id;
@@ -60,6 +60,7 @@ export function ToolsPage() {
     <h1 className="text-2xl font-bold">{t('Account & Chamber Tools')}</h1>
     <nav className="flex flex-wrap gap-2" aria-label="Tools">{tabs.map(name => <button key={name} onClick={() => setParams({ tab: name })} className={tab === name ? 'btn-primary capitalize' : 'btn-secondary capitalize'}>{t(name)}</button>)}</nav>
     {message && <p role="status" className="rounded-xl bg-spandan-50 p-4">{message}</p>}
+    {tab === 'directory' && admin && <section className="glass-card p-6 space-y-4"><h2 className="text-xl font-bold">{t('Public hospital directory')}</h2><p>These listings do not create doctor accounts or bookable availability. Hide outdated information until its hospital source can be reviewed. Imports preserve your visibility decisions.</p>{!rows.length && <p>No imported listings.</p>}{rows.map(row => <article key={row.id} className="border-t py-4 flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">{row.full_name}</h3><p className="text-sm">{row.institution} · {row.division}</p><a className="text-sm underline" href={row.source_url} target="_blank" rel="noopener noreferrer">Official source · reviewed {row.source_checked_on}</a></div><button disabled={busy} className="btn-secondary" onClick={() => void act(`/directory/admin/doctors/${row.id}`, { is_active: !row.is_active }, 'patch')}>{row.is_active ? 'Hide listing' : 'Publish listing'}</button></article>)}</section>}
     {tab === 'notifications' && <section className="glass-card p-6 space-y-4">{!rows.length && <p>No notifications yet.</p>}{rows.map(row => <article key={row.id} className="border-b py-3">
       <h2 className="font-bold">{row.subject}</h2><p>{row.message}</p><p className="text-xs text-slate-500">{new Date(row.created_at).toLocaleString()}</p>
       {!row.read_at && <button className="btn-secondary mt-2" disabled={busy} onClick={() => void act(`/notifications/${row.id}/read`)}>Mark read</button>}

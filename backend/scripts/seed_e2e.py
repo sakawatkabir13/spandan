@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash
 from app.db.session import async_session_maker
 from app.models.user import User, UserRole
+from scripts.import_directory import import_rows, load_dataset
 
 
 async def main():
@@ -26,6 +27,7 @@ async def main():
                     is_active=True,
                 )
             )
+        await import_rows(db, load_dataset())
         await db.commit()
 
 

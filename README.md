@@ -198,8 +198,7 @@ cp .env.example .env
 ### 3. Launch the stack
 
 ```bash
-make up
-# or:  docker compose up --build -d
+docker compose up --build -d
 ```
 
 On first boot the backend will:
@@ -239,18 +238,19 @@ On first boot the backend will:
 
 ## 🧪 Available Scripts
 
-### Root (`Makefile` shortcuts)
+### Docker commands (development)
 
 | Command | Description |
-| --- | --- |
-| `make up` | Start all services (db, backend, frontend) via Docker Compose |
-| `make down` | Stop and remove containers |
-| `make restart` | Restart all services |
-| `make logs` | Follow logs from all services |
-| `make migrate` | Run Alembic migrations inside the backend container |
-| `make seed` | Re-run or reset the seed script |
-| `make test` | Run the full Pytest backend suite |
-| `make clean` | Remove volumes, containers, and build artifacts |
+|---|---|
+| `docker compose up --build -d` | Build and start the development services |
+| `docker compose down` | Stop the development services |
+| `docker compose restart` | Restart the development services |
+| `docker compose logs -f` | Follow service logs |
+| `docker compose exec backend alembic upgrade head` | Apply database migrations |
+| `docker compose exec backend python -m scripts.seed` | Load development demo data |
+| `docker compose exec backend python -m scripts.import_directory` | Import reviewed public hospital listings |
+| `docker compose exec backend pytest -q` | Run backend tests |
+
 
 ### Backend (inside `backend/`)
 
@@ -308,7 +308,6 @@ spandan/
 │   ├── workflows/ci.yml     # GitHub Actions CI
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docker-compose.yml
-├── Makefile
 ├── .env.example
 ├── LICENSE
 ├── SECURITY.md
@@ -347,7 +346,7 @@ All variables are loaded from `.env` via `pydantic-settings`. Server-side secret
 
 ## 🐳 Docker Deployment
 
-`docker-compose.yml` runs the development/demo stack. `docker-compose.prod.yml` builds non-root production images, serves the frontend through Nginx, keeps the backend and database private, disables demo data and API documentation, and adds health checks and request limits.
+`docker-compose.yml` runs the development/demo stack. The three Compose files have separate purposes: development, portable production (`docker-compose.prod.yml`), and the existing VPS overlay (`docker-compose.vps.yml`). The private, ignored VPS overlay preserves its named database/upload volumes, bounds logs, and binds the frontend behind host Nginx; deployment scripts combine it with the production file. Keep this overlay locally on the deployment machine. Only development and portable production Compose files are tracked in Git. `docker-compose.prod.yml` builds non-root production images, serves the frontend through Nginx, keeps the backend and database private, disables demo data and API documentation, and adds health checks and request limits.
 
 ```bash
 # Build & start everything
@@ -369,7 +368,7 @@ docker compose down
 
 A healthchecked Postgres ensures Alembic migrations only run after the DB is ready.
 
-For production, create a private `.env.production` from `.env.production.example` and configure the database, JWT/MFA keys, operator email, public URL, and Groq key. Never use demo credentials in production. The existing VPS uses `docker-compose.vps.yml` to preserve its database/upload volumes and bind the frontend to `127.0.0.1:8082` behind host Nginx.
+For production, create a private `.env.production` from `.env.production.example` and configure the database, JWT/MFA keys, operator email, public URL, and Groq key. Never use demo credentials in production. The existing VPS uses a private, ignored `docker-compose.vps.yml` to preserve its database/upload volumes and bind the frontend to `127.0.0.1:8082` behind host Nginx. Back it up separately; a fresh clone does not contain this machine-specific file. The `ops/release.sh`, rollback and maintenance scripts require this overlay on that VPS.
 
 Run `sh ops/release.sh` for tagged builds, encrypted snapshots, migrations, readiness verification, and rollback on release failure. With prebuilt images tagged to the current Git SHA, use `SKIP_BUILD=true sh ops/release.sh`. `sh ops/rollback.sh` restores the preceding production runtime without downgrading data. Preserve `.runtime/backup.key` separately: losing it makes encrypted snapshots unrecoverable.
 
@@ -460,3 +459,9 @@ Contributions can be proposed through GitHub issues and pull requests.
 Made with 💚 in 🇧🇩 Bangladesh by the [Spandan team](#-contributors)
 
 </div>
+
+### Public doctor directory
+
+Find Doctors opens a reviewed public hospital directory with an initial 22 listings covering all eight Bangladesh divisions. Each listing retains its official hospital source and review date. These entries are independent of registered doctors: no accounts, BMDC verification, fees, appointment inventory, or live availability are generated from scraped facts. Contact the hospital to confirm appointments. Administrators can hide or publish entries from Account & Chamber Tools → directory.
+
+After migrations, import the reviewed dataset with `python -m scripts.import_directory` in the backend, or `docker compose exec backend python -m scripts.import_directory` in development. In production: `docker compose --env-file .env.production -f docker-compose.prod.yml exec -T backend python -m scripts.import_directory`. Imports are transactional and repeatable, update reviewed facts, and preserve administrator visibility decisions. Review the official sources before updating `backend/data/bangladesh_doctors.json`; HTTPS sources are restricted to approved hospital domains. Unknown details remain unset. Never treat published hours as confirmed Spandan booking slots.
