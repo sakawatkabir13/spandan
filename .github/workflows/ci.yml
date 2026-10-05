@@ -76,13 +76,13 @@ jobs:
       - run: docker compose --env-file .env.production.example -f docker-compose.prod.yml config --quiet
       - run: docker build --target production -t spandan-backend:ci backend
       - run: docker build --target production -t spandan-frontend:ci frontend
-      - uses: aquasecurity/trivy-action@0.33.1
+      - uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
         with:
           image-ref: spandan-backend:ci
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: '1'
-      - uses: aquasecurity/trivy-action@0.33.1
+      - uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
         with:
           image-ref: spandan-frontend:ci
           severity: CRITICAL,HIGH
