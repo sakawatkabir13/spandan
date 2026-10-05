@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import SpandanException
 from app.core.time import aware, session_time
 from app.models.appointment import Appointment, AppointmentStatus, BookingSource
@@ -89,7 +90,8 @@ class AppointmentService:
             require_doctor_access(current_user, schedule.doctor_id, "can_manage_appointments")
         doctor = await db.get(DoctorProfile, schedule.doctor_id)
         if (
-            doctor.verification_status != DoctorVerificationStatus.APPROVED
+            (doctor.is_demo and not settings.DEMO_MODE)
+            or doctor.verification_status != DoctorVerificationStatus.APPROVED
             or not schedule.chamber.is_active
             or not (await db.get(User, doctor.user_id)).is_active
         ):
@@ -146,7 +148,6 @@ class AppointmentService:
             dependent = await db.get(Dependent, request.dependent_id)
             if not dependent or dependent.patient_id != patient.id or not dependent.is_active:
                 raise SpandanException("FORBIDDEN", "Choose an active family member from this patient account.", 403)
-        from app.core.config import settings
         if request.consultation_mode == "video" and not settings.VIDEO_BASE_URL:
             raise SpandanException("VIDEO_UNAVAILABLE", "Video consultations are not configured for this deployment.", 503)
         if await appointment_repo.check_patient_already_booked(db, schedule.id, patient.id, request.dependent_id):
@@ -197,7 +198,7 @@ class AppointmentService:
         )
         from app.services.notifications import notify
         patient_user = await db.get(User, patient.user_id)
-        await notify(db, patient_user, "Appointment booked", f"Your Spandan booking is confirmed for {schedule.schedule_date}, serial {serial}.", f"booking:{appointment.id}")
+        await notify(db, patient_user, "Demo appointment booked" if doctor.is_demo else "Appointment booked", f"Your {'academic demo' if doctor.is_demo else 'Spandan'} booking is recorded for {schedule.schedule_date}, serial {serial}." + (" This is simulated; no real consultation is arranged." if doctor.is_demo else ""), f"booking:{appointment.id}")
         from sqlalchemy import select
 
         from app.models.operations import WaitlistEntry

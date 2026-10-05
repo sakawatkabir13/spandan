@@ -20,7 +20,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialSpec = queryParams.get('specialization_id') || '';
-  const bookable = queryParams.get('view') === 'booking' || !!initialSpec;
+  const bookable = queryParams.get('view') === 'booking';
   const initialQuery = queryParams.get('query') || '';
 
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
@@ -85,7 +85,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
   return (
     <MainLayout>
       <nav aria-label={t('Doctor directory options')} className="flex flex-wrap gap-3 mb-6"><Link to="/doctors?view=directory" aria-current={!bookable ? 'page' : undefined} className={!bookable ? 'btn-primary' : 'btn-secondary'}>{t('Public hospital directory')}</Link><Link to="/doctors?view=booking" aria-current={bookable ? 'page' : undefined} className={bookable ? 'btn-primary' : 'btn-secondary'}>{t('Book on Spandan')}</Link></nav>
-      {!bookable ? <DirectoryBrowser initialQuery={initialQuery} /> : <>
+      {!bookable ? <DirectoryBrowser key={location.search} initialQuery={initialQuery} specializationId={initialSpec} /> : <>
       {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
       <div className="space-y-8">
         {/* Header & Filter Bar */}
@@ -182,7 +182,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
                       </h3>
                       {(doctor.verification_status === 'approved') && (
                         <Badge variant="success" className="flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> BMDC Verified
+                          <CheckCircle2 className="w-3 h-3" /> {doctor.is_demo ? t('Academic demo account') : 'BMDC Verified'}
                         </Badge>
                       )}
                     </div>

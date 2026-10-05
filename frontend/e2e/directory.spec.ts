@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('public directory covers Bangladesh and does not offer unconfirmed booking', async ({ page }) => {
   await page.goto('/doctors');
   await expect(page.getByRole('heading', { name: 'Find doctors across Bangladesh' })).toBeVisible();
-  await expect(page.getByRole('status').filter({ hasText: '22 public hospital listings' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: '44 public hospital listings' })).toBeVisible();
   await page.getByLabel('Division', { exact: true }).selectOption('Sylhet');
   await expect(page.getByRole('status').filter({ hasText: '3 public hospital listings' })).toBeVisible();
   await page.getByLabel('Doctor, specialty or hospital').fill('Ayesha');
@@ -13,7 +13,7 @@ test('public directory covers Bangladesh and does not offer unconfirmed booking'
   await expect(page.getByRole('heading', { name: 'Dr. Ayesha Rafiq Chowdhury', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Call hospital: +8809610009640' })).toHaveAttribute('href', 'tel:+8809610009640');
   await expect(page.getByRole('link', { name: 'Official hospital source' })).toHaveAttribute('href', /ibnsinahospitalsylhet.com.bd/);
-  await expect(page.getByText('Online booking through Spandan is unavailable', { exact: false })).toBeVisible();
+  await expect(page.getByText('Real appointments must be confirmed with the hospital', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Book Serial' })).toHaveCount(0);
   await expect(page.getByText('BMDC Verified', { exact: true })).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });

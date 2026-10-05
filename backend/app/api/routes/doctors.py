@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import require_roles
+from app.core.config import settings
 from app.core.exceptions import SpandanException, create_success_response
 from app.db.session import get_db
 from app.models.user import User, UserRole
@@ -101,6 +102,6 @@ async def verify_doctor(id: UUID, request: DoctorVerificationRequest, current_us
 async def get_doctor_by_id(id: UUID, db: AsyncSession = Depends(get_db)):
     profile = await doctor_service.get_doctor_profile(db, id)
     owner = await db.get(User, profile.user_id)
-    if profile.verification_status.value != "approved" or not owner or not owner.is_active:
+    if (profile.is_demo and not settings.DEMO_MODE) or profile.verification_status.value != "approved" or not owner or not owner.is_active:
         raise SpandanException(code="NOT_FOUND", message="Doctor profile not found.", status_code=404)
     return create_success_response(message="Doctor profile fetched.", data=profile)

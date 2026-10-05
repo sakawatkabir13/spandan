@@ -212,7 +212,7 @@ export const ProfilePage: React.FC = () => {
                 {doc ? (
                   <>
                     <p className="rounded-xl bg-slate-100 p-4 text-sm">
-                      BMDC: {doc.medical_registration_number} · Status:{" "}
+                      {doc.is_demo ? 'Demo identifier' : 'BMDC'}: {doc.medical_registration_number} · Status:{" "}
                       <strong>{doc.verification_status}</strong>
                       {doc.verification_notes && (
                         <span className="block mt-2">

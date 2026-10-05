@@ -138,7 +138,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
                 <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{doctor.full_name}</h1>
                 {(doctor.verification_status === 'approved') && (
                   <Badge variant="success" className="flex items-center gap-1.5 px-3 py-1 text-xs">
-                    <CheckCircle2 className="w-4 h-4" /> BMDC Verified ({doctor.medical_registration_number})
+                    <CheckCircle2 className="w-4 h-4" /> {doctor.is_demo ? 'Academic demo account' : `BMDC Verified (${doctor.medical_registration_number})`}
                   </Badge>
                 )}
               </div>
@@ -154,15 +154,16 @@ export const DoctorProfileDetailPage: React.FC = () => {
                     {doctor.current_workplace}
                   </span>
                 )}
-                <span className="flex items-center gap-1.5">
+                {!doctor.is_demo && <span className="flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-slate-400" />
                   <strong>{doctor.years_of_experience}</strong> years clinical experience
-                </span>
+                </span>}
               </div>
             </div>
           </div>
         </div>
 
+        {doctor.is_demo && <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-2"><p className="font-semibold">Academic demonstration only</p><p>Fees, availability, appointment serials and queues below are simulated. This account is automatically approved for the demo; it is not BMDC verification or confirmation from the doctor. No real consultation is arranged.</p>{doctor.source_url && <a className="underline" href={doctor.source_url} target="_blank" rel="noopener noreferrer">Official hospital profile and real contact information</a>}</div>}
         {/* Qualifications & Biography */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
@@ -172,7 +173,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                 {doctor.biography ||
-                  `${doctor.full_name} is a highly experienced ${doctor.specializations.map((s) => s.name).join(', ') || 'medical specialist'} practicing in private chambers with over ${doctor.years_of_experience} years of expertise. Dedicated to patient-centric care and accurate diagnosis.`}
+                  'No biography has been provided.'}
               </p>
 
               {doctor.qualifications && doctor.qualifications.length > 0 && (

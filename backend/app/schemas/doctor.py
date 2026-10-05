@@ -42,6 +42,8 @@ class DoctorProfileResponse(BaseModel):
     user_id: UUID
     full_name: str
     profile_photo_url: Optional[str] = None
+    is_demo: bool = False
+    source_url: Optional[str] = None
     medical_registration_number: str
     biography: Optional[str] = None
     current_workplace: Optional[str] = None

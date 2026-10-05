@@ -79,7 +79,8 @@ class DirectoryDoctorResponse(BaseModel):
     contact_source_url: str | None = None
     source_checked_on: date
     is_active: bool
-    booking_status: Literal["contact_hospital"] = "contact_hospital"
+    demo_doctor_id: UUID | None = None
+    booking_status: Literal["contact_hospital", "demo_only"] = "contact_hospital"
     model_config = ConfigDict(from_attributes=True)
 
 

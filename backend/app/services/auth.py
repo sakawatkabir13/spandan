@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import SpandanException
 from app.core.security import (
     create_access_token,
@@ -158,7 +159,8 @@ class AuthService:
             user = await db.scalar(select(User).where(User.id == user.id).with_for_update().execution_options(populate_existing=True))
         if not user or not verify_password(password, user.password_hash):
             return None
-        if not user.is_active:
+        demo = await db.scalar(select(DoctorProfile.is_demo).where(DoctorProfile.user_id == user.id))
+        if not user.is_active or (demo and not settings.DEMO_MODE):
             raise SpandanException(
                 code="ACCOUNT_INACTIVE",
                 message="Your account has been deactivated or suspended.",
@@ -202,7 +204,7 @@ class AuthService:
         user = await user_repo.get_by_id_with_profiles(db, user_id)
         if user and payload.get("ver", 0) != user.token_version:
             raise SpandanException(code="INVALID_CREDENTIALS", message="Session has expired. Please sign in again.", status_code=401)
-        if not user or not user.is_active:
+        if not user or not user.is_active or (user.doctor_profile and user.doctor_profile.is_demo and not settings.DEMO_MODE):
             raise SpandanException(
                 code="ACCOUNT_INACTIVE",
                 message="User not found or account inactive.",

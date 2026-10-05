@@ -17,17 +17,17 @@ from tests.test_workflows import admin, register
 async def test_directory_import_is_idempotent_and_not_booking_inventory(client, db_session):
     rows = load_dataset()
     assert {row.division for row in rows} == DIVISIONS
-    assert len(rows) == 22
-    assert (await import_rows(db_session, rows))["added"] == 22
+    assert len(rows) >= 44
+    assert (await import_rows(db_session, rows))["added"] == len(rows)
     await db_session.commit()
-    assert await import_rows(db_session, rows) == {"added": 0, "updated": 0, "unchanged": 22}
+    assert await import_rows(db_session, rows) == {"added": 0, "updated": 0, "unchanged": len(rows)}
     await db_session.commit()
     for model in (User, DoctorProfile, Chamber, Schedule):
         assert await db_session.scalar(select(func.count()).select_from(model)) == 0
     page = (await client.get("/api/v1/directory/doctors?limit=12")).json()["data"]
-    assert page["total"] == 22 and len(page["items"]) == 12
+    assert page["total"] == len(rows) and len(page["items"]) == 12
     second = (await client.get("/api/v1/directory/doctors?skip=12&limit=12")).json()["data"]
-    assert len(second["items"]) == 10
+    assert len(second["items"]) == min(12, len(rows) - 12)
     assert not {r["id"] for r in page["items"]} & {r["id"] for r in second["items"]}
     assert page["items"][0]["booking_status"] == "contact_hospital"
     assert "medical_registration_number" not in page["items"][0]
@@ -80,13 +80,13 @@ async def test_admin_moderation_is_audited_and_survives_reimport(client, db_sess
     headers = await admin(client, db_session)
     assert (
         len((await client.get("/api/v1/directory/admin/doctors", headers=headers)).json()["data"])
-        == 22
+        == len(rows)
     )
     response = await client.patch(path, headers=headers, json={"is_active": False})
     assert response.status_code == 200
     assert not response.json()["data"]["is_active"]
     assert (await client.get(f"/api/v1/directory/doctors/{listing.id}")).status_code == 404
-    assert (await client.get("/api/v1/directory/doctors")).json()["data"]["total"] == 21
+    assert (await client.get("/api/v1/directory/doctors")).json()["data"]["total"] == len(rows) - 1
     assert await db_session.scalar(
         select(AuditLog).where(AuditLog.action == "directory.visibility_changed")
     )

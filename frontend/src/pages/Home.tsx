@@ -122,7 +122,7 @@ export const Home: React.FC = () => {
           </div>
           <h3 className="font-bold text-lg text-slate-900 mb-2">AI Symptom Triage</h3>
           <p className="text-sm text-slate-600 leading-relaxed">
-            Not sure whether to see a Neurologist or an ENT specialist? Enter your symptoms into our Groq Llama-powered screening engine to get precise recommendations and ER alerts.
+            Not sure whether to see a Neurologist or an ENT specialist? Enter your symptoms into our AI-assisted screening using openai/gpt-oss-120b to explore specialist categories and emergency alerts. It cannot diagnose you.
           </p>
         </div>
 
@@ -130,9 +130,9 @@ export const Home: React.FC = () => {
           <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-5 shadow-sm">
             <ShieldCheck className="w-6 h-6" />
           </div>
-          <h3 className="font-bold text-lg text-slate-900 mb-2">BMDC Verified Doctors</h3>
+          <h3 className="font-bold text-lg text-slate-900 mb-2">Doctor Profiles & Credentials</h3>
           <p className="text-sm text-slate-600 leading-relaxed">
-            Every participating physician undergoes rigorous verification against their Bangladesh Medical & Dental Council (BMDC) registration number and hospital credentials.
+            Browse hospital-sourced profiles and their published qualifications. Academic demo accounts are clearly labelled; their schedules and fees are simulated.
           </p>
         </div>
       </section>

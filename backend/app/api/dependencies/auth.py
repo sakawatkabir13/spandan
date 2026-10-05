@@ -5,6 +5,7 @@ from fastapi import Depends, Header, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import SpandanException
 from app.core.security import decode_token
 from app.db.session import get_db
@@ -73,7 +74,7 @@ async def get_current_user(
 async def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    if not current_user.is_active:
+    if not current_user.is_active or (current_user.doctor_profile and current_user.doctor_profile.is_demo and not settings.DEMO_MODE):
         raise SpandanException(
             code="ACCOUNT_INACTIVE",
             message="Your account has been deactivated or suspended.",

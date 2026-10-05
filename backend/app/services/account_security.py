@@ -63,7 +63,7 @@ def validate_mfa(user, code, allow_pending=False):
 
 async def issue_action(db, user, purpose):
     channel = "sms" if purpose == "phone" else "email"
-    configured = bool(settings.TWILIO_ACCOUNT_SID) if channel == "sms" else bool(settings.SMTP_HOST)
+    configured = bool(settings.TWILIO_ACCOUNT_SID) if channel == "sms" else settings.email_enabled
     if not configured:
         raise SpandanException(
             "DELIVERY_UNAVAILABLE",

@@ -1,5 +1,5 @@
 import json
-from typing import List, Union
+from typing import List, Literal, Union
 
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     APP_ENV: str = "development"
+    DEMO_MODE: bool = False
     APP_NAME: str = "Spandan"
     APP_VERSION: str = "1.0.0"
     APP_TIMEZONE: str = "Asia/Dhaka"
@@ -57,6 +58,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = "community.cuetinsights@gmail.com"
     SMTP_STARTTLS: bool = True
+    SMTP_SSL: bool = False
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_FROM: str = ""
@@ -65,6 +67,7 @@ class Settings(BaseSettings):
     S3_ENDPOINT_URL: str = ""
     S3_REGION: str = "ap-south-1"
     S3_PUBLIC_URL: str = ""
+    STRIPE_MODE: Literal["test"] = "test"
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
     PAYMENT_CURRENCY: str = "bdt"
@@ -80,8 +83,23 @@ class Settings(BaseSettings):
             return value
         return json.loads(value) if isinstance(value, str) else []
 
+    @property
+    def email_enabled(self) -> bool:
+        if self.SMTP_HOST.lower() == "smtp.gmail.com" and not (self.SMTP_USERNAME and self.SMTP_PASSWORD):
+            return False
+        return bool(self.SMTP_HOST and (not self.SMTP_USERNAME or self.SMTP_PASSWORD)
+                    and (self.SMTP_STARTTLS or self.SMTP_SSL))
+
+    @property
+    def online_payments_enabled(self) -> bool:
+        return bool(self.STRIPE_SECRET_KEY and self.STRIPE_WEBHOOK_SECRET)
+
     @model_validator(mode="after")
     def validate_production_settings(self):
+        if self.STRIPE_SECRET_KEY and not self.STRIPE_SECRET_KEY.startswith(("sk_test_", "rk_test_")):
+            raise ValueError("Only Stripe test keys are allowed; live payments are disabled")
+        if self.SMTP_SSL and self.SMTP_STARTTLS:
+            raise ValueError("Choose SMTP_SSL or SMTP_STARTTLS, not both")
         if self.APP_ENV.lower() != "production":
             return self
         placeholder_markers = ("replace-with", "change-me", "your_")

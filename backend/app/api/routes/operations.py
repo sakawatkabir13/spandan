@@ -70,7 +70,7 @@ async def system_status(user=Depends(require_roles(UserRole.ADMINISTRATOR)), db=
             "ai_fallbacks_24h": fallback,
             "delivery_jobs_overdue": overdue,
             "stale_active_queues": stale,
-            "external_delivery_enabled": bool(settings.SMTP_HOST or settings.TWILIO_ACCOUNT_SID),
+            "external_delivery_enabled": bool(settings.email_enabled or settings.TWILIO_ACCOUNT_SID),
             "offsite_backups_configured": bool(settings.S3_BACKUP_BUCKET),
         },
     )
@@ -83,11 +83,13 @@ async def capabilities():
     return create_success_response(
         "Service capabilities.",
         {
-            "email": bool(settings.SMTP_HOST),
+            "demo_mode": settings.DEMO_MODE,
+            "payment_mode": settings.STRIPE_MODE,
+            "email": settings.email_enabled,
             "sms": bool(
                 settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN and settings.TWILIO_FROM
             ),
-            "online_payments": bool(settings.STRIPE_SECRET_KEY and settings.STRIPE_WEBHOOK_SECRET),
+            "online_payments": settings.online_payments_enabled,
             "video": bool(settings.VIDEO_BASE_URL),
             "operator": settings.OPERATOR_NAME,
             "contact": settings.OPERATOR_EMAIL,

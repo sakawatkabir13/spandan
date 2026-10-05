@@ -30,6 +30,7 @@ services:
         condition: service_healthy
     environment:
       APP_ENV: production
+      DEMO_MODE: ${DEMO_MODE:-false}
       APP_NAME: Spandan
       APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Dhaka}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -61,9 +62,11 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-community.cuetinsights@gmail.com}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      SMTP_SSL: ${SMTP_SSL:-false}
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
       TWILIO_FROM: ${TWILIO_FROM:-}
+      STRIPE_MODE: test
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       PAYMENT_CURRENCY: ${PAYMENT_CURRENCY:-bdt}

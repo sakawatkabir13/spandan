@@ -37,7 +37,7 @@ class MfaRequest(BaseModel):
 async def forgot_password(request: RecoveryRequest, db=Depends(get_db)):
     from app.core.config import settings
 
-    if not settings.SMTP_HOST:
+    if not settings.email_enabled:
         raise SpandanException(
             "DELIVERY_UNAVAILABLE",
             "Password recovery delivery is not configured. Contact support.",

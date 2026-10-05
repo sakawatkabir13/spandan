@@ -10,7 +10,7 @@ from app.models.operations import Notification
 async def notify(db, user, subject, message, key: Optional[str] = None, scheduled_at=None):
     """Queue minimal operational messages without symptom or clinical details."""
     channels = ["in_app"]
-    if settings.SMTP_HOST and user.is_email_verified:
+    if settings.email_enabled and user.is_email_verified and not user.email.endswith((".invalid", "@demo.spandan.example.com")):
         channels.append("email")
     if settings.TWILIO_ACCOUNT_SID and user.is_phone_verified:
         channels.append("sms")

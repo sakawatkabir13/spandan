@@ -6,6 +6,7 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.models.doctor import (
     DoctorProfile,
     DoctorVerificationStatus,
@@ -53,6 +54,9 @@ class DoctorRepository(BaseRepository[DoctorProfile]):
             .options(selectinload(DoctorProfile.qualifications), selectinload(DoctorProfile.specializations))
             .where(DoctorProfile.verification_status == status, DoctorProfile.user.has(User.is_active.is_(True)))
         )
+
+        if not settings.DEMO_MODE:
+            stmt = stmt.where(DoctorProfile.is_demo.is_(False))
 
         if specialization_id:
             stmt = stmt.join(DoctorProfile.specializations).where(Specialization.id == specialization_id)

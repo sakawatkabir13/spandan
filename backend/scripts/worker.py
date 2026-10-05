@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import smtplib
+import ssl
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from zoneinfo import ZoneInfo
@@ -14,6 +15,7 @@ from app.core.config import settings
 from app.core.time import session_time
 from app.db.session import async_session_maker
 from app.models.appointment import Appointment, AppointmentStatus
+from app.models.doctor import DoctorProfile
 from app.models.operations import AccountAction, Notification
 from app.models.recommendation import SpecialistRecommendation
 from app.models.schedule import Schedule, ScheduleStatus
@@ -29,9 +31,14 @@ def send_email(user, notification):
     message["To"] = user.email
     message["Subject"] = notification.subject
     message.set_content(notification.message)
-    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as smtp:
+    if not settings.email_enabled or user.email.endswith((".invalid", "@demo.spandan.example.com")):
+        raise ValueError("Email delivery is unavailable for this recipient")
+    context = ssl.create_default_context()
+    connection = (smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15, context=context)
+                  if settings.SMTP_SSL else smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15))
+    with connection as smtp:
         if settings.SMTP_STARTTLS:
-            smtp.starttls()
+            smtp.starttls(context=context)
         if settings.SMTP_USERNAME:
             smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
         smtp.send_message(message)
@@ -44,6 +51,9 @@ async def run():
             text("SELECT pg_try_advisory_xact_lock(984322)")
         ):
             return
+        if settings.DEMO_MODE:
+            from scripts.seed_demo_directory import ensure_demo_sessions
+            await ensure_demo_sessions(db)
         appointments = await db.scalars(
             select(Appointment)
             .join(Schedule, Schedule.id == Appointment.schedule_id)
@@ -65,12 +75,13 @@ async def run():
             if now <= start <= now + timedelta(hours=24):
                 profile = await db.get(PatientProfile, appointment.patient_id)
                 user = await db.get(User, profile.user_id)
+                doctor = await db.get(DoctorProfile, appointment.doctor_id)
                 if user.is_active:
                     await notify(
                         db,
                         user,
-                        "Appointment reminder",
-                        f"Your consultation is on {schedule.schedule_date}, serial {appointment.serial_number}. Please check your queue before travelling.",
+                        "Demo appointment reminder" if doctor.is_demo else "Appointment reminder",
+                        (f"Academic demo session: {schedule.schedule_date}, serial {appointment.serial_number}. No real consultation is arranged." if doctor.is_demo else f"Your consultation is on {schedule.schedule_date}, serial {appointment.serial_number}. Please check your queue before travelling."),
                         f"reminder:{appointment.id}",
                     )
         await db.execute(
@@ -149,7 +160,7 @@ async def run():
                 await db.commit()
                 continue
             configured = (
-                bool(settings.SMTP_HOST)
+                settings.email_enabled
                 if notification.channel == "email"
                 else bool(settings.TWILIO_ACCOUNT_SID)
             )

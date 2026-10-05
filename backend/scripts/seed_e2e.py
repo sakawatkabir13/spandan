@@ -28,6 +28,9 @@ async def main():
                 )
             )
         await import_rows(db, load_dataset())
+        if settings.DEMO_MODE:
+            from scripts.seed_demo_directory import seed_demo_accounts
+            await seed_demo_accounts(db, load_dataset(), {})
         await db.commit()
 
 

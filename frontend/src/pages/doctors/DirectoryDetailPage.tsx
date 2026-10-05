@@ -34,6 +34,7 @@ export function DirectoryDetailPage() {
         <div><dt className="font-semibold">{t('Consultation fee')}</dt><dd>{t('Confirm current fees directly with the hospital.')}</dd></div>
       </dl>
       <div className="flex flex-wrap gap-3">{doctor.appointment_phone && <a className="btn-primary" href={`tel:${doctor.appointment_phone}`}>{t('Call hospital')}: {doctor.appointment_phone}</a>}<a className="btn-secondary" href={doctor.contact_source_url || doctor.source_url} target="_blank" rel="noopener noreferrer">{t('Visit hospital website')}</a></div>
+      {doctor.booking_status === 'demo_only' && doctor.demo_doctor_id && <div className="rounded-xl bg-spandan-50 p-4 space-y-3"><p>{t('This profile has an academic demo account with simulated fees and availability. It does not book a real hospital visit.')}</p><Link className="btn-primary" to={`/doctors/${doctor.demo_doctor_id}`}>{t('Book demo appointment')}</Link></div>}
       <SourceLink doctor={doctor} />
       <p className="text-sm text-slate-500">{t('To request a correction or removal, contact')} <a className="underline" href="mailto:community.cuetinsights@gmail.com">community.cuetinsights@gmail.com</a>.</p>
     </article>}

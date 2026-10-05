@@ -31,6 +31,11 @@ async def get_doctor_chambers(
     only_active: bool = Query(True),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.core.config import settings
+    from app.services.doctor import doctor_service
+    profile = await doctor_service.get_doctor_profile(db, doctor_id)
+    if profile.is_demo and not settings.DEMO_MODE:
+        return create_success_response(message="Demo availability disabled.", data=[])
     chambers = await chamber_service.get_doctor_chambers(db, doctor_id, only_active=only_active)
     return create_success_response(message="Chambers fetched successfully.", data=chambers)
 

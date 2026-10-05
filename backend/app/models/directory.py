@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import Boolean, Column, Date, DateTime, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.db.base import Base, utcnow
@@ -11,6 +11,7 @@ from app.db.base import Base, utcnow
 class DirectoryDoctor(Base):
     __tablename__ = "directory_doctors"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    demo_doctor_id = Column(UUID(as_uuid=True), ForeignKey("doctor_profiles.id", ondelete="SET NULL"), unique=True, nullable=True)
     listing_key = Column(String(160), unique=True, nullable=False)
     full_name = Column(String(200), nullable=False, index=True)
     native_name = Column(String(200), nullable=True)

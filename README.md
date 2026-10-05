@@ -368,7 +368,7 @@ docker compose down
 
 A healthchecked Postgres ensures Alembic migrations only run after the DB is ready.
 
-For production, create a private `.env.production` from `.env.production.example` and configure the database, JWT/MFA keys, operator email, public URL, and Groq key. Never use demo credentials in production. The existing VPS uses a private, ignored `docker-compose.vps.yml` to preserve its database/upload volumes and bind the frontend to `127.0.0.1:8082` behind host Nginx. Back it up separately; a fresh clone does not contain this machine-specific file. The `ops/release.sh`, rollback and maintenance scripts require this overlay on that VPS.
+For production, create a private `.env.production` from `.env.production.example` and configure the database, JWT/MFA keys, operator email, public URL, and Groq key. Keep academic demonstration explicitly separated using `DEMO_MODE`; all demo credentials are private random values. The existing VPS uses a private, ignored `docker-compose.vps.yml` to preserve its database/upload volumes and bind the frontend to `127.0.0.1:8082` behind host Nginx. Back it up separately; a fresh clone does not contain this machine-specific file. The `ops/release.sh`, rollback and maintenance scripts require this overlay on that VPS.
 
 Run `sh ops/release.sh` for tagged builds, encrypted snapshots, migrations, readiness verification, and rollback on release failure. With prebuilt images tagged to the current Git SHA, use `SKIP_BUILD=true sh ops/release.sh`. `sh ops/rollback.sh` restores the preceding production runtime without downgrading data. Preserve `.runtime/backup.key` separately: losing it makes encrypted snapshots unrecoverable.
 
@@ -394,7 +394,7 @@ Queue tracking uses aggregate SSE events with a 15-second polling fallback. Sess
 
 - In-app confirmations, queue alerts, cancellation notifications, and reminders; configurable SMTP email and Twilio SMS delivery.
 - Atomic rescheduling, cancellation waitlists, staff walk-in intake, and family/dependent bookings.
-- Cash payments, receipts, and refunds; configurable Stripe checkout and signed payment webhooks.
+- Cash payments, receipts and refunds; Stripe **test-only** checkout and signed webhooks; an explicitly labelled simulator for academic demo appointments.
 - Expiring password recovery and contact verification, authenticator MFA, and security audit events.
 - Doctor availability calendars, holiday closures, chamber/session editing, and recurring-series editing.
 - Installable patient PWA with a generic offline page; patient and API data are never cached offline.
@@ -402,7 +402,7 @@ Queue tracking uses aggregate SSE events with a 15-second polling fallback. Sess
 - Bengali labels for core patient flows, mobile layouts, and keyboard/accessibility improvements.
 - Chamber analytics, operator status, health-data retention, and privacy export/deletion requests.
 
-Email recovery/verification, SMS, online payments, video consultations, and off-site storage require provider credentials. They remain disabled until configured. Approved doctors must publish real future sessions before patients can book.
+Email recovery/verification, SMS, online payments, video consultations, and off-site storage require provider credentials. They remain disabled until configured. Real services require confirmed future availability. Academic demo slots are explicitly simulated.
 
 Have an idea? [Open a feature request](https://github.com/sakawatkabir13/spandan/issues/new?template=feature_request.yml).
 
@@ -462,6 +462,16 @@ Made with 💚 in 🇧🇩 Bangladesh by the [Spandan team](#-contributors)
 
 ### Public doctor directory
 
-Find Doctors opens a reviewed public hospital directory with an initial 22 listings covering all eight Bangladesh divisions. Each listing retains its official hospital source and review date. These entries are independent of registered doctors: no accounts, BMDC verification, fees, appointment inventory, or live availability are generated from scraped facts. Contact the hospital to confirm appointments. Administrators can hide or publish entries from Account & Chamber Tools → directory.
+Find Doctors opens a reviewed public hospital directory with an initial 44 listings covering all eight Bangladesh divisions. Each listing retains its official hospital source and review date. Hospital facts remain separate from academic demo bookings. Contact the hospital to confirm real fees, availability and appointments. The directory covers all 15 AI specialist categories and additional departments. Administrators can hide or publish entries from Account & Chamber Tools → directory.
 
 After migrations, import the reviewed dataset with `python -m scripts.import_directory` in the backend, or `docker compose exec backend python -m scripts.import_directory` in development. In production: `docker compose --env-file .env.production -f docker-compose.prod.yml exec -T backend python -m scripts.import_directory`. Imports are transactional and repeatable, update reviewed facts, and preserve administrator visibility decisions. Review the official sources before updating `backend/data/bangladesh_doctors.json`; HTTPS sources are restricted to approved hospital domains. Unknown details remain unset. Never treat published hours as confirmed Spandan booking slots.
+
+### Academic demo accounts and payments
+
+Set `DEMO_MODE=true` explicitly to enable demo profiles. After migrations, run `python -m scripts.seed_demo_directory --credentials-file /private/demo-doctors.json` from the backend. This creates active automatically approved accounts for visible hospital listings, using synthetic reserved-domain emails, random passwords and `DEMO-` identifiers. Approval is for academic demonstration only and never represents BMDC verification or doctor ownership. No messages are sent to the real doctors. Keep the credentials file outside public uploads, mode 600, and out of Git. Re-runs preserve existing credentials and moderation; they add missing sessions without reopening edited or cancelled sessions. The maintenance worker replenishes seven days of simulated slots. Turning `DEMO_MODE=false` hides demo discovery and disables demo logins, bookings and payment simulation.
+
+Demo fees are 500 BDT with 12 simulated appointment places per session. They are not published hospital fees. Directory cards link to **Book demo appointment**; sourced qualifications and hospital contact links remain visible. The payment simulator supports success/decline, receipts and staff refunds without taking card details or contacting Stripe. Receipts retain the provider and test/demo status.
+
+Stripe is restricted to `sk_test_` / `rk_test_` keys; live keys and live webhook events are rejected. Add `STRIPE_SECRET_KEY` and the test endpoint's `STRIPE_WEBHOOK_SECRET` privately. The webhook URL is `https://spandan.cuetinsights.dev/api/v1/payments/webhook`; subscribe to `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `refund.updated`. Use Stripe's test payment methods only. Without these credentials, the simulator works but hosted Stripe checkout remains disabled.
+
+Google SMTP uses `smtp.gmail.com`, port 587, STARTTLS, and `community.cuetinsights@gmail.com` for username/from. Add the Gmail app password as `SMTP_PASSWORD` in the VPS's private `.env.production`. Email delivery remains disabled until all required credentials exist. After changing credentials, recreate the backend: `RELEASE_TAG=$(cat .runtime/current-release) docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml -f docker-compose.vps.yml up -d --no-deps backend`. Never commit app passwords or payment secrets.

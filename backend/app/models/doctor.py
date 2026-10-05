@@ -25,6 +25,8 @@ class DoctorProfile(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    is_demo = Column(Boolean, nullable=False, default=False, server_default="false")
+    source_url = Column(String(1000), nullable=True)
     full_name = Column(String, nullable=False, index=True)
     profile_photo_url = Column(String, nullable=True)
     medical_registration_number = Column(String, unique=True, index=True, nullable=False)

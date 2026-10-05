@@ -71,6 +71,8 @@ export interface Qualification {
 }
 
 export interface DoctorProfile {
+  is_demo?: boolean;
+  source_url?: string | null;
   id: string;
   user_id: string;
   full_name: string;
@@ -229,5 +231,6 @@ export interface DirectoryDoctor {
   contact_source_url: string | null;
   source_checked_on: string;
   is_active: boolean;
-  booking_status: 'contact_hospital';
+  demo_doctor_id?: string | null;
+  booking_status: 'contact_hospital' | 'demo_only';
 }

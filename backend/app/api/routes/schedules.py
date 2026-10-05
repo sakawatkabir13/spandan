@@ -75,6 +75,11 @@ async def get_doctor_schedules(
     from_date: Optional[date] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.core.config import settings
+    from app.services.doctor import doctor_service
+    profile = await doctor_service.get_doctor_profile(db, doctor_id)
+    if profile.is_demo and not settings.DEMO_MODE:
+        return create_success_response(message="Demo availability disabled.", data=[])
     schedules = await schedule_service.get_doctor_schedules(db, doctor_id, from_date=from_date)
     return create_success_response(message="Schedules fetched successfully.", data=schedules)
 

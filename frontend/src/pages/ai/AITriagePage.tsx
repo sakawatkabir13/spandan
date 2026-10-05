@@ -88,7 +88,7 @@ export const AITriagePage: React.FC = () => {
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-xl">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-spandan-500/20 text-spandan-300 text-xs font-semibold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" /> Groq Llama Powered Triage
+                <Sparkles className="w-3.5 h-3.5" /> GPT-OSS AI-Assisted Triage
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">AI Medical Symptom Checker</h1>
               <p className="text-sm text-slate-300 leading-relaxed">

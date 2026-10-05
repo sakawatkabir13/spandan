@@ -212,7 +212,7 @@ async def test_cash_receipts_refunds_and_signed_payment_mismatch(client, db_sess
     await db_session.refresh(payment)
     assert payment.status == "refunded"
     monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", "test-webhook-secret")
-    payment.status, payment.provider_reference = "pending", "cs_test_expected"
+    payment.status, payment.provider_reference, payment.provider = "pending", "cs_test_expected", "stripe"
     await db_session.commit()
     event = {
         "type": "checkout.session.completed",
