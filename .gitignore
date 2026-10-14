@@ -50,6 +50,6 @@ uploads/
 *.swo
 .DS_Store
 
-# Private machine-specific production overlay (keep locally and on the VPS).
-docker-compose.vps.yml
+# Optional private local overrides must not be committed.
 docker-compose.override.yml
+docker-compose.vps.yml

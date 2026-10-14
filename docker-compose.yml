@@ -1,14 +1,16 @@
+# Local development with source hot reload; no accounts are created automatically.
+name: spandan-dev
+
 services:
   db:
     image: postgres:16-alpine
-    container_name: spandan_db
     restart: always
     environment:
       POSTGRES_USER: spandan
       POSTGRES_PASSWORD: spandan
       POSTGRES_DB: spandan
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -22,12 +24,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: development
-    container_name: spandan_backend
     restart: always
     depends_on:
       db:
         condition: service_healthy
+    env_file: .env
     environment:
+      ENABLE_DOCS: ${ENABLE_DOCS:-true}
       APP_ENV: ${APP_ENV:-development}
       APP_NAME: Spandan
       APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Dhaka}
@@ -47,28 +50,27 @@ services:
       UPLOAD_DIR: uploads
       MAX_UPLOAD_SIZE_MB: 5
       EMERGENCY_CONTACT_NUMBER: "${EMERGENCY_CONTACT_NUMBER:-999}"
-      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      SEED_DEMO_DATA: "false"
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./backend:/app
       - backend_uploads:/app/uploads
     command: >
-      bash -c "alembic upgrade head && if [ \"$$SEED_DEMO_DATA\" = \"true\" ]; then python -m scripts.seed; fi && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+      bash -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       target: development
-    container_name: spandan_frontend
     restart: always
     depends_on:
       - backend
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules

@@ -10,11 +10,10 @@ From this directory, with a local PostgreSQL database available:
 uv sync --frozen --extra dev
 export DATABASE_URL=postgresql+asyncpg://spandan:spandan@localhost:5432/spandan
 uv run alembic upgrade head
-uv run python -m scripts.seed
 uv run uvicorn app.main:app --reload
 ```
 
-Alternatively, create a virtual environment, install `requirements.lock`, then install the project with `pip install --no-deps -e .`. The seed creates demo accounts and should only run in development.
+Alternatively, create a virtual environment, install `requirements.lock`, then install the project with `pip install --no-deps -e .`. Accounts are created through verified registration or private operator provisioning. Local startup does not seed accounts.
 
 ## Checks
 

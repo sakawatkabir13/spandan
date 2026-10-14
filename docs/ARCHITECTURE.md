@@ -521,7 +521,7 @@ For local development, the same topology is defined in [`docker-compose.yml`](..
 | File uploads        | `MAX_UPLOAD_SIZE_MB` + server-side MIME validation (planned hardening)    |
 | Secrets             | `.env` is git-ignored; example lives in `.env.example`                    |
 
-See [`SECURITY.md`](../SECURITY.md) for the coordinated vulnerability disclosure policy.
+Report suspected vulnerabilities privately to community.cuetinsights@gmail.com.
 
 ---
 

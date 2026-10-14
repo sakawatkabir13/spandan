@@ -73,7 +73,11 @@ jobs:
     needs: [backend, frontend, postgres]
     steps:
       - uses: actions/checkout@v4
-      - run: docker compose --env-file .env.production.example -f docker-compose.prod.yml config --quiet
+      - name: Validate development and production configuration
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+          docker compose --env-file .env.production.example -f docker-compose.prod.yml config --quiet
       - run: docker build --target production -t spandan-backend:ci backend
       - run: docker build --target production -t spandan-frontend:ci frontend
       - name: Scan production image archives

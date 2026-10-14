@@ -10,7 +10,7 @@ test -f .env.production
 release_sha="$(git rev-parse --short=12 HEAD)"
 previous_tag="$(cat .runtime/current-release 2>/dev/null || true)"
 export RELEASE_TAG="$release_sha"
-compose() { docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml -f docker-compose.vps.yml "$@"; }
+compose() { docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml "$@"; }
 compose config --quiet
 if [ "${SKIP_BUILD:-false}" = "true" ]; then
     docker image inspect "spandan-backend:$release_sha" "spandan-frontend:$release_sha" >/dev/null
@@ -19,7 +19,7 @@ else
 fi
 python3 ops/backup.py
 if compose up -d --wait --wait-timeout 150; then
-    if python3 -c 'import json,urllib.request; r=urllib.request.urlopen("http://127.0.0.1:8082/health/ready",timeout=10); assert json.load(r)["data"]["status"] == "OK"'; then
+    if compose exec -T frontend wget -qO- http://127.0.0.1:8080/health/ready | python3 -c 'import json,sys; assert json.load(sys.stdin)["data"]["status"] == "OK"'; then
         printf '%s\n' "$previous_tag" > .runtime/previous-release
         printf '%s\n' "$release_sha" > .runtime/current-release
         echo "Production release $release_sha is healthy."

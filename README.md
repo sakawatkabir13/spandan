@@ -1,489 +1,182 @@
-<div align="center">
+# Spandan
 
-# 🩺 Spandan
+AI-assisted doctor appointment booking and private chamber management for patients, doctors, assistants, and administrators.
 
-### AI-Assisted Appointment Booking & Private Chamber Management System — verified doctors, multi-chamber scheduling, real-time queues, and safety-first AI triage for Bangladesh.
+[Open Spandan](https://spandan.cuetinsights.dev) · [Report an issue](https://github.com/sakawatkabir13/spandan/issues) · [Architecture](docs/ARCHITECTURE.md)
 
-[![Live](https://img.shields.io/badge/Live-spandan.cuetinsights.dev-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://spandan.cuetinsights.dev)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](./LICENSE)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![Groq](https://img.shields.io/badge/Groq-GPT--OSS%20120B-FF6B35?style=for-the-badge)](https://groq.com)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](./docker-compose.yml)
+## Features
 
-<br />
+- **Patient accounts:** email OTP registration, password recovery, profile completion, medical history, and private medical reports.
+- **Appointments:** doctor discovery, chamber and specialty filters, online and staff bookings, dependent bookings, rescheduling, cancellation, and waitlists.
+- **Live queues:** serial allocation, check-in and consultation states, real-time updates, and polling fallback.
+- **Doctor and chamber management:** professional profiles, multiple chambers, recurring schedules, closures, delegated assistant permissions, and analytics.
+- **Medical records:** encrypted PDF/image uploads, patient-controlled sharing, and appointment-based doctor access. Assistants and administrators cannot access clinical records.
+- **Billing:** hosted Stripe checkout, payment reconciliation, receipts, cash recording, and authorized refunds. Stripe uses sandbox credentials and test cards; transactions do not move real funds.
+- **Account controls:** role-based access, authenticator MFA, audit events, session revocation, and personal-data export/deletion workflows.
+- **AI assistance:** specialty recommendations using Groq `openai/gpt-oss-120b`, emergency screening, and a local fallback when the provider is unavailable.
 
-Spandan is a production-style healthcare platform that brings **patients, doctors, assistants, and admins** into one secure system — with AI-assisted symptom triage, role-based dashboards, and an end-to-end queue engine with no double-booking.
+AI recommendations provide general information and do not diagnose or prescribe.
 
-[🚀 Live Demo](https://spandan.cuetinsights.dev) · [🐛 Report Bug](https://github.com/sakawatkabir13/spandan/issues) · [✨ Request Feature](https://github.com/sakawatkabir13/spandan/issues)
+## Technology
 
-</div>
-
----
-
-## ✨ Why Spandan?
-
-Booking a private chamber consultation in Bangladesh today means phone calls, paper registers, and zero visibility into queue times. **Spandan** digitises the entire flow — from **verified doctor profiles** and **multi-chamber scheduling** to a **real-time queue engine** with atomic serial allocation — and adds a **safety-first AI triage** layer that suggests which specialty to consult based on symptoms.
-
-> ⚠️ **Spandan's AI is informational only.** It does **not** diagnose, prescribe, or replace professional medical advice. In an emergency, call **999** (Bangladesh).
-
----
-
-## 📑 Table of Contents
-
-1. [✨ Features](#-features)
-2. [🖼️ Screenshots](#-screenshots)
-3. [🧱 Tech Stack](#-tech-stack)
-4. [🏗️ Architecture](#-architecture)
-5. [🚀 Quick Start](#-quick-start)
-6. [🔑 Demo Credentials](#-demo-credentials)
-7. [🧪 Available Scripts](#-available-scripts)
-8. [📁 Project Structure](#-project-structure)
-9. [🔐 Environment Variables](#-environment-variables)
-10. [🐳 Docker Deployment](#-docker-deployment)
-11. [🛡️ Medical Disclaimer](#-medical-disclaimer)
-12. [🗺️ Roadmap](#-roadmap)
-13. [🤝 Contributing](#-contributing)
-14. [🛡️ Security](#-security)
-15. [📄 License](#-license)
-16. [🙏 Acknowledgements](#-acknowledgements)
-17. [👥 Contributors](#-contributors)
-
----
-
-## ✨ Features
-
-### 🧑‍⚕️ For Patients
-- 🩺 Browse a verified directory of doctors with specialty and chamber filters
-- 📅 Book appointments online with **live queue serial** allocation
-- ✅ Confirm or cancel appointments and view doctor profile photos
-- 🧾 Full **appointment history** with per-visit status tracking
-- 🤖 **AI symptom triage** that recommends which specialty to consult
-- 📱 Fully responsive across desktop, tablet, and mobile
-
-### 👨‍⚕️ For Doctors
-- 🧑‍💼 Dedicated **Doctor Dashboard** for schedules, chambers, and patient queue
-- ➕ Create individual or recurring schedules with overlap protection
-- 📈 Track today's queue, active serials, and consultation history
-- 🏥 Manage **multiple chambers** with independent schedules and fees
-
-### 🧑‍💼 For Assistants
-- 🎟️ Manage the **walk-in (offline) queue** for the assigned doctor/chamber
-- ➡️ Mark serials as *served*, *skipped*, or *delayed* in real time
-- 🔄 Move patients through check-in, waiting, skipped, in-room, completed, and no-show states
-
-### 🛡️ For Admins
-- 🧭 Centralized **Admin Dashboard** for moderation
-- ✅ Approve or reject doctor verification
-- 👀 Manage user access and inspect protected audit logs
-
-### 🔐 Platform-Wide
-- 🔑 Email + password auth with **JWT access + refresh tokens** and **Argon2/Bcrypt** hashing
-- 🔁 Logout and password changes revoke existing access and refresh tokens
-- 🏭 Separate development and production Docker stacks with health checks
-- 🧪 Backend tests with **Pytest** + frontend tests with **Vitest** + **Testing Library**
-- 🎨 Theming and design tokens with **Tailwind CSS**
-- 🔒 Strict Postgres constraints and row-level locking (`SELECT FOR UPDATE`) — zero double-booking
-
----
-
-## 🖼️ Screenshots
-
-> Placeholders ship as `.svg` files in `docs/screenshots/`. Replace with real `.png` (1280×720) screenshots after the first deploy.
-
-| Landing | Marketplace |
-| :---: | :---: |
-| ![Landing](./docs/screenshots/landing.svg) | ![Marketplace](./docs/screenshots/marketplace.svg) |
-
-| Doctor Dashboard | Admin Dashboard |
-| :---: | :---: |
-| ![Doctor Dashboard](./docs/screenshots/farmer-dashboard.svg) | ![Admin Dashboard](./docs/screenshots/admin-dashboard.svg) |
-
-| AI Triage | Live Queue |
-| :---: | :---: |
-| ![AI Triage](./docs/screenshots/ai-triage.svg) | ![Live Queue](./docs/screenshots/queue-engine.svg) |
-
----
-
-## 🏗️ Architecture
-
-```mermaid
-flowchart LR
-    Browser["🖥️ React 18 + Vite + TS<br/>TanStack Query · Zod<br/>Tailwind · Lucide"]
-    API["⚙️ FastAPI (Async)<br/>SQLAlchemy 2 · Alembic<br/>Pydantic v2 · JWT<br/>Argon2 / Bcrypt"]
-    DB[("🗄️ PostgreSQL 16<br/>row-level locking<br/>SELECT FOR UPDATE")]
-    AI["🤖 AI Triage (3-tier)<br/>1. Local emergency keywords<br/>2. Groq GPT-OSS 120B<br/>3. Safe local fallback"]
-
-    Browser <-->|"HTTPS / REST / JWT"| API
-    API <-->|"asyncpg"| DB
-    API --> AI
-    AI --> API
-```
-
-**Key flows**
-- **Auth & RBAC** — JWT access + refresh tokens; Argon2/Bcrypt hashing; four role-based portals (Patient, Doctor, Assistant, Admin).
-- **Queue engine** — PostgreSQL row-level locking (`SELECT FOR UPDATE`) guarantees **no double-booking** between online and walk-in serials.
-- **AI triage** — local emergency keyword screening → Groq `openai/gpt-oss-120b` strict structured output → safe fallback when the provider is unavailable.
-- **Doctor verification** — doctors only become publicly visible after admin approval (`PENDING → APPROVED / REJECTED / SUSPENDED`).
-
-For auth flow, queue locking, state machines, the ERD, and deployment topology, see [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
-
----
-
-## 🧱 Tech Stack
-
-### Frontend
-| Layer | Technology |
+| Component | Stack |
 | --- | --- |
-| Framework | **React 18** |
-| Language | **TypeScript 5** |
-| Build tool | **Vite 8** |
-| Styling | **Tailwind CSS 3** |
-| Routing | **React Router 7** |
-| Forms | **React Hook Form** + **Zod** resolvers |
-| Data fetching | **TanStack Query v5** |
-| Icons | **Lucide React** |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query |
+| Backend | FastAPI, Python, SQLAlchemy, Pydantic |
+| Database | PostgreSQL 16, Alembic migrations |
+| Delivery | Docker Compose, Nginx, GitHub Actions |
+| Checks | Pytest, Ruff, Vitest, TypeScript, Playwright |
 
-### Backend
-| Layer | Technology |
+## Configuration files
+
+There are two independent stacks. Do not combine their Compose files.
+
+| File | Purpose |
 | --- | --- |
-| Runtime | **Python 3.11+** |
-| Framework | **FastAPI 0.110** (async) |
-| ORM | **SQLAlchemy 2** with `asyncpg` |
-| Validation | **Pydantic v2** |
-| Migrations | **Alembic** |
-| Auth | **JWT** (access + refresh) · **Argon2 / Bcrypt** hashing |
-| AI | **Groq API** — `openai/gpt-oss-120b` |
+| `docker-compose.yml` | Local development with source hot reload |
+| `docker-compose.prod.yml` | Production images, private services, health checks, bounded logs, and persistent storage |
+| `.env.example` | Tracked template for local `.env` |
+| `.env.production.example` | Tracked template for private production `.env.production` |
 
-### Database & Tooling
-| Layer | Technology |
-| --- | --- |
-| Database | **PostgreSQL 16** (row-level locking) |
-| Backend tests | **Pytest** + `pytest-asyncio` + `aiosqlite` |
-| Backend lint | **Ruff** |
-| Frontend tests | **Vitest** + **Testing Library** + **jsdom** |
-| Frontend checks | **TypeScript (`tsc --noEmit`)** |
-| Orchestration | **Docker Compose** (db + backend + frontend) |
+Actual environment files contain deployment settings and secrets and are excluded from Git. Example files contain placeholders only. A separate VPS overlay is no longer required: production defaults preserve the existing `spandan_pgdata` and `spandan_backend_uploads` volumes and expose the frontend at `127.0.0.1:8082` for the host HTTPS proxy.
 
----
+## Local development
 
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Docker** & Docker Compose **v2.x+**
-- `make` *(optional, for convenience targets)*
-
-### 1. Clone the repository
+Install Docker with Compose v2 or newer, then:
 
 ```bash
 git clone https://github.com/sakawatkabir13/spandan.git
 cd spandan
-```
-
-### 2. Configure environment
-
-```bash
 cp .env.example .env
-```
-
-> 🔑 *(Optional)* add a real `GROQ_API_KEY` to `.env` to enable live AI triage. Without it, Spandan automatically runs the **local fallback engine**.
-
-### 3. Launch the stack
-
-```bash
 docker compose up --build -d
 ```
 
-On first boot the backend will:
+- Frontend: <http://localhost:5173>
+- API documentation: <http://localhost:8000/docs>
+- Readiness: <http://localhost:8000/health/ready>
 
-1. Wait for Postgres to be healthy.
-2. Run `alembic upgrade head` (idempotent migrations).
-3. Execute `python -m scripts.seed` (idempotent seed data).
-4. Start Uvicorn with hot-reload.
+Startup applies database migrations. It does not automatically create accounts or publish shared login credentials. Register through the application; email verification requires SMTP configuration. The development database uses local-only credentials and a separate Compose project from production.
 
-### 4. Open the apps
+Configure `SMTP_PASSWORD` privately to use Gmail delivery. Use the 16-character Gmail app password without spaces. Configure `GROQ_API_KEY` to enable hosted AI assistance; without it, local recommendations remain available.
 
-| App | URL |
-| --- | --- |
-| 🖥️ Frontend | http://localhost:5173 |
-| 📘 Swagger UI | http://localhost:8000/docs |
-| 📕 ReDoc | http://localhost:8000/redoc |
-| 🌐 Production | https://spandan.cuetinsights.dev |
-
----
-
-## 🔑 Demo Credentials
-
-> All seed accounts use the password **`Password123!`**. **Change these immediately in any non-local environment.**
-
-| Role | Email | Status | Notes |
-| --- | --- | --- | --- |
-| Administrator | `admin@spandan.com.bd` | Active | Full system access & verification review |
-| Doctor (Approved) | `dr.rahman@spandan.com.bd` | Approved | Cardiologist & General Medicine (Dhanmondi) |
-| Doctor (Approved) | `dr.farhana@spandan.com.bd` | Approved | Pediatrician (Uttara) |
-| Doctor (Pending) | `dr.tariq@spandan.com.bd` | Pending | Awaiting admin verification |
-| Assistant | `assistant.karim@spandan.com.bd` | Active | Assigned to Dr. Rahman |
-| Assistant | `assistant.nasrin@spandan.com.bd` | Active | Assigned to Dr. Farhana |
-| Patient | `patient.jamal@gmail.com` | Active | Sample patient with bookings |
-| Patient | `patient.sadia@gmail.com` | Active | Sample patient with AI recommendation logs |
-
----
-
-## 🧪 Available Scripts
-
-### Docker commands (development)
-
-| Command | Description |
-|---|---|
-| `docker compose up --build -d` | Build and start the development services |
-| `docker compose down` | Stop the development services |
-| `docker compose restart` | Restart the development services |
-| `docker compose logs -f` | Follow service logs |
-| `docker compose exec backend alembic upgrade head` | Apply database migrations |
-| `docker compose exec backend python -m scripts.seed` | Load development demo data |
-| `docker compose exec backend python -m scripts.import_directory` | Import reviewed public hospital listings |
-| `docker compose exec backend pytest -q` | Run backend tests |
-
-
-### Backend (inside `backend/`)
+Local environment settings are passed to the backend. Only the frontend API URL is passed to Vite; server credentials must never use the `VITE_` prefix.
 
 ```bash
-ruff check .              # lint
-pytest -v                 # run tests
-alembic upgrade head      # apply migrations
-uvicorn app.main:app --reload
-```
-
-### Frontend (inside `frontend/`)
-
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite dev server with HMR |
-| `npm run build` | Production build to `dist/` |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run TypeScript validation without emitting files |
-| `npm run test` | Run the Vitest suite once |
-
----
-
-## 📁 Project Structure
-
-```
-spandan/
-├── backend/                 # FastAPI service
-│   ├── app/
-│   │   ├── api/             # routes & dependencies
-│   │   │   ├── dependencies/
-│   │   │   └── routes/
-│   │   ├── core/            # config, security, exceptions
-│   │   ├── db/              # SQLAlchemy base, async session
-│   │   ├── models/          # ORM models
-│   │   ├── repositories/    # data-access layer
-│   │   ├── schemas/         # Pydantic DTOs
-│   │   └── services/        # business logic
-│   ├── alembic/             # migrations
-│   ├── scripts/             # seed data
-│   ├── tests/               # Pytest suite
-│   ├── Dockerfile
-│   └── pyproject.toml
-├── frontend/                # Vite + React + TS
-│   ├── src/
-│   │   ├── api/             # axios client
-│   │   ├── components/      # common, layout
-│   │   ├── context/         # AuthContext
-│   │   ├── pages/           # auth, dashboard, doctors, ai
-│   │   └── types/
-│   ├── tests/               # Vitest setup
-│   ├── Dockerfile
-│   └── package.json
-├── .github/
-│   ├── ISSUE_TEMPLATE/      # bug_report.yml, feature_request.yml
-│   ├── workflows/ci.yml     # GitHub Actions CI
-│   └── PULL_REQUEST_TEMPLATE.md
-├── docker-compose.yml
-├── .env.example
-├── LICENSE
-├── SECURITY.md
-├── docs/
-│   ├── ARCHITECTURE.md
-│   └── screenshots/
-└── README.md
-```
-
----
-
-## 🔐 Environment Variables
-
-All variables are loaded from `.env` via `pydantic-settings`. Server-side secrets **must never** be committed.
-
-| Variable | Required | Description |
-| --- | :---: | --- |
-| `APP_ENV` | ✅ | `development` \| `staging` \| `production` |
-| `APP_NAME` | ✅ | Service name (default: `Spandan`) |
-| `APP_TIMEZONE` | ✅ | IANA timezone (default: `Asia/Dhaka`) |
-| `DATABASE_URL` | ✅ | e.g. `postgresql+asyncpg://spandan:spandan@db:5432/spandan` |
-| `JWT_SECRET_KEY` | ✅ | Long random string — **rotate in production** |
-| `JWT_ALGORITHM` | ✅ | `HS256` (default) |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | ✅ | Default `30` |
-| `REFRESH_TOKEN_EXPIRE_DAYS` | ✅ | Default `7` |
-| `FRONTEND_URL` | ✅ | e.g. `https://spandan.cuetinsights.dev` |
-| `BACKEND_URL` | ✅ | e.g. `https://api.spandan.cuetinsights.dev` |
-| `CORS_ORIGINS` | ✅ | Comma-separated allow-list |
-| `GROQ_API_KEY` | ⚙️ | Enables live AI triage; fallback engine runs without it |
-| `GROQ_MODEL` | ⚙️ | Default `openai/gpt-oss-120b` |
-| `UPLOAD_DIR` | ✅ | Server-side upload path (default `uploads`) |
-| `MAX_UPLOAD_SIZE_MB` | ✅ | Default `5` |
-| `EMERGENCY_CONTACT_NUMBER` | ✅ | Default `999` |
-
----
-
-## 🐳 Docker Deployment
-
-`docker-compose.yml` runs the development/demo stack. The three Compose files have separate purposes: development, portable production (`docker-compose.prod.yml`), and the existing VPS overlay (`docker-compose.vps.yml`). The private, ignored VPS overlay preserves its named database/upload volumes, bounds logs, and binds the frontend behind host Nginx; deployment scripts combine it with the production file. Keep this overlay locally on the deployment machine. Only development and portable production Compose files are tracked in Git. `docker-compose.prod.yml` builds non-root production images, serves the frontend through Nginx, keeps the backend and database private, disables demo data and API documentation, and adds health checks and request limits.
-
-```bash
-# Build & start everything
-docker compose up --build -d
-
-# Follow logs
-docker compose logs -f
-
-# Run the backend test suite inside the container
-docker compose exec backend pytest -v
-
-# Apply migrations or re-seed
+docker compose logs -f backend
 docker compose exec backend alembic upgrade head
-docker compose exec backend python -m scripts.seed
-
-# Tear down
 docker compose down
 ```
 
-A healthchecked Postgres ensures Alembic migrations only run after the DB is ready.
+`down` preserves named volumes. Do not use `down -v` unless you intend to erase the stack's stored data.
 
-For production, create a private `.env.production` from `.env.production.example` and configure the database, JWT/MFA keys, operator email, public URL, and Groq key. Keep academic demonstration explicitly separated using `DEMO_MODE`; all demo credentials are private random values. The existing VPS uses a private, ignored `docker-compose.vps.yml` to preserve its database/upload volumes and bind the frontend to `127.0.0.1:8082` behind host Nginx. Back it up separately; a fresh clone does not contain this machine-specific file. The `ops/release.sh`, rollback and maintenance scripts require this overlay on that VPS.
+## Production deployment
 
-Run `sh ops/release.sh` for tagged builds, encrypted snapshots, migrations, readiness verification, and rollback on release failure. With prebuilt images tagged to the current Git SHA, use `SKIP_BUILD=true sh ops/release.sh`. `sh ops/rollback.sh` restores the preceding production runtime without downgrading data. Preserve `.runtime/backup.key` separately: losing it makes encrypted snapshots unrecoverable.
+Create the private production configuration:
 
-Schedule `sh ops/run-backup.sh` daily, `sh ops/maintenance.sh` every minute, and `python3 ops/monitor.py` every five minutes. Backup restoration uses `python3 ops/backup.py --restore-archive PATH --destination PRIVATE_DIRECTORY`, followed by `pg_restore` into an isolated database before restoring live data. Configure `S3_BACKUP_BUCKET` and credentials for ongoing off-site copies. Profile photos support optional S3 storage; multi-host deployments require it or another shared store.
+```bash
+cp .env.production.example .env.production
+chmod 600 .env.production
+```
 
-### Completed workflows
+Set the database credentials and matching URL, independent JWT and medical-record encryption secrets, Groq key, public URLs, allowed hosts, and integration credentials. Placeholder values must be replaced before startup.
 
-Patients can discover approved doctors, view profile photos, book, confirm, or cancel appointments, edit their profile, and track live queue progress. Doctors can manage chambers, create individual or recurring schedules, control bookings, cancel sessions, edit professional details, and create assistants with individual permissions. Assistants can book registered patients and operate assigned queues. Administrators can verify doctors, control user access, and inspect recent audited activity.
+Production binds the frontend to `HTTP_LISTEN_HOST=127.0.0.1` and `HTTP_LISTEN_PORT=8082`. Configure the host Nginx HTTPS proxy to forward to that address. The backend and database have no published host ports. A different network topology can override the listen address and port explicitly.
 
-Queue tracking uses aggregate SSE events with a 15-second polling fallback. Session times use `APP_TIMEZONE` (`Asia/Dhaka` by default). Sessions cannot overlap for the same doctor, booked session times cannot be changed without first cancelling bookings, and cancelled serial numbers are not reused.
+For a first deployment:
 
----
+```bash
+docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml config --quiet
+docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml up --build -d --wait
+```
 
-## 🛡️ Medical Disclaimer
+For subsequent releases:
 
-1. **Not a medical device.** Spandan's AI Specialist Recommendation tool provides **general guidance only** based on user-entered symptoms. It **never** diagnoses illnesses or prescribes medication.
-2. **Emergencies.** If you or someone near you is experiencing life-threatening symptoms (e.g., severe chest pain, difficulty breathing, stroke symptoms, severe bleeding), call **999** immediately or visit the nearest hospital emergency department.
-3. **Consult a licensed professional.** Always verify recommendations with a registered doctor before making health decisions.
+```bash
+sh ops/release.sh
+```
 
----
+The release script builds images tagged with the Git revision, creates an encrypted snapshot, applies migrations, verifies readiness, and restores the previous runtime if verification fails. It requires the existing stack to be running for the pre-release backup. `sh ops/rollback.sh` restores the preceding recorded runtime without downgrading the database.
 
-## 🗺️ Extended workflows
+Existing installations can use the production file alone. Retire any old `docker-compose.vps.yml` and remove it from custom commands or scheduled jobs after updating the repository. Preserve the production environment, existing database/upload volume names, backup key, and medical-record encryption key.
 
-- In-app confirmations, queue alerts, cancellation notifications, and reminders; configurable SMTP email and Twilio SMS delivery.
-- Atomic rescheduling, cancellation waitlists, staff walk-in intake, and family/dependent bookings.
-- Cash payments, receipts and refunds; Stripe **test-only** checkout and signed webhooks; a payment simulator for configured test appointments.
-- Expiring password recovery and contact verification, authenticator MFA, and security audit events.
-- Doctor availability calendars, holiday closures, chamber/session editing, and recurring-series editing.
-- Installable patient PWA with a generic offline page; patient and API data are never cached offline.
-- Configurable video consultation rooms and authorized FHIR R4 Appointment export.
-- Bengali labels for core patient flows, mobile layouts, and keyboard/accessibility improvements.
-- Chamber analytics, operator status, health-data retention, and privacy export/deletion requests.
+### Email and payments
 
-Email recovery/verification, SMS, online payments, video consultations, and off-site storage require provider credentials. They remain disabled until configured. Real services require confirmed future availability. Academic demo slots are explicitly simulated.
+Gmail uses `smtp.gmail.com`, port `587`, STARTTLS, and `community.cuetinsights@gmail.com` as the configured sender. Store the app password only in `SMTP_PASSWORD`.
 
-Have an idea? [Open a feature request](https://github.com/sakawatkabir13/spandan/issues/new?template=feature_request.yml).
+For hosted checkout, configure `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` from the same Stripe sandbox. The webhook endpoint is:
 
----
+```text
+https://spandan.cuetinsights.dev/api/v1/payments/webhook
+```
 
-## 🤝 Contributing
+Subscribe to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, and `refund.updated`. Checkout status is verified with Stripe; return URL parameters cannot mark a payment as paid. Live Stripe keys are rejected.
 
-Open a focused pull request with relevant validation. CI checks backend/frontend tests, PostgreSQL migrations and concurrency, browser workflows, dependencies, and production containers.
+After changing backend environment values, recreate the backend using the current release tag:
 
----
+```bash
+RELEASE_TAG=$(cat .runtime/current-release) docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml up -d --no-deps backend
+```
 
-## 🛡️ Security
+### Logs and maintenance
 
-Found a vulnerability? Please review [`SECURITY.md`](./SECURITY.md) and report it privately — **do not** open a public issue. We follow coordinated disclosure and will credit reporters with consent.
+```bash
+docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml logs --tail=100 -f backend
+sh ops/run-backup.sh
+sh ops/maintenance.sh
+python3 ops/monitor.py
+```
 
----
+Run backups daily, maintenance every minute, and monitoring every five minutes using the server scheduler. The scripts use the stable production container names. Container logs rotate at 10 MB with three retained files per service.
 
-## 📄 License
+Encrypted snapshots are stored in `.runtime/backups`. Keep `.runtime/backup.key` separately and test recovery into an isolated database before a live restore. Optional off-site delivery requires configured storage credentials.
 
-This project is licensed under the **MIT License** — see the [`LICENSE`](./LICENSE) file for details.
+## Patient medical records
 
-© 2026 **Mohammad Sakawat Kabir**
+Patients can review medical history and upload PDF, JPEG, PNG, or WebP reports, up to 5 MB per file, 25 files, and 100 MB per patient. Sharing starts disabled. Eligible booked doctors can access shared records; cancelled/absent appointments and sessions older than 30 days are excluded. Account-holder records are never shared through a dependent's appointment.
 
----
+Files are encrypted under `UPLOAD_DIR/.medical`, excluded from public file serving, and checked for authorization on every download. Preserve `MFA_ENCRYPTION_KEY`, or the fallback `JWT_SECRET_KEY` used when records were created: replacing the encryption secret without migrating existing files makes those files unreadable. Encrypted upload snapshots include these reports.
 
-## 🙏 Acknowledgements
+## Development checks
 
-- [FastAPI](https://fastapi.tiangolo.com/) & [SQLAlchemy](https://www.sqlalchemy.org/) — rock-solid async backend foundations.
-- [Groq](https://groq.com/) — hosted inference for the configured GPT-OSS model.
-- [TanStack](https://tanstack.com/), [Tailwind CSS](https://tailwindcss.com/), and the [Vite](https://vitejs.dev/) team — delightful frontend DX.
-- [PostgreSQL](https://www.postgresql.org/) — the world's most advanced open-source database.
-- The Bangladeshi doctor and patient community — this project exists to serve you.
+Backend, from `backend/`:
 
----
+```bash
+uv sync --frozen --extra dev
+uv run ruff check .
+uv run pytest -q
+```
 
-## 👥 Contributors
+Frontend, from `frontend/`:
 
-<!-- ALL-CONTRIBUTORS-LIST:START -->
-| Name | Role / Focus | GitHub |
-| :--- | :--- | :---: |
-| **Mohammad Sakawat Kabir** | Project lead & full-stack | [@sakawatkabir13](https://github.com/sakawatkabir13) |
-| **Abdur Rashid Raj** | Frontend & patient flows | [@Asimpleman420](https://github.com/Asimpleman420) |
-| **Olid Hussan Opu** | Auth, dashboards & admin flows | [@olid-opu](https://github.com/olid-opu) |
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+```bash
+npm ci
+npm run lint
+npm test
+npm run build
+```
 
-Contributions can be proposed through GitHub issues and pull requests.
+PostgreSQL migration/concurrency checks and browser workflows run in CI using isolated test databases. Fixed credentials in automated tests are test fixtures, not published application accounts. See [backend setup](backend/README.md) for PostgreSQL verification.
 
----
+## Repository layout
 
-<div align="center">
+```text
+backend/                    API, models, migrations, scripts, and tests
+frontend/                   Application, browser tests, and Nginx configuration
+ops/                        Release, rollback, backup, and monitoring tools
+docs/ARCHITECTURE.md        Architecture reference
+.github/workflows/ci.yml    Automated checks
+docker-compose.yml         Local development stack
+docker-compose.prod.yml    Production stack
+.env.example               Local configuration template
+.env.production.example    Production configuration template
+```
 
-⭐ **If you find this project useful, please consider giving it a star!** ⭐
+Report suspected vulnerabilities privately to community.cuetinsights@gmail.com. Never include passwords, API keys, patient information, or private environment files in issues or commits.
 
-Made with 💚 in 🇧🇩 Bangladesh by the [Spandan team](#-contributors)
+## Contributors and license
 
-</div>
+- [Mohammad Sakawat Kabir](https://github.com/sakawatkabir13) — project lead and full stack.
+- [Abdur Rashid Raj](https://github.com/Asimpleman420) — frontend and patient flows.
+- [Olid Hussan Opu](https://github.com/olid-opu) — authentication, dashboards, and administrator flows.
 
-### Public doctor directory
-
-Find Doctors opens a reviewed public hospital directory with an initial 44 listings covering all eight Bangladesh divisions. Each listing retains its official hospital source and review date. Hospital facts remain separate from academic demo bookings. Contact the hospital to confirm real fees, availability and appointments. The directory covers all 15 AI specialist categories and additional departments. Administrators can hide or publish entries from Account & Chamber Tools → directory.
-
-After migrations, import the reviewed dataset with `python -m scripts.import_directory` in the backend, or `docker compose exec backend python -m scripts.import_directory` in development. In production: `docker compose --env-file .env.production -f docker-compose.prod.yml exec -T backend python -m scripts.import_directory`. Imports are transactional and repeatable, update reviewed facts, and preserve administrator visibility decisions. Review the official sources before updating `backend/data/bangladesh_doctors.json`; HTTPS sources are restricted to approved hospital domains. Unknown details remain unset. Never treat published hours as confirmed Spandan booking slots.
-
-### Academic demo accounts and payments
-
-Set `DEMO_MODE=true` explicitly to enable demo profiles. After migrations, run `python -m scripts.seed_demo_directory --credentials-file /private/demo-doctors.json` from the backend. This creates active automatically approved accounts for visible hospital listings, using synthetic reserved-domain emails, random passwords and `DEMO-` identifiers. Approval is for academic demonstration only and never represents BMDC verification or doctor ownership. No messages are sent to the real doctors. Keep the credentials file outside public uploads, mode 600, and out of Git. Re-runs preserve existing credentials and moderation; they add missing sessions without reopening edited or cancelled sessions. The maintenance worker replenishes seven days of simulated slots. Turning `DEMO_MODE=false` hides demo discovery and disables demo logins, bookings and payment simulation.
-
-Demo fees are 500 BDT with 12 simulated appointment places per session. They are not published hospital fees. Directory cards link to **Book appointment**; sourced qualifications and hospital contact links remain visible. The payment simulator supports success/decline, receipts and staff refunds without taking card details or contacting Stripe. Receipts retain the provider and test/demo status.
-
-Stripe is restricted to `sk_test_` / `rk_test_` keys; live keys and live webhook events are rejected. Add `STRIPE_SECRET_KEY` and the test endpoint's `STRIPE_WEBHOOK_SECRET` privately. The webhook URL is `https://spandan.cuetinsights.dev/api/v1/payments/webhook`; subscribe to `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `refund.updated`. Use Stripe's test payment methods only. Without these credentials, the simulator works but hosted Stripe checkout remains disabled.
-
-New patient, doctor and assistant login accounts require a six-digit email OTP before creation. Request a code with `POST /api/v1/auth/registration-code`, then include `email_otp` in the registration request. No account or authentication token is issued before verification; the email is marked verified on successful registration. Codes expire after ten minutes, are single use, allow five incorrect attempts, and can be resent after sixty seconds (at most six per hour per email). Only keyed code hashes are stored. A delivery failure returns a clear error instead of accepting an unverified registration. Email verification proves access to that mailbox; it does not establish a person's identity or practitioner credentials. Existing accounts and explicitly provisioned academic doctor fixtures are preserved.
-
-The **Forgot your password?** link on Sign In opens email recovery. Request a six-digit code with `POST /api/v1/auth/forgot-password`; submit it as `token`, with `purpose=reset` and a new password of at least twelve characters, to `POST /api/v1/auth/account-action`. Successful reset revokes all existing access and refresh sessions. Responses to recovery requests do not disclose whether an account exists. Security codes are sent immediately through SMTP, never returned in the API or patient notifications. Production Nginx also limits security requests by client address.
-
-Google SMTP uses `smtp.gmail.com`, port 587, STARTTLS, and `community.cuetinsights@gmail.com` for username/from. Add the Gmail app password as `SMTP_PASSWORD` in the VPS's private `.env.production`. Email delivery remains disabled until all required credentials exist. After changing credentials, recreate the backend: `RELEASE_TAG=$(cat .runtime/current-release) docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml -f docker-compose.vps.yml up -d --no-deps backend`. Never commit app passwords or payment secrets.
-
-### Patient medical profiles and payments
-
-Patient registration keeps its existing fields and email verification. New patients are then guided to complete their personal details, review medical history, and optionally upload reports. PDF, JPEG, PNG, and WebP files are limited to 5 MB each, 25 reports, and 100 MB per patient. Sharing starts disabled. A patient can enable access for the doctor of an eligible appointment and disable it at any time. Access is unavailable for cancelled/absent visits, sessions older than 30 days, and appointments for dependents. Assistants and administrators do not receive clinical-record access.
-
-Report files are encrypted in `UPLOAD_DIR/.medical`, and the public uploads handler rejects hidden paths. Downloads require authentication and a fresh ownership/appointment/sharing check. Medical histories and downloads are audited without recording their contents. Files are included in existing encrypted upload snapshots; preserve `MFA_ENCRYPTION_KEY` (or the fallback `JWT_SECRET_KEY`) privately alongside recovery procedures. Changing that key without re-encrypting existing reports makes them unreadable. Histories and report metadata are included in personal-data exports; binary files can be downloaded individually. Patient anonymization removes the active medical history and report files. Backup retention applies separately.
-
-Billing now lists appointments, supports hosted Stripe checkout and declined-card retries, reconciles provider-confirmed payments after checkout returns, and provides receipts and staff refunds. Status changes are verified against Stripe, not trusted from return-URL parameters. Stripe continues to use test credentials and test cards; the regular interface does not expose payment-simulator controls. Browser tests use an isolated hosted-provider fixture installed only by the guarded test server; production never installs these routes.
+Licensed under the [MIT License](LICENSE).
