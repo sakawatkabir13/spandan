@@ -24,18 +24,18 @@
 
   /* Custom Input Styling */
   .input-field {
-    @apply w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/90 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-spandan-500 focus:border-transparent transition duration-200 shadow-sm disabled:bg-slate-100 disabled:cursor-not-allowed;
+    @apply w-full min-w-0 max-w-full min-h-11 px-4 py-2.5 rounded-xl border border-slate-200 bg-white/90 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-spandan-500 focus:border-transparent transition duration-200 shadow-sm disabled:bg-slate-100 disabled:cursor-not-allowed;
   }
 
   /* Button Variants */
   .btn-primary {
-    @apply px-5 py-2.5 rounded-xl bg-gradient-to-r from-spandan-600 to-spandan-500 text-white font-medium shadow-md shadow-spandan-500/25 hover:shadow-lg hover:shadow-spandan-500/35 hover:from-spandan-700 hover:to-spandan-600 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply px-5 py-2.5 rounded-xl bg-gradient-to-r from-spandan-600 to-spandan-500 text-white font-medium shadow-md shadow-spandan-500/25 hover:shadow-lg hover:shadow-spandan-500/35 hover:from-spandan-700 hover:to-spandan-600 active:scale-[0.98] transition-all duration-200 inline-flex min-h-11 max-w-full items-center justify-center gap-2 text-center leading-snug disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-secondary {
-    @apply px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:pointer-events-none;
+    @apply px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all duration-200 inline-flex min-h-11 max-w-full items-center justify-center gap-2 text-center leading-snug shadow-sm disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-danger {
-    @apply px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white font-medium shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/35 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white font-medium shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/35 active:scale-[0.98] transition-all duration-200 inline-flex min-h-11 max-w-full items-center justify-center gap-2 text-center leading-snug disabled:opacity-50 disabled:pointer-events-none;
   }
 }
 
@@ -69,4 +69,37 @@
   body.printing-receipt .payment-receipt,
   body.printing-receipt .payment-receipt * { visibility: visible; }
   body.printing-receipt .payment-receipt { position: absolute; left: 0; top: 0; width: 100%; border: 0; }
+}
+
+/* Shared layout guards: content wraps inside its own card instead of pushing neighbours. */
+@layer base {
+  html { scroll-padding-top: 6rem; }
+  button, a, input, select, textarea, summary { -webkit-tap-highlight-color: transparent; }
+  button, a, summary { touch-action: manipulation; }
+  button:not(:disabled), summary { cursor: pointer; }
+  :where(button, a, summary, input, select, textarea):focus-visible {
+    outline: 3px solid #16a34a;
+    outline-offset: 3px;
+  }
+  :where(input, select, textarea) { min-width: 0; max-width: 100%; }
+  :where(h1, h2, h3, h4, p, dd, label) { overflow-wrap: anywhere; }
+}
+@layer components {
+  .btn-primary > svg, .btn-secondary > svg, .btn-danger > svg { flex-shrink: 0; }
+  .glass-card { min-width: 0; }
+  .skip-link { position: fixed; top: -6rem; left: 1rem; z-index: 100; padding: .75rem 1rem; background: white; color: #166534; border-radius: .75rem; }
+  .skip-link:focus { top: .5rem; }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .field-with-icon { position: relative; }
+  .field-with-icon > svg { position: absolute; left: .875rem; top: .875rem; width: 1rem; height: 1rem; pointer-events: none; color: #64748b; }
+  .field-with-icon > .input-field { padding-left: 2.5rem; }
+}
+@media (max-width: 639px) {
+  .dashboard-content > .space-y-8 { gap: 1.25rem; }
+  input, select, textarea { font-size: 16px; }
+}
+
+@layer base {
+  .grid > * { min-width: 0; }
+  .flex > svg { flex-shrink: 0; }
 }

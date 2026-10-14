@@ -67,6 +67,7 @@ const bengali: Record<string, string> = {
   'Previous': 'আগের', 'Next': 'পরের', 'Book Appointment': 'অ্যাপয়েন্টমেন্ট বুক করুন', 'Confirm Booking': 'বুকিং নিশ্চিত করুন',
   'Booking for': 'যার জন্য বুকিং', 'Myself': 'নিজের জন্য', 'Consultation': 'পরামর্শ', 'At the chamber': 'চেম্বারে',
   'Appointment History': 'অ্যাপয়েন্টমেন্টের ইতিহাস', 'Cancel': 'বাতিল', 'Reschedule visit': 'সময় পরিবর্তন',
+  'My appointments': 'আমার অ্যাপয়েন্টমেন্ট', 'Upcoming': 'আসন্ন', 'History': 'ইতিহাস', 'All': 'সব', 'Pay consultation fee': 'পরামর্শ ফি পরিশোধ করুন', 'Resume payment': 'পেমেন্ট চালিয়ে যান', 'View receipt': 'রসিদ দেখুন',
   'Payment & receipt': 'পেমেন্ট ও রসিদ', 'notifications': 'বিজ্ঞপ্তি', 'security': 'নিরাপত্তা', 'privacy': 'গোপনীয়তা',
   'family': 'পরিবার', 'waitlist': 'অপেক্ষার তালিকা', 'billing': 'বিল', 'calendar': 'ক্যালেন্ডার', 'analytics': 'পরিসংখ্যান',
   'Account & Chamber Tools': 'অ্যাকাউন্ট ও চেম্বারের সরঞ্জাম', 'Family members': 'পরিবারের সদস্য', 'Add family member': 'পরিবারের সদস্য যোগ করুন',

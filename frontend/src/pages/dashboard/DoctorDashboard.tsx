@@ -17,6 +17,7 @@ import {
 
 export const DoctorDashboard: React.FC = () => {
   const [loadError, setLoadError] = useState('');
+  const [formError, setFormError] = useState('');
   const { user } = useAuth();
   const [chambers, setChambers] = useState<Chamber[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -76,6 +77,7 @@ export const DoctorDashboard: React.FC = () => {
 
   const handleCreateChamber = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
     setChamSubmitting(true);
     try {
       await apiClient.post('/chambers', {
@@ -93,7 +95,7 @@ export const DoctorDashboard: React.FC = () => {
       setChamArea('');
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Failed to create chamber.');
+      setFormError(err.response?.data?.error?.message || 'Failed to create chamber.');
     } finally {
       setChamSubmitting(false);
     }
@@ -102,9 +104,10 @@ export const DoctorDashboard: React.FC = () => {
   const handleCreateSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!schedChamberId) {
-      alert('Please select a chamber.');
+      setFormError('Please select a chamber.');
       return;
     }
+    setFormError('');
     setSchedSubmitting(true);
     try {
       const basePayload = {
@@ -136,7 +139,7 @@ export const DoctorDashboard: React.FC = () => {
       setLoadError('');
       await fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Failed to create schedule.');
+      setFormError(err.response?.data?.error?.message || 'Failed to create schedule.');
     } finally {
       setSchedSubmitting(false);
     }
@@ -148,7 +151,7 @@ export const DoctorDashboard: React.FC = () => {
         {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
         {scheduleMessage && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-800">{scheduleMessage}</p>}
         {/* Header */}
-        <div className="glass-card p-6 border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="glass-card p-6 border-slate-200 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Doctor Chamber Portal</h1>
             <p className="text-sm text-slate-600">
@@ -158,7 +161,7 @@ export const DoctorDashboard: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={() => setChamberModalOpen(true)}
+              onClick={() => { setFormError(''); setChamberModalOpen(true); }}
               className="btn-secondary py-2 px-4 text-xs font-semibold"
             >
               <Plus className="w-4 h-4" /> Add Chamber
@@ -166,9 +169,10 @@ export const DoctorDashboard: React.FC = () => {
             <button
               onClick={() => {
                 if (chambers.length === 0) {
-                  alert('Please create at least one chamber before adding a schedule.');
+                  setFormError('Create your first chamber to start scheduling consultations.'); setChamberModalOpen(true);
                   return;
                 }
+                setFormError('');
                 setSchedChamberId(chambers[0].id);
                 setScheduleModalOpen(true);
               }}
@@ -182,11 +186,11 @@ export const DoctorDashboard: React.FC = () => {
         {loading ? (
           <LoadingSpinner size="lg" text="Loading your chamber operations..." />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 2xl:grid-cols-3 gap-8">
             {/* Schedules Column */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="2xl:col-span-2 space-y-6">
               <div className="glass-card p-6 border-slate-200 space-y-4">
-                <div className="flex items-center justify-between border-b pb-3">
+                <div className="flex flex-wrap gap-3 items-center justify-between border-b pb-3">
                   <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-spandan-600" /> Active & Upcoming Schedules
                   </h3>
@@ -204,10 +208,10 @@ export const DoctorDashboard: React.FC = () => {
                       return (
                         <div
                           key={sched.id}
-                          className="border border-slate-200 rounded-2xl p-5 bg-white/60 hover:bg-white transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                          className="border border-slate-200 rounded-2xl p-5 bg-white/60 hover:bg-white transition flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4"
                         >
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-2">
+                          <div className="min-w-0 space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="font-bold text-base text-slate-900">
                                 {new Date(sched.schedule_date).toLocaleDateString('en-GB', {
                                   weekday: 'short',
@@ -244,10 +248,10 @@ export const DoctorDashboard: React.FC = () => {
                             )}
                           </div>
 
-                          <div className="flex sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto">
+                          <div className="flex flex-wrap xl:flex-col items-start gap-2 w-full xl:w-auto xl:shrink-0">
                             <Link
                               to={`/dashboard/doctor/queue?schedule_id=${sched.id}`}
-                              className="btn-primary py-2.5 px-5 text-xs font-semibold whitespace-nowrap w-full sm:w-auto text-center"
+                              className="btn-primary py-2.5 px-5 text-sm font-semibold w-full xl:w-auto text-center"
                             >
                               Launch Queue Console
                             </Link>
@@ -268,7 +272,7 @@ export const DoctorDashboard: React.FC = () => {
             {/* Chambers Sidebar */}
             <div className="space-y-6">
               <div className="glass-card p-6 border-slate-200 space-y-4">
-                <div className="flex items-center justify-between border-b pb-3">
+                <div className="flex flex-wrap gap-3 items-center justify-between border-b pb-3">
                   <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-spandan-600" /> My Chambers
                   </h3>
@@ -305,6 +309,7 @@ export const DoctorDashboard: React.FC = () => {
         <Modal isOpen={!!editingSchedule} onClose={() => setEditingSchedule(null)} title="Edit Session">{editingSchedule && <ScheduleEditor schedule={editingSchedule} saved={() => { setEditingSchedule(null); void fetchData(); }} />}</Modal>
         <Modal isOpen={chamberModalOpen} onClose={() => setChamberModalOpen(false)} title="Register New Chamber">
           <form onSubmit={handleCreateChamber} className="space-y-4">
+            {formError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{formError}</p>}
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
                 Chamber / Center Name
@@ -417,6 +422,7 @@ export const DoctorDashboard: React.FC = () => {
         {/* Add Schedule Modal */}
         <Modal isOpen={scheduleModalOpen} onClose={() => setScheduleModalOpen(false)} title="Create New Schedule">
           <form onSubmit={handleCreateSchedule} className="space-y-4">
+            {formError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{formError}</p>}
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Select Chamber</label>
               <select

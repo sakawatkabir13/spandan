@@ -67,12 +67,12 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <MainLayout>
-      <div className="max-w-xl mx-auto py-8">
-        <div className="glass-card p-8 border-slate-200 shadow-xl space-y-6">
+    <MainLayout compact>
+      <div className="max-w-xl mx-auto py-3 sm:py-8">
+        <div className="glass-card p-5 sm:p-8 border-slate-200 shadow-xl space-y-6">
           <div className="text-center space-y-2">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white mx-auto shadow-md shadow-spandan-500/20">
-              <Activity className="w-7 h-7 animate-pulse" />
+              <Activity className="w-7 h-7" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900">{t('Create your Spandan account')}</h1>
             <p className="text-sm text-slate-500">{t('Choose your account type below to get started')}</p>
@@ -86,26 +86,26 @@ export const RegisterPage: React.FC = () => {
                 setTab('patient');
                 setError(null);
               }}
-              className={`py-2.5 px-4 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 ${
+              className={`py-2.5 px-2 sm:px-4 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 ${
                 tab === 'patient'
                   ? 'bg-white text-spandan-800 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <UserIcon className="w-4 h-4" />{t('Patient Account')}</button>
+              <UserIcon className="w-4 h-4 shrink-0" />{t('Patient Account')}</button>
             <button
               type="button"
               onClick={() => {
                 setTab('doctor');
                 setError(null);
               }}
-              className={`py-2.5 px-4 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 ${
+              className={`py-2.5 px-2 sm:px-4 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 ${
                 tab === 'doctor'
                   ? 'bg-white text-spandan-800 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Stethoscope className="w-4 h-4" />{t('Doctor Practitioner')}</button>
+              <Stethoscope className="w-4 h-4 shrink-0" />{t('Doctor Practitioner')}</button>
           </div>
 
           {error && <Alert type="error" title="Registration Error" message={error} onClose={() => setError(null)} />}
@@ -113,7 +113,7 @@ export const RegisterPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Full Name')}</label>
-              <div className="relative">
+              <div className="field-with-icon">
                 <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input aria-label="Full Name"
                   type="text"
@@ -129,10 +129,11 @@ export const RegisterPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Email Address')}</label>
-                <div className="relative">
+                <div className="field-with-icon">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                   <input aria-label="Email Address"
                     type="email"
+                  autoComplete="email"
                     required
                     placeholder="name@gmail.com"
                     value={email}
@@ -144,7 +145,7 @@ export const RegisterPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Phone Number')}</label>
-                <div className="relative">
+                <div className="field-with-icon">
                   <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                   <input aria-label="Phone Number"
                     type="text"
@@ -160,14 +161,14 @@ export const RegisterPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Password')}</label>
-              <div className="relative">
+              <div className="field-with-icon">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input aria-label="Password"
                   type="password"
+                  autoComplete="new-password"
                   required
                   minLength={8}
                   maxLength={128}
-                  autoComplete="new-password"
                   placeholder="At least 8 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -240,7 +241,7 @@ export const RegisterPage: React.FC = () => {
               className="btn-primary w-full py-3 mt-4 font-semibold shadow-md"
             >
               {loading ? t('Creating account...') : t(tab === 'patient' ? 'Register as Patient' : 'Register as Doctor')}
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 shrink-0" />
             </button>
           </form>
 

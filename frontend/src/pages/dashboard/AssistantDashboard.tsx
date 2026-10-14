@@ -59,8 +59,8 @@ export const AssistantDashboard: React.FC = () => {
                   key={sched.id}
                   className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-bold text-slate-900">
                         {new Date(sched.schedule_date).toLocaleDateString('en-GB')}
                       </span>

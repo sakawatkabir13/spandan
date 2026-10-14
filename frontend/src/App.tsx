@@ -21,6 +21,7 @@ import { ProfilePage } from './pages/dashboard/ProfilePage';
 import { LegalPage } from './pages/LegalPage';
 import { AccountActionPage } from './pages/auth/AccountActionPage';
 import { ToolsPage } from './pages/dashboard/ToolsPage';
+import { PaymentsPage } from './pages/dashboard/PaymentsPage';
 import { PatientRecordsPage } from './pages/dashboard/PatientRecordsPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> = ({
@@ -28,6 +29,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> 
   roles,
 }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -38,7 +40,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> 
   }
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location.pathname + location.search + location.hash }} replace />;
   }
 
   if (roles && !roles.includes(user.role)) {
@@ -61,8 +63,23 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> 
 };
 
 const AppRoutes: React.FC = () => {
-  const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    if (!hash) { window.scrollTo(0, 0); return; }
+    let targetId: string;
+    try { targetId = decodeURIComponent(hash.slice(1)); } catch { return; }
+    const scroll = () => {
+      const target = document.getElementById(targetId);
+      if (!target) return false;
+      target.scrollIntoView({ block: 'start' });
+      return true;
+    };
+    if (scroll()) return;
+    const observer = new MutationObserver(() => { if (scroll()) observer.disconnect(); });
+    observer.observe(document.body, { childList: true, subtree: true });
+    const timeout = window.setTimeout(() => observer.disconnect(), 10000);
+    return () => { observer.disconnect(); window.clearTimeout(timeout); };
+  }, [pathname, hash]);
   return (
     <Routes>
       {/* Public Routes */}
@@ -80,6 +97,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/medical-disclaimer" element={<LegalPage document="medical" />} />
 
       {/* Patient Routes */}
+      <Route path="/dashboard/patient/payments" element={<ProtectedRoute roles={['patient']}><PaymentsPage /></ProtectedRoute>} />
       <Route path="/dashboard/:role/tools" element={<ProtectedRoute><ToolsPage /></ProtectedRoute>} />
       <Route path="/dashboard/doctor/patients/:appointmentId" element={<ProtectedRoute roles={['doctor']}><PatientRecordsPage /></ProtectedRoute>} />
       <Route

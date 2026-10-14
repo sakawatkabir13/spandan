@@ -33,7 +33,7 @@ export function AccountActionPage() {
     } catch (error) { setMessage(errorMessage(error)); }
     finally { setBusy(false); }
   };
-  return <MainLayout><section className="glass-card max-w-lg mx-auto p-6 space-y-4">
+  return <MainLayout compact><section className="glass-card max-w-lg mx-auto p-6 space-y-4">
     <h1 className="text-2xl font-bold">{t(recovery ? 'Reset your password' : 'Complete account verification')}</h1>
     <p className="text-slate-600">{t(recovery ? 'We will send a six-digit code from community.cuetinsights@gmail.com to your account email. The code expires in 10 minutes.' : 'Security links expire after 15 minutes.')}</p>
     {message && <p role="status">{message}</p>}

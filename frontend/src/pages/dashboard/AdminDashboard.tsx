@@ -18,6 +18,8 @@ export const AdminDashboard: React.FC = () => {
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [verificationFilter, setVerificationFilter] = useState('all');
 
   // Reject Modal
   const [rejectTarget, setRejectTarget] = useState<DoctorProfile | null>(null);
@@ -77,6 +79,7 @@ export const AdminDashboard: React.FC = () => {
     setRejectNotes('');
   };
 
+  const filteredDoctors = doctors.filter(doctor => (verificationFilter === 'all' || doctor.verification_status === verificationFilter) && `${doctor.full_name} ${doctor.medical_registration_number} ${doctor.current_workplace || ''}`.toLowerCase().includes(search.trim().toLowerCase()));
   const pendingCount = doctors.filter((d) => d.verification_status === 'pending').length;
   const verifiedCount = doctors.filter((d) => !d.is_demo && d.verification_status === 'approved').length;
 
@@ -93,7 +96,7 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-3">
             <div className="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl text-center">
               <span className="text-[11px] font-bold uppercase text-amber-800 block">Pending Audit</span>
               <span className="text-xl font-extrabold text-amber-900">{pendingCount}</span>
@@ -115,15 +118,18 @@ export const AdminDashboard: React.FC = () => {
               <ShieldCheck className="w-5 h-5 text-spandan-600" /> Practitioner Audit Registry
             </h3>
 
+            <div className="grid sm:grid-cols-2 gap-3"><label className="text-sm font-medium">Find a practitioner<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Name, workplace, or registration number" className="input-field mt-1" /></label><label className="text-sm font-medium">Verification status<select value={verificationFilter} onChange={event => setVerificationFilter(event.target.value)} className="input-field mt-1"><option value="all">All statuses</option><option value="pending">Pending review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="suspended">Suspended</option></select></label></div>
+            <p className="text-sm text-slate-500">{filteredDoctors.length} of {doctors.length} practitioners</p>
+            {!filteredDoctors.length && <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-600">No practitioners match these filters.</p>}
             <div className="divide-y divide-slate-100">
-              {doctors.map((doc) => (
-                <div key={doc.id} className="py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
+              {filteredDoctors.map((doc) => (
+                <div key={doc.id} className="py-5 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-spandan-100 text-spandan-800 font-bold text-base flex items-center justify-center flex-shrink-0">
                       <Stethoscope className="w-6 h-6 text-spandan-600" />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h4 className="font-bold text-base text-slate-900">{doc.full_name}</h4>
                         <Badge variant={(doc.verification_status === 'approved') ? 'success' : 'warning'}>
@@ -141,7 +147,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end md:self-center">
+                  <div className="flex items-center gap-2 self-start xl:self-center">
                     {doc.verification_status !== 'approved' ? (
                       <>
                         <button
@@ -182,7 +188,7 @@ export const AdminDashboard: React.FC = () => {
           {auditLogs.length === 0 ? (
             <p className="py-5 text-center text-sm text-slate-500">No audited activity has been recorded yet.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-slate-200" tabIndex={0} role="region" aria-label="Recent system activity table">
               <table className="min-w-full text-left text-sm">
                 <thead className="text-xs uppercase text-slate-500">
                   <tr>

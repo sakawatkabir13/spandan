@@ -87,7 +87,8 @@ test.describe.serial('Full-stack chamber operations', () => {
     await page.getByRole('button', { name: /Cancel/i }).first().click();
     await page.getByLabel('Cancellation reason').fill('Browser workflow test');
     await page.getByRole('dialog').getByRole('button', { name: 'Yes, Cancel Serial' }).click();
-    await expect(page.getByText('CANCELLED', { exact: true }).first()).toBeVisible();
+    await page.getByRole('button', { name: /^History/ }).click();
+    await expect(page.getByText('Cancelled', { exact: true }).first()).toBeVisible();
     await page.goto(`/doctors/${doctorId}`);
     await page.getByRole('button', { name: 'Book Serial', exact: true }).click();
     await page.getByLabel(/^Booking for/).selectOption({ label: 'Browser Child (Child)' });
@@ -113,7 +114,7 @@ test.describe.serial('Full-stack chamber operations', () => {
     await expect(page.getByText('Browser Walk-in').first()).toBeVisible();
     await page.getByRole('button', { name: /Call Next/i }).click();
     await expect(page.getByText('IN CONSULTATION', { exact: true }).first()).toBeVisible();
-    await page.getByRole('link', { name: 'Payment & receipt', exact: true }).last().click();
+    await page.getByRole('link', { name: /Pay consultation fee|Payment & receipt|View receipt/, exact: true }).last().click();
     const appointmentId = new URL(page.url()).searchParams.get('appointment_id')!;
     await page.goto('/dashboard/doctor/tools?tab=billing');
     await page.getByLabel('Choose appointment', { exact: true }).selectOption(appointmentId);

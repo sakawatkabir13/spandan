@@ -19,6 +19,7 @@ import {
 
 export const LiveQueueConsolePage: React.FC = () => {
   const [loadError, setLoadError] = useState('');
+  const [queueMessage, setQueueMessage] = useState('');
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -111,7 +112,7 @@ export const LiveQueueConsolePage: React.FC = () => {
       await apiClient.post(`/schedules/${scheduleId}/queue/increment`);
       await fetchQueueData();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Failed to increment serial.');
+      setLoadError(err.response?.data?.error?.message || 'Failed to increment serial.');
     } finally {
       setUpdatingQueue(false);
     }
@@ -127,9 +128,9 @@ export const LiveQueueConsolePage: React.FC = () => {
         status_message: statusMsg || undefined,
       });
       await fetchQueueData();
-      alert('Queue broadcast updated successfully.');
+      setQueueMessage('Queue broadcast updated successfully.');
     } catch (err: any) {
-      alert('Failed to update queue broadcast.');
+      setLoadError('Failed to update queue broadcast.');
     } finally {
       setUpdatingQueue(false);
     }
@@ -152,7 +153,8 @@ export const LiveQueueConsolePage: React.FC = () => {
       <DashboardLayout>
         <div className="glass-card p-12 text-center space-y-4">
           <Clock className="w-12 h-12 text-slate-400 mx-auto" />
-          <h3 className="font-bold text-lg text-slate-800">No active consultation session selected</h3>
+          {loadError && <p role="alert" className="text-sm text-red-700">{loadError}</p>}
+          <h3 className="font-bold text-lg text-slate-800">No active consultation session selected</h3><Link to={`/dashboard/${user?.role === 'administrator' ? 'admin' : user?.role}`} className="btn-primary">Choose a session</Link>
           <p className="text-sm text-slate-500 max-w-md mx-auto">
             Please select an open schedule from your schedules panel to start controlling the serial numbers.
           </p>
@@ -168,10 +170,11 @@ export const LiveQueueConsolePage: React.FC = () => {
       <div className="space-y-8">
         <p role="status" className="text-sm text-slate-500">{live.connected ? 'Live queue connected' : 'Live connection unavailable; refreshing every 15 seconds'}</p>
         {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
+        {queueMessage && <p role="status" className="rounded-xl bg-spandan-50 p-4 text-sm text-spandan-800">{queueMessage}</p>}
         {/* Header Banner */}
-        <div className="bg-gradient-to-r from-slate-900 via-spandan-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
+        <div className="bg-gradient-to-r from-slate-900 via-spandan-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 border border-slate-800">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 animate-pulse">
                 <Activity className="w-3.5 h-3.5" /> LIVE CHAMBER CONSOLE
               </span>
@@ -187,7 +190,7 @@ export const LiveQueueConsolePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 w-full md:w-auto justify-around">
+          <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 w-full xl:w-auto justify-around flex-wrap">
             <div className="text-center">
               <span className="text-[11px] uppercase tracking-wider text-slate-300 font-semibold block">
                 Running Serial
@@ -217,6 +220,7 @@ export const LiveQueueConsolePage: React.FC = () => {
               </label>
               <input
                 type="number"
+                aria-label="Chamber delay in minutes"
                 min={0}
                 max={300}
                 step={5}
@@ -232,6 +236,7 @@ export const LiveQueueConsolePage: React.FC = () => {
               </label>
               <input
                 type="text"
+                aria-label="Live status broadcast message"
                 placeholder="e.g. Doctor is in chamber; running smoothly or 20 mins delayed due to surgery..."
                 value={statusMsg}
                 onChange={(e) => setStatusMsg(e.target.value)}
@@ -254,15 +259,15 @@ export const LiveQueueConsolePage: React.FC = () => {
 
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-lg font-bold">Book a Patient at the Chamber</h2>
-          <p className="text-sm text-slate-600">Enter the phone number on the patient's registered account. New patients can create an account from the Register page.</p>
+          <p className="text-sm text-slate-600">Register a walk-in patient below, or use an existing patient's account phone number.</p>
           {bookingMessage && <p role="status" className="text-sm text-spandan-800">{bookingMessage}</p>}
-          <form className="grid sm:grid-cols-4 gap-3" onSubmit={async e => { e.preventDefault(); const form = e.currentTarget; setUpdatingQueue(true); try { await apiClient.post('/appointments/intake', { ...Object.fromEntries(new FormData(form)), schedule_id: scheduleId }); form.reset(); setBookingMessage('Walk-in patient registered and booked.'); await fetchQueueData(false); } catch (error) { setBookingMessage(errorMessage(error)); } finally { setUpdatingQueue(false); } }}>
+          <form className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 items-end" onSubmit={async e => { e.preventDefault(); const form = e.currentTarget; setUpdatingQueue(true); try { await apiClient.post('/appointments/intake', { ...Object.fromEntries(new FormData(form)), schedule_id: scheduleId }); form.reset(); setBookingMessage('Walk-in patient registered and booked.'); await fetchQueueData(false); } catch (error) { setBookingMessage(errorMessage(error)); } finally { setUpdatingQueue(false); } }}>
             <label>New patient name<input name="full_name" required minLength={2} className="input-field" /></label>
             <label>Phone number<input name="phone_number" type="tel" required className="input-field" /></label>
             <label>Email (optional)<input name="email" type="email" className="input-field" /></label>
             <button disabled={updatingQueue} className="btn-secondary">Register & book walk-in</button>
           </form>
-          <form onSubmit={bookOffline} className="grid sm:grid-cols-3 gap-3">
+          <form onSubmit={bookOffline} className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 items-end">
             <label className="text-sm">Patient phone<input name="patient_phone" type="tel" required className="input-field" /></label>
             <label className="text-sm">Booking source<select name="booking_source" className="input-field"><option value="walk_in">Walk-in</option><option value="phone">Phone</option><option value="assistant">Assistant</option></select></label>
             <button disabled={updatingQueue || schedule.status !== 'open'} className="btn-primary self-end">Book Patient</button>
@@ -271,7 +276,7 @@ export const LiveQueueConsolePage: React.FC = () => {
 
         {/* Booked Patient Roster */}
         <div className="glass-card p-6 border-slate-200 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex flex-wrap gap-3 items-center justify-between pb-3 border-b border-slate-100">
             <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
               <UserCheck className="w-5 h-5 text-spandan-600" /> Booked Patient Roster ({appointments.length})
             </h3>
@@ -303,7 +308,7 @@ export const LiveQueueConsolePage: React.FC = () => {
                       isCurrent ? 'bg-spandan-50/80 -mx-4 px-4 rounded-2xl border border-spandan-200/80 my-1' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex min-w-0 items-center gap-4">
                       <div
                         className={`w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-base flex-shrink-0 ${
                           isCurrent
@@ -316,8 +321,8 @@ export const LiveQueueConsolePage: React.FC = () => {
                         #{app.serial_number}
                       </div>
 
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2.5">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2.5">
                           <h4 className="font-bold text-sm sm:text-base text-slate-900">
                             {app.attendee_name || app.patient?.full_name || 'Patient Name'}
                           </h4>
@@ -346,8 +351,8 @@ export const LiveQueueConsolePage: React.FC = () => {
                         <p className="text-xs text-slate-500">
                           Booked via {app.booking_source}
                         </p>
-                        <Link className="text-xs underline" to={`/dashboard/${user?.role === 'administrator' ? 'admin' : user?.role}/tools?tab=billing&appointment_id=${app.id}`}>Payment & receipt</Link>
-                        {user?.role === 'doctor' && !['cancelled', 'absent'].includes(status) && <Link className="text-xs text-spandan-700 underline block" to={`/dashboard/doctor/patients/${app.id}`}>Medical history & reports</Link>}
+                        <Link className="inline-flex min-h-10 items-center text-sm font-medium text-spandan-700 underline" to={`/dashboard/${user?.role === 'administrator' ? 'admin' : user?.role}/tools?tab=billing&appointment_id=${app.id}`}>Payment & receipt</Link>
+                        {user?.role === 'doctor' && !['cancelled', 'absent'].includes(status) && <Link className="flex min-h-10 items-center text-sm font-medium text-spandan-700 underline" to={`/dashboard/doctor/patients/${app.id}`}>Medical history & reports</Link>}
                         {app.consultation_mode === 'video' && ['doctor', 'administrator'].includes(user?.role || '') && !['cancelled', 'completed', 'absent'].includes(status) && <button className="btn-secondary text-xs" onClick={async () => {
                           try { const response = await apiClient.get(`/appointments/${app.id}/video`); window.open(response.data.data.url, '_blank', 'noopener,noreferrer'); }
                           catch (error) { setLoadError(errorMessage(error)); }
@@ -362,7 +367,7 @@ export const LiveQueueConsolePage: React.FC = () => {
 
                     {/* Action Buttons */}
                     {status !== 'cancelled' && status !== 'completed' && status !== 'absent' && (
-                      <div className="flex flex-wrap items-center gap-2 self-end sm:self-center">
+                      <div className="flex flex-wrap items-center gap-2 self-start xl:self-center">
                         {['booked', 'confirmed'].includes(status) && (
                           <button
                             onClick={() => handleUpdateStatus(app.id, 'checked_in')}

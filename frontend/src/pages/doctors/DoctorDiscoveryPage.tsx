@@ -23,6 +23,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
   const bookable = queryParams.get('view') === 'booking';
   const initialQuery = queryParams.get('query') || '';
 
+  const [searchRevision, setSearchRevision] = useState(0);
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [specializations, setSpecializations] = useState<Specialization[]>([]);
   const [loadError, setLoadError] = useState('');
@@ -48,7 +49,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
     if (bookable) fetchSpecs();
   }, [bookable]);
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -60,26 +61,29 @@ export const DoctorDiscoveryPage: React.FC = () => {
       params.append('skip', String(page * 20));
       params.append('limit', '21');
 
-      const resp = await apiClient.get<ApiResponse<DoctorProfile[]>>(`/doctors?${params.toString()}`);
+      const resp = await apiClient.get<ApiResponse<DoctorProfile[]>>(`/doctors?${params.toString()}`, { signal });
       if (resp.data.success) {
         setHasMore(resp.data.data.length > 20);
         setDoctors(resp.data.data.slice(0, 20));
         setLoadError('');
       }
     } catch (err) {
+      if (signal?.aborted) return;
       setLoadError('Unable to load doctor information. Please refresh to try again.');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (bookable) fetchDoctors();
-  }, [selectedSpec, page, bookable]);
+    const controller = new AbortController();
+    if (bookable) void fetchDoctors(controller.signal);
+    return () => controller.abort();
+  }, [selectedSpec, page, bookable, searchRevision]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (page) setPage(0); else fetchDoctors();
+    setPage(0); setSearchRevision(value => value + 1);
   };
 
   return (
@@ -95,11 +99,12 @@ export const DoctorDiscoveryPage: React.FC = () => {
             Search by specialty, doctor name, or hospital to book instant online serials and track live chambers.
           </p>
 
-          <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-3">
-            <div className="md:col-span-6 relative">
+          <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="sm:col-span-2 xl:col-span-2 field-with-icon">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
               <input
                 type="text"
+                aria-label="Search doctor name or hospital"
                 placeholder="Doctor name, qualification, or hospital..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -107,9 +112,10 @@ export const DoctorDiscoveryPage: React.FC = () => {
               />
             </div>
 
-            <div className="md:col-span-4 relative">
+            <div className="field-with-icon">
               <Stethoscope className="w-4 h-4 text-spandan-600 absolute left-3.5 top-3.5 pointer-events-none" />
               <select
+                aria-label="Specialization"
                 value={selectedSpec}
                 onChange={(e) => { setPage(0); setSelectedSpec(e.target.value); }}
                 className="input-field pl-10 bg-white cursor-pointer"
@@ -123,11 +129,11 @@ export const DoctorDiscoveryPage: React.FC = () => {
               </select>
             </div>
 
-            <label className="md:col-span-4 text-sm">{t('District')}<input value={district} onChange={e => setDistrict(e.target.value)} className="input-field" /></label>
-            <label className="md:col-span-4 text-sm">{t('Maximum fee (৳)')}<input type="number" min={0} value={fee} onChange={e => setFee(e.target.value)} className="input-field" /></label>
-            <label className="md:col-span-4 text-sm">{t('Available on')}<input type="date" value={availableOn} onChange={e => setAvailableOn(e.target.value)} className="input-field" /></label>
-            <div className="md:col-span-2">
-              <button type="submit" className="btn-primary w-full py-2.5 font-semibold">{t('Filter Results')}</button>
+            <label className="block text-sm">{t('District')}<input value={district} onChange={e => setDistrict(e.target.value)} className="input-field" /></label>
+            <label className="block text-sm">{t('Maximum fee (৳)')}<input type="number" min={0} value={fee} onChange={e => setFee(e.target.value)} className="input-field" /></label>
+            <label className="block text-sm">{t('Available on')}<input type="date" value={availableOn} onChange={e => setAvailableOn(e.target.value)} className="input-field" /></label>
+            <div className="sm:col-span-2 xl:col-span-3 flex flex-wrap gap-3">
+              <button type="submit" className="btn-primary py-2.5 font-semibold">{t('Filter Results')}</button><button type="button" className="btn-secondary" onClick={() => { setSearchQuery(''); setSelectedSpec(''); setDistrict(''); setFee(''); setAvailableOn(''); setPage(0); setSearchRevision(value => value + 1); }}>Clear filters</button>
             </div>
           </form>
         </div>
@@ -147,8 +153,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
             </p>
             <button
               onClick={() => {
-                setSearchQuery('');
-                setSelectedSpec('');
+                setSearchQuery(''); setSelectedSpec(''); setDistrict(''); setFee(''); setAvailableOn(''); setPage(0); setSearchRevision(value => value + 1);
               }}
               className="btn-secondary mx-auto text-sm"
             >
@@ -162,7 +167,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
                 key={doctor.id}
                 className="glass-card p-6 border-slate-200/80 hover:border-spandan-400 transition flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
               >
-                <div className="flex items-start gap-4">
+                <div className="flex min-w-0 items-start gap-4">
                   {doctor.profile_photo_url ? (
                     <img
                       src={doctor.profile_photo_url}
@@ -175,7 +180,7 @@ export const DoctorDiscoveryPage: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="space-y-1.5">
+                  <div className="min-w-0 space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-bold text-lg text-slate-900 hover:text-spandan-600 transition">
                         <Link to={`/doctors/${doctor.id}`}>{doctor.full_name}</Link>

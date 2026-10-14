@@ -2,7 +2,8 @@ import React from 'react';
 import { Activity, Heart, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export const Footer: React.FC = () => {
+export const Footer: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
+  if (compact) return <footer className="border-t border-slate-200 bg-white py-5 text-xs text-slate-500"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-3"><p>© {new Date().getFullYear()} Spandan</p><nav aria-label="Legal information" className="flex flex-wrap gap-x-4 gap-y-2"><Link to="/privacy" className="hover:text-spandan-700">Privacy policy</Link><Link to="/terms" className="hover:text-spandan-700">Terms of service</Link><Link to="/medical-disclaimer" className="hover:text-spandan-700">Medical disclaimer</Link></nav></div></footer>;
   return (
     <footer className="bg-slate-900 text-slate-300 pt-12 pb-8 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

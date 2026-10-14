@@ -72,11 +72,11 @@ export const DoctorProfileDetailPage: React.FC = () => {
 
   const handleOpenBookingModal = (schedule: Schedule) => {
     if (!isAuthenticated || !user) {
-      navigate('/login');
+      navigate('/login', { state: { from: `/doctors/${id}` } });
       return;
     }
     if (user.role !== 'patient') {
-      alert('Only registered patient accounts can book serials directly online.');
+      setNotice('Sign in with a patient account to book a consultation.');
       return;
     }
     setSelectedSchedule(schedule);
@@ -120,20 +120,20 @@ export const DoctorProfileDetailPage: React.FC = () => {
         {notice && <p role="status" className="rounded-xl bg-spandan-50 p-4">{notice}</p>}
         {/* Doctor Header Banner */}
         <div className="glass-card p-6 sm:p-8 border-slate-200 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-start gap-5">
+          <div className="flex min-w-0 items-start gap-3 sm:gap-5">
             {doctor.profile_photo_url ? (
               <img
                 src={doctor.profile_photo_url}
                 alt={`${doctor.full_name} profile`}
-                className="w-20 h-20 rounded-2xl object-cover shadow-lg shadow-spandan-500/25 flex-shrink-0"
+                className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-lg shadow-spandan-500/25 flex-shrink-0"
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white font-extrabold text-3xl shadow-lg shadow-spandan-500/25 flex-shrink-0" aria-hidden="true">
+              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white font-extrabold text-3xl shadow-lg shadow-spandan-500/25 flex-shrink-0" aria-hidden="true">
                 {doctor.full_name ? doctor.full_name.split(' ').slice(-1)[0][0] : 'DR'}
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{doctor.full_name}</h1>
                 {(doctor.verification_status === 'approved') && (
@@ -165,8 +165,8 @@ export const DoctorProfileDetailPage: React.FC = () => {
 
         {doctor.is_demo && <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-2"><p>Spandan schedules are separate from hospital availability. Contact the hospital to confirm consultation fees and appointments; a Spandan booking does not reserve a hospital visit.</p>{doctor.source_url && <a className="underline" href={doctor.source_url} target="_blank" rel="noopener noreferrer">Official hospital profile and real contact information</a>}</div>}
         {/* Qualifications & Biography */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
             <div className="glass-card p-6 border-slate-200">
               <h3 className="font-bold text-lg text-slate-900 mb-3 flex items-center gap-2">
                 <Stethoscope className="w-5 h-5 text-spandan-600" /> Biography & Clinical Profile
@@ -215,8 +215,8 @@ export const DoctorProfileDetailPage: React.FC = () => {
                         key={sched.id}
                         className="border border-slate-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 hover:bg-white transition"
                       >
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2">
+                        <div className="min-w-0 space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span className="font-bold text-slate-900 text-base">
                               {new Date(sched.schedule_date).toLocaleDateString('en-GB', {
                                 weekday: 'short',
@@ -344,7 +344,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
                 You can track running serial numbers live from your Patient Dashboard right before leaving home.
               </p>
               <div className="flex gap-3 pt-2">
-                <Link to={`/dashboard/patient/tools?tab=billing&appointment_id=${bookedResult.id}`} className="btn-primary flex-1 py-2.5 text-xs font-semibold">Pay consultation fee</Link>
+                <Link to={`/dashboard/patient/payments?appointment_id=${bookedResult.id}`} className="btn-primary flex-1 py-2.5 text-xs font-semibold">Pay consultation fee</Link>
                 <button
                   onClick={() => setSelectedSchedule(null)}
                   className="btn-secondary flex-1 py-2.5 text-xs font-semibold"

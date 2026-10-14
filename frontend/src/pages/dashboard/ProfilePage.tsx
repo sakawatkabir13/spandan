@@ -153,10 +153,10 @@ export const ProfilePage: React.FC = () => {
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-6">
         {!isDoctor && user?.role === 'patient' && params.get('onboarding') === '1' && <section className="rounded-2xl bg-spandan-50 border border-spandan-200 p-6 space-y-2"><h1 className="text-xl font-bold">Welcome to Spandan. Complete your health profile.</h1><p className="text-sm text-slate-600">Add your details, medical history, and any previous reports so your doctor can prepare for your appointment. You can update them at any time.</p><Link className="text-sm text-spandan-700 underline" to="/dashboard/patient">Continue to appointments</Link></section>}
-        {user?.role === 'patient' && <nav className="flex flex-wrap gap-4 text-sm text-spandan-700" aria-label="Profile sections"><a className="underline" href="#personal-details">Personal details</a><a className="underline" href="#medical-records">Medical history & reports</a><a className="underline" href="#account-security">Account security</a></nav>}
+        {user?.role === 'patient' && <nav className="flex flex-wrap gap-2 text-sm text-spandan-700" aria-label="Profile sections"><a className="rounded-xl bg-white border border-slate-200 px-3 py-2.5" href="#personal-details">Personal details</a><a className="rounded-xl bg-white border border-slate-200 px-3 py-2.5" href="#medical-records">Medical history & reports</a><a className="rounded-xl bg-white border border-slate-200 px-3 py-2.5" href="#account-security">Account security</a></nav>}
         <section className="glass-card p-6 space-y-4 scroll-mt-24" id="personal-details">
           <h1 className="text-2xl font-bold">My Profile</h1>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600 break-words">
             {user?.email} · {user?.phone_number}
           </p>
           {message && (

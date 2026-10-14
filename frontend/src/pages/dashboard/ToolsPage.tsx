@@ -1,7 +1,7 @@
 import { PaymentsPanel } from '../../components/common/PaymentsPanel';
 import { useLanguage } from '../../context/LanguageContext';
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { errorMessage } from '../../api/errors';
 import { useAuth } from '../../context/AuthContext';
@@ -24,19 +24,22 @@ export function ToolsPage() {
   const [system, setSystem] = useState<Row | null>(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [secret, setSecret] = useState('');
   const [editing, setEditing] = useState<Schedule | null>(null);
   const [month, setMonth] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' }).slice(0, 7));
   const patient = user?.role === 'patient';
   const admin = user?.role === 'administrator';
-  const tabs = ['notifications', 'security', 'privacy', ...(patient ? ['family', 'waitlist', 'billing'] : ['calendar', 'analytics', 'billing']), ...(admin ? ['directory'] : [])];
+  const tabs = ['notifications', 'security', 'privacy', ...(patient ? ['family', 'waitlist'] : ['calendar', 'analytics', 'billing']), ...(admin ? ['directory'] : [])];
   const load = async () => {
+    setLoading(true);
     try {
       if (tab === 'analytics') { setAnalytics((await apiClient.get('/analytics')).data.data); if (admin) setSystem((await apiClient.get('/system/status')).data.data); return; }
       const endpoint = { notifications: '/notifications', family: '/dependents', waitlist: '/waitlist', privacy: '/privacy/requests', calendar: '/schedules/me', directory: admin ? '/directory/admin/doctors' : undefined }[tab];
       setRows(endpoint ? (await apiClient.get(endpoint)).data.data : []);
 
     } catch (error) { setMessage(errorMessage(error)); }
+    finally { setLoading(false); }
   };
   useEffect(() => { setMessage(''); setRows([]); void load(); }, [tab, params.get('appointment_id')]);
   const act = async (path: string, data: any = {}, method = 'post') => {
@@ -51,12 +54,14 @@ export function ToolsPage() {
     const result = await act(path, data);
     if (result) form.reset();
   };
+  if (patient && tab === 'billing') return <Navigate to={`/dashboard/patient/payments?${params.toString()}`} replace />;
   return <DashboardLayout><div className="space-y-6">
-    <h1 className="text-2xl font-bold">{t('Account & Chamber Tools')}</h1>
-    <nav className="flex flex-wrap gap-2" aria-label="Tools">{tabs.map(name => <button key={name} onClick={() => setParams({ tab: name })} className={tab === name ? 'btn-primary capitalize' : 'btn-secondary capitalize'}>{t(name)}</button>)}</nav>
+    <header><h1 className="text-2xl sm:text-3xl font-bold">{patient ? 'Account settings' : t('Account & Chamber Tools')}</h1><p className="mt-2 text-sm text-slate-600">{patient ? 'Manage notifications, security, family members, and privacy.' : 'Manage account preferences and chamber operations.'}</p></header>
+    <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Tools">{tabs.map(name => <button key={name} onClick={() => setParams({ tab: name })} aria-pressed={tab === name} className={tab === name ? 'btn-primary capitalize shrink-0 text-sm' : 'btn-secondary capitalize shrink-0 text-sm'}>{t(name)}</button>)}</nav>
+    {loading && <p role="status" className="text-sm text-slate-500">Loading account information…</p>}
     {message && <p role="status" className="rounded-xl bg-spandan-50 p-4">{message}</p>}
     {tab === 'directory' && admin && <section className="glass-card p-6 space-y-4"><h2 className="text-xl font-bold">{t('Public hospital directory')}</h2><p>Doctor information is sourced from hospital websites. Hide outdated listings until their sources can be reviewed. Imports preserve your visibility decisions.</p>{!rows.length && <p>No imported listings.</p>}{rows.map(row => <article key={row.id} className="border-t py-4 flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">{row.full_name}</h3><p className="text-sm">{row.institution} · {row.division}</p><a className="text-sm underline" href={row.source_url} target="_blank" rel="noopener noreferrer">Official source · reviewed {row.source_checked_on}</a></div><button disabled={busy} className="btn-secondary" onClick={() => void act(`/directory/admin/doctors/${row.id}`, { is_active: !row.is_active }, 'patch')}>{row.is_active ? 'Hide listing' : 'Publish listing'}</button></article>)}</section>}
-    {tab === 'notifications' && <section className="glass-card p-6 space-y-4">{!rows.length && <p>No notifications yet.</p>}{rows.map(row => <article key={row.id} className="border-b py-3">
+    {tab === 'notifications' && <section className="glass-card p-6 space-y-4">{!loading && !rows.length && <p>No notifications yet. Your appointment updates will appear here.</p>}{rows.map(row => <article key={row.id} className="border-b py-3">
       <h2 className="font-bold">{row.subject}</h2><p>{row.message}</p><p className="text-xs text-slate-500">{new Date(row.created_at).toLocaleString()}</p>
       {!row.read_at && <button className="btn-secondary mt-2" disabled={busy} onClick={() => void act(`/notifications/${row.id}/read`)}>Mark read</button>}
     </article>)}</section>}
@@ -78,18 +83,18 @@ export function ToolsPage() {
     {tab === 'family' && <section className="glass-card p-6 space-y-4">
       <h2 className="text-xl font-bold">{t('Family members')}</h2><p>You can choose a family member when booking an appointment.</p>
       <form onSubmit={submit('/dependents')} className="grid sm:grid-cols-2 gap-3"><Input name="full_name" /><Input name="relationship_name" /><Input name="date_of_birth" type="date" required={false} /><button disabled={busy} className="btn-primary">{t('Add family member')}</button></form>
-      {rows.map(row => <div key={row.id} className="flex justify-between border-t py-3"><p>{row.full_name} · {row.relationship_name}</p><button disabled={busy} className="btn-secondary" onClick={() => void act(`/dependents/${row.id}`, {}, 'delete')}>Archive</button></div>)}
+      {rows.map(row => <div key={row.id} className="flex flex-wrap gap-3 justify-between border-t py-3"><p>{row.full_name} · {row.relationship_name}</p><button disabled={busy} className="btn-secondary" onClick={() => void act(`/dependents/${row.id}`, {}, 'delete')}>Archive</button></div>)}
     </section>}
     {tab === 'waitlist' && <section className="glass-card p-6 space-y-4"><p>Join a full session's cancellation waitlist from the doctor's profile. A notification signals availability; it does not reserve a place.</p>{rows.map(row => <div key={row.id} className="flex flex-wrap gap-3 border-t py-3"><p>Waiting since {new Date(row.created_at).toLocaleDateString()}</p><button disabled={busy} className="btn-secondary" onClick={() => void act(`/waitlist/${row.id}`, {}, 'delete')}>Leave waitlist</button></div>)}</section>}
     {tab === 'calendar' && <section className="glass-card p-6 space-y-4">
       <h2 className="text-xl font-bold">Availability calendar</h2><label>Month<input type="month" value={month} onChange={e => setMonth(e.target.value)} className="input-field max-w-xs" /></label>
       {!rows.length && <p role="alert">No upcoming sessions. Publish availability from Chamber & Schedules to accept bookings.</p>}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{rows.filter(row => row.schedule_date.startsWith(month)).map(row => <article key={row.id} className="border rounded-xl p-4 space-y-2">
+      <div className="grid sm:grid-cols-2 2xl:grid-cols-3 gap-3">{rows.filter(row => row.schedule_date.startsWith(month)).map(row => <article key={row.id} className="border rounded-xl p-4 space-y-2">
         <h3 className="font-bold">{row.schedule_date}</h3><p>{row.chamber?.name}</p><p>{row.start_time.slice(0, 5)}–{row.end_time.slice(0, 5)} · {row.status}</p>
         <Link className="underline" to={`/dashboard/${admin ? 'admin' : user?.role === 'doctor' ? 'doctor' : 'assistant'}/queue?schedule_id=${row.id}`}>Open queue</Link>
         <button className="btn-secondary" onClick={() => setEditing(row as Schedule)}>Edit session</button>
       </article>)}</div>
-      {user?.role === 'doctor' && <><h3 className="font-bold">Holiday or closure</h3><form className="grid sm:grid-cols-3 gap-3" onSubmit={submit('/availability/exceptions')}><Input name="exception_date" type="date" /><Input name="reason" /><button className="btn-secondary" disabled={busy}>Add closure</button></form><Closures key={message} /></>}
+      {user?.role === 'doctor' && <><h3 className="font-bold">Holiday or closure</h3><form className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 items-end" onSubmit={submit('/availability/exceptions')}><Input name="exception_date" type="date" /><Input name="reason" /><button className="btn-secondary" disabled={busy}>Add closure</button></form><Closures key={message} /></>}
     </section>}
     {tab === 'analytics' && analytics && <section className="glass-card p-6 space-y-5">
       {system && <div className="rounded-xl border p-4"><h2 className="font-bold">Service monitoring</h2>{Object.entries(system).map(([name, value]) => <p key={name}>{name.replaceAll('_', ' ')}: {typeof value === 'boolean' ? (value ? 'Enabled' : 'Disabled') : String(value)}</p>)}</div>}
@@ -100,7 +105,7 @@ export function ToolsPage() {
     </section>}
     {tab === 'privacy' && <section className="glass-card p-6 space-y-4"><h2 className="text-xl font-bold">Personal data requests</h2>
       <button disabled={busy} className="btn-secondary" onClick={async () => { const data = await act('/privacy/export', {}, 'get'); if (data) { const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); const a = document.createElement('a'); a.href = url; a.download = 'spandan-personal-data.json'; a.click(); URL.revokeObjectURL(url); } }}>Download my data</button>
-      {!admin && <div className="flex gap-3"><button disabled={busy} className="btn-secondary" onClick={() => void act('/privacy/requests', { kind: 'access' })}>Request access review</button><button disabled={busy} className="btn-danger" onClick={() => { if (confirm('Request account anonymization? Active appointments must be resolved first.')) void act('/privacy/requests', { kind: 'deletion' }); }}>Request deletion review</button></div>}
+      {!admin && <div className="flex flex-wrap gap-3"><button disabled={busy} className="btn-secondary" onClick={() => void act('/privacy/requests', { kind: 'access' })}>Request access review</button><button disabled={busy} className="btn-danger" onClick={() => { if (confirm('Request account anonymization? Active appointments must be resolved first.')) void act('/privacy/requests', { kind: 'deletion' }); }}>Request deletion review</button></div>}
       {rows.map(row => <article key={row.id} className="border-t py-3"><p>{row.kind} · {row.status} · {new Date(row.created_at).toLocaleDateString()}</p>{admin && row.status === 'pending' && <button className="btn-secondary mt-2" onClick={() => { if (confirm('Resolve this privacy request? Deletion requests anonymize the account.')) void act(`/privacy/requests/${row.id}/resolve`); }}>Resolve request</button>}</article>)}
     </section>}
     {tab === 'billing' && <PaymentsPanel />}

@@ -29,16 +29,18 @@ export const Alert: React.FC<AlertProps> = ({ type = 'info', title, message, onC
   }[type];
 
   return (
-    <div className={`p-4 rounded-xl border flex items-start gap-3 shadow-sm ${styles.bg}`}>
+    <div role={type === 'error' ? 'alert' : 'status'} className={`p-4 rounded-xl border flex items-start gap-3 shadow-sm ${styles.bg}`}>
       {styles.icon}
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         {title && <h4 className="font-semibold text-sm mb-0.5">{title}</h4>}
         <p className="text-sm leading-relaxed">{message}</p>
       </div>
       {onClose && (
         <button
+          type="button"
+          aria-label="Dismiss message"
           onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 transition p-1 rounded-lg"
+          className="text-slate-400 hover:text-slate-600 transition p-2 shrink-0 rounded-lg"
         >
           ×
         </button>

@@ -43,7 +43,7 @@ export const Home: React.FC = () => {
   return (
     <MainLayout>
       {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slateDark-900 to-spandan-950 text-white p-8 sm:p-12 md:p-16 mb-16 shadow-2xl border border-slate-800">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slateDark-900 to-spandan-950 text-white p-5 sm:p-12 md:p-16 mb-16 shadow-2xl border border-slate-800">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-96 h-96 bg-spandan-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 -mb-20 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -53,11 +53,11 @@ export const Home: React.FC = () => {
             <span>AI-Assisted Private Chamber Booking</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
             End the Chamber Waiting Room <span className="bg-gradient-to-r from-spandan-400 to-emerald-300 bg-clip-text text-transparent">Uncertainty.</span>
           </h1>
 
-          <p className="text-lg text-slate-300 mb-8 max-w-2xl leading-relaxed">
+          <p className="text-base sm:text-lg text-slate-300 mb-8 max-w-2xl leading-relaxed">
             Get exact online serial numbers for private doctor consultations across Bangladesh. Track current running serials from home and use Spandan's AI medical triage to find the right specialist right when you need them.
           </p>
 
@@ -66,23 +66,25 @@ export const Home: React.FC = () => {
             onSubmit={handleSearch}
             className="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-glass flex flex-col sm:flex-row gap-3 border border-white/20 text-slate-800 max-w-2xl"
           >
-            <div className="flex-1 flex items-center gap-2 px-3 border-b sm:border-b-0 sm:border-r border-slate-200 py-2 sm:py-0">
+            <div className="flex-1 min-w-0 flex items-center gap-2 px-3 border-b sm:border-b-0 sm:border-r border-slate-200 py-2 sm:py-0">
               <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
               <input
                 type="text"
-                placeholder="Doctor name, hospital, or symptom..."
+                aria-label="Doctor name or hospital"
+                placeholder="Doctor name or hospital..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-transparent focus:outline-none text-sm placeholder-slate-400 font-medium"
               />
             </div>
 
-            <div className="flex items-center gap-2 px-3 py-2 sm:py-0">
+            <div className="flex min-w-0 sm:max-w-[45%] items-center gap-2 px-3 py-2 sm:py-0">
               <Stethoscope className="w-5 h-5 text-spandan-600 flex-shrink-0" />
               <select
+                aria-label="Doctor specialty"
                 value={selectedSpec}
                 onChange={(e) => setSelectedSpec(e.target.value)}
-                className="bg-transparent focus:outline-none text-sm font-medium text-slate-700 cursor-pointer w-full sm:w-auto"
+                className="bg-transparent focus:outline-none text-sm font-medium text-slate-700 cursor-pointer w-full min-w-0"
               >
                 <option value="">All Specializations</option>
                 {specializations.map((spec) => (
@@ -206,7 +208,7 @@ export const Home: React.FC = () => {
 
       {/* Specializations Grid */}
       <section className="mb-16">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Explore Medical Specialties</h2>
             <p className="text-sm text-slate-600">Find experienced chamber specialists across common departments.</p>

@@ -34,7 +34,7 @@ test('sourced profile booking, hosted checkout decline and retry, receipt and ca
   await page.getByRole('button', { name: 'Confirm & Get Serial Number', exact: true }).click();
   await expect(page.getByText('Booking Confirmed!', { exact: true })).toBeVisible();
   await page.goto('/dashboard/patient');
-  await page.getByRole('link', { name: 'Payment & receipt', exact: true }).first().click();
+  await page.getByRole('link', { name: /Pay consultation fee|Payment & receipt|View receipt/, exact: true }).first().click();
   await expect(page.getByLabel('Choose appointment', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Pay consultation fee', exact: true }).click();
   await expect(page).toHaveURL(/__e2e\/checkout/);
@@ -52,5 +52,6 @@ test('sourced profile booking, hosted checkout decline and retry, receipt and ca
   await page.getByRole('button', { name: /Cancel/i }).first().click();
   await page.getByLabel('Cancellation reason', { exact: true }).fill('Booking workflow complete');
   await page.getByRole('dialog').getByRole('button', { name: 'Yes, Cancel Serial', exact: true }).click();
-  await expect(page.getByText('CANCELLED', { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: /^History/ }).click();
+    await expect(page.getByText('Cancelled', { exact: true }).first()).toBeVisible();
 });

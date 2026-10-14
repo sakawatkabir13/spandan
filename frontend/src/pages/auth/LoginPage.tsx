@@ -29,6 +29,8 @@ export const LoginPage: React.FC = () => {
 
     try {
       const user = await login(email, password, mfaCode);
+      const from = location.state?.from;
+      if (typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') && (from.startsWith('/doctors/') || from.startsWith(`/dashboard/${user.role === 'administrator' ? 'admin' : user.role}`))) { navigate(from, { replace: true }); return; }
       if (user.role === 'patient') navigate('/dashboard/patient');
       else if (user.role === 'doctor') navigate('/dashboard/doctor');
       else if (user.role === 'assistant') navigate('/dashboard/assistant');
@@ -43,12 +45,12 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <MainLayout>
-      <div className="max-w-md mx-auto py-8">
-        <div className="glass-card p-8 border-slate-200 shadow-xl space-y-6">
+    <MainLayout compact>
+      <div className="max-w-md mx-auto py-3 sm:py-8">
+        <div className="glass-card p-5 sm:p-8 border-slate-200 shadow-xl space-y-6">
           <div className="text-center space-y-2">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white mx-auto shadow-md shadow-spandan-500/20">
-              <Activity className="w-7 h-7 animate-pulse" />
+              <Activity className="w-7 h-7" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900">{t('Welcome back to Spandan')}</h1>
             <p className="text-sm text-slate-500">
@@ -63,10 +65,11 @@ export const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">{t('Email Address')}</label>
-              <div className="relative">
+              <div className="field-with-icon">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input aria-label="Email Address"
                   type="email"
+                  autoComplete="email"
                   required
                   placeholder="you@example.com"
                   value={email}
@@ -80,10 +83,11 @@ export const LoginPage: React.FC = () => {
               <div className="flex justify-between items-center mb-1.5">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">{t('Password')}</label>
               </div>
-              <div className="relative">
+              <div className="field-with-icon">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input aria-label="Password"
                   type="password"
+                  autoComplete="current-password"
                   required
                   placeholder="••••••••"
                   value={password}
@@ -93,7 +97,7 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <label className="block text-sm">Authenticator code (if enabled)<input aria-label="Authenticator code" value={mfaCode} onChange={e => setMfaCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={6} className="input-field" /></label>
+            <details className="rounded-xl border border-slate-200 p-3"><summary className="text-sm text-slate-600 font-medium">Use an authenticator code</summary><label className="mt-3 block text-sm">Authenticator code<input aria-label="Authenticator code" value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\D/g, ''))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} className="input-field mt-1" /></label></details>
             <Link to="/forgot-password" className="block underline text-sm">{t('Forgot your password?')}</Link>
             <button
               type="submit"

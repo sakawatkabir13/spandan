@@ -193,7 +193,7 @@ export const AITriagePage: React.FC = () => {
             }`}
           >
             <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-200/60">
-              <div className="space-y-1">
+              <div className="min-w-0 space-y-1">
                 <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
                   Triage Recommendation Result
                 </span>
@@ -267,7 +267,7 @@ export const AITriagePage: React.FC = () => {
                 {result.urgency_level !== 'emergency' && (
                   <Link
                     to={result.recommended_specialization_id ? `/doctors?specialization_id=${result.recommended_specialization_id}` : `/doctors?query=${encodeURIComponent(result.recommended_specialization_name)}`}
-                    className="btn-primary py-3 px-6 text-sm font-semibold whitespace-nowrap shadow-lg"
+                    className="btn-primary py-3 px-6 text-sm font-semibold shadow-lg"
                   >
                     Book {result.recommended_specialization_name} Doctor
                     <ArrowRight className="w-4 h-4" />
@@ -295,8 +295,8 @@ export const AITriagePage: React.FC = () => {
                   key={item.id}
                   className="p-4 rounded-xl border border-slate-200/80 bg-white/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-bold text-slate-900">{item.recommended_specialization_name}</span>
                       <Badge variant={item.urgency_level === 'emergency' ? 'danger' : 'neutral'}>
                         {item.urgency_level}

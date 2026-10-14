@@ -59,13 +59,13 @@ export function PaymentsPanel() {
   }, [checkoutResult, paymentId, paymentStatus, refreshInvoice, refreshList]);
   const act = async (action: () => Promise<void>) => { setBusy(true); setError(''); setMessage(''); try { await action(); } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); } };
   const status = invoice?.payment?.status || 'unpaid';
-  return <section className="glass-card p-5 sm:p-7 space-y-6" aria-labelledby="payments-heading">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 id="payments-heading" className="text-2xl font-bold">Payments & receipts</h2><p className="text-sm text-slate-600 mt-1">Manage consultation fees, payment status, and receipts in one place.</p></div><CreditCard className="h-8 w-8 text-spandan-600" /></div>
+  return <section className="glass-card p-4 sm:p-6 space-y-6" aria-labelledby="payments-heading">
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 id="payments-heading" className="text-2xl font-bold">Consultation payment</h2><p className="text-sm text-slate-600 mt-1">Manage consultation fees, payment status, and receipts in one place.</p></div><CreditCard className="h-8 w-8 text-spandan-600" /></div>
     {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{error}<button className="ml-3 underline" disabled={busy} onClick={() => void act(async () => { await refreshList(); await refreshInvoice(); })}>Try again</button></p>}
     {message && <p role="status" className="rounded-xl bg-spandan-50 p-4 text-spandan-800">{message}</p>}
     {loading && <p role="status">Loading your appointments…</p>}
     {!loading && !appointments.length && !selected && <div className="rounded-2xl border border-dashed p-6 text-center space-y-3"><p>No appointments to bill yet.</p>{patient && <Link to="/doctors" className="btn-primary">Find a doctor</Link>}</div>}
-    {(appointments.length > 0 || selected) && <label className="block text-sm font-medium">Choose appointment<select aria-label="Choose appointment" className="input-field mt-2" value={selected} disabled={busy} onChange={e => setParams({ tab: 'billing', appointment_id: e.target.value })}>
+    {(appointments.length > 0 || selected) && <label className="block text-sm font-medium">Choose appointment<select aria-label="Choose appointment" className="input-field mt-2 truncate" value={selected} disabled={busy} onChange={e => setParams({ tab: 'billing', appointment_id: e.target.value })}>
       <option value="" disabled>Select an appointment</option>{selected && !appointments.some(a => a.id === selected) && <option value={selected}>{invoice ? `${invoice.appointment.doctor_name} · ${date(invoice.appointment.session_date)}` : 'Selected appointment'}</option>}
       {appointments.map(a => <option key={a.id} value={a.id}>{date(a.session_date)} · {patient ? a.doctor_name : a.patient_name} · Serial {a.serial_number} · {labels[a.payment_status] || a.payment_status}</option>)}
     </select></label>}
@@ -80,7 +80,7 @@ export function PaymentsPanel() {
       {checkoutResult === 'cancelled' && !['paid', 'refunded', 'refund_pending'].includes(status) && <p role="status" className="rounded-xl bg-slate-50 p-4">Checkout was closed. Your appointment is still booked. You can resume payment or pay at the chamber.</p>}
       {['cancelled', 'absent'].includes(invoice.appointment.status) && status === 'unpaid' && <p className="text-sm text-slate-600">This appointment does not accept new payments.</p>}
       {Number(invoice.fee) === 0 && status === 'unpaid' && <p className="rounded-xl bg-spandan-50 p-4">No consultation payment is required.</p>}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
         {patient && invoice.can_pay && invoice.online_enabled && !(checkoutResult === 'success' && status === 'pending') && <button disabled={busy} className="btn-primary" onClick={() => void act(async () => { const response = await apiClient.post(`/payments/appointment/${selected}/checkout`); window.location.assign(response.data.data.url); })}><CreditCard className="h-4 w-4" />{busy ? 'Opening secure checkout…' : status === 'pending' ? 'Resume payment' : 'Pay consultation fee'}</button>}
         {invoice.payment && <button className="btn-secondary" disabled={busy} onClick={() => void act(async () => { await apiClient.post(`/payments/${invoice.payment!.id}/refresh`); await refreshInvoice(); await refreshList(); })}><RefreshCw className="h-4 w-4" />Refresh payment status</button>}
         {invoice.payment?.status === 'pending' && invoice.payment.provider === 'stripe' && <button disabled={busy} className="btn-secondary" onClick={() => { if (window.confirm('Cancel this pending checkout? Your appointment will stay booked.')) void act(async () => { await apiClient.post(`/payments/${invoice.payment!.id}/cancel-checkout`); setParams({ tab: 'billing', appointment_id: selected }, { replace: true }); await refreshInvoice(); await refreshList(); setMessage('Checkout cancelled. You can choose another payment method.'); }); }}>Cancel checkout</button>}
