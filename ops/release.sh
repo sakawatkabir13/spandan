@@ -19,7 +19,7 @@ else
 fi
 python3 ops/backup.py
 if compose up -d --wait --wait-timeout 150; then
-    if compose exec -T frontend wget -qO- http://127.0.0.1:8080/health/ready | python3 -c 'import json,sys; assert json.load(sys.stdin)["data"]["status"] == "OK"'; then
+    if compose exec -T frontend wget -qO- http://127.0.0.1:8080/health/ready < /dev/null | python3 -c 'import json,sys; assert json.load(sys.stdin)["data"]["status"] == "OK"'; then
         printf '%s\n' "$previous_tag" > .runtime/previous-release
         printf '%s\n' "$release_sha" > .runtime/current-release
         echo "Production release $release_sha is healthy."

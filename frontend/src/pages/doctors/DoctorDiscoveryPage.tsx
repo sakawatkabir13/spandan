@@ -208,9 +208,9 @@ export const DoctorDiscoveryPage: React.FC = () => {
                           {doctor.current_workplace}
                         </span>
                       )}
-                      <span>
+                      {!doctor.is_demo && doctor.years_of_experience > 0 && <span>
                         <strong className="text-slate-700">{doctor.years_of_experience}</strong> years experience
-                      </span>
+                      </span>}
 
                     </div>
                   </div>
