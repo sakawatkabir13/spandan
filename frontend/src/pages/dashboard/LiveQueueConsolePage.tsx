@@ -347,6 +347,7 @@ export const LiveQueueConsolePage: React.FC = () => {
                           Booked via {app.booking_source}
                         </p>
                         <Link className="text-xs underline" to={`/dashboard/${user?.role === 'administrator' ? 'admin' : user?.role}/tools?tab=billing&appointment_id=${app.id}`}>Payment & receipt</Link>
+                        {user?.role === 'doctor' && !['cancelled', 'absent'].includes(status) && <Link className="text-xs text-spandan-700 underline block" to={`/dashboard/doctor/patients/${app.id}`}>Medical history & reports</Link>}
                         {app.consultation_mode === 'video' && ['doctor', 'administrator'].includes(user?.role || '') && !['cancelled', 'completed', 'absent'].includes(status) && <button className="btn-secondary text-xs" onClick={async () => {
                           try { const response = await apiClient.get(`/appointments/${app.id}/video`); window.open(response.data.data.url, '_blank', 'noopener,noreferrer'); }
                           catch (error) { setLoadError(errorMessage(error)); }

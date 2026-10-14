@@ -12,6 +12,7 @@ from app.models.doctor import (
     Specialization,
 )
 from app.models.email_otp import EmailOTP
+from app.models.medical import MedicalHistory, MedicalReport
 from app.models.operations import (
     AccountAction,
     AvailabilityException,
@@ -28,6 +29,7 @@ from app.models.user import PatientProfile, User, UserRole
 __all__ = [
     "Base",
     "EmailOTP",
+    "MedicalHistory", "MedicalReport",
     "User",
     "UserRole",
     "PatientProfile",

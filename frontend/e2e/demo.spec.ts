@@ -1,7 +1,7 @@
 import { verifyEmail } from './mailbox';
 import { test, expect } from '@playwright/test';
 
-test('sourced profile to demo booking, declined payment, receipt and cancellation on mobile', async ({ page }) => {
+test('sourced profile booking, hosted checkout decline and retry, receipt and cancellation on mobile', async ({ page }) => {
   const suffix = String(Date.now());
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/doctors');
@@ -35,12 +35,18 @@ test('sourced profile to demo booking, declined payment, receipt and cancellatio
   await expect(page.getByText('Booking Confirmed!', { exact: true })).toBeVisible();
   await page.goto('/dashboard/patient');
   await page.getByRole('link', { name: 'Payment & receipt', exact: true }).first().click();
-  await page.getByRole('button', { name: 'Simulate declined payment', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Simulated card declined' })).toBeVisible();
-  await page.getByRole('button', { name: 'Simulate successful payment', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'No money was charged' })).toBeVisible();
+  await expect(page.getByLabel('Choose appointment', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Pay consultation fee', exact: true }).click();
+  await expect(page).toHaveURL(/__e2e\/checkout/);
+  await page.getByLabel('Card number', { exact: true }).fill('4000000000000002');
+  await page.getByRole('button', { name: 'Pay now', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Your card was declined');
+  await page.getByLabel('Card number', { exact: true }).fill('4242424242424242');
+  await page.getByRole('button', { name: 'Pay now', exact: true }).click();
+  await expect(page).toHaveURL(/checkout=success/);
+  await expect(page.getByRole('status').filter({ hasText: 'Payment confirmed.' })).toBeVisible();
   await page.getByRole('button', { name: 'View receipt', exact: true }).click();
-  await expect(page.getByText('TEST RECEIPT', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Print receipt', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.goto('/dashboard/patient');
   await page.getByRole('button', { name: /Cancel/i }).first().click();

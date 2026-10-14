@@ -20,7 +20,9 @@ import {
 export const PatientDashboard: React.FC = () => {
   const { t } = useLanguage();
   const [loadError, setLoadError] = useState('');
-  useAuth();
+  const { user } = useAuth();
+  const [medicalCompletion, setMedicalCompletion] = useState<number | null>(null);
+  const [paymentStatuses, setPaymentStatuses] = useState<Record<string, string>>({});
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +42,9 @@ export const PatientDashboard: React.FC = () => {
     try {
       const resp = await apiClient.get<ApiResponse<Appointment[]>>('/appointments/me');
       if (resp.data.success) {
+        setLoadError('');
         setAppointments(resp.data.data);
+        void apiClient.get('/payments/appointments').then(r => setPaymentStatuses(Object.fromEntries(r.data.data.map((row: { id: string; payment_status: string }) => [row.id, row.payment_status])))).catch(() => {});
         await fetchAllTracking(resp.data.data);
       }
     } catch (err) {
@@ -81,6 +85,7 @@ export const PatientDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchAppointments();
+    void apiClient.get('/medical-records/me').then(r => setMedicalCompletion(r.data.data.completion.percent)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -123,7 +128,8 @@ export const PatientDashboard: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        <p role="status" className="text-sm text-slate-500">{live.connected ? 'Live queue connected' : 'Live connection unavailable; refreshing every 15 seconds'}</p>
+        {liveSchedule && <p role="status" className="text-sm text-slate-500">{live.connected ? 'Live queue connected' : 'Live connection unavailable; refreshing every 15 seconds'}</p>}
+        {medicalCompletion !== null && medicalCompletion < 100 && <section className="rounded-2xl border border-spandan-200 bg-spandan-50 p-5 flex flex-wrap items-center justify-between gap-4"><div><h2 className="font-bold">Complete your medical profile</h2><p className="text-sm text-slate-600 mt-1">{user?.full_name?.split(' ')[0] || 'You'} can add medical history and reports so your doctor is prepared before the visit.</p></div><Link className="btn-secondary" to="/dashboard/patient/profile">Update medical profile</Link></section>}
         {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
         {/* Header */}
         <div className="glass-card p-6 border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -242,6 +248,7 @@ export const PatientDashboard: React.FC = () => {
                     </div>
 
                     <AppointmentActions appointment={app} updated={() => void fetchAppointments(false)} />
+                    <p className="text-xs text-slate-500">Consultation fee: ৳{Number(app.chamber?.consultation_fee || 0).toLocaleString('en-BD')} · Payment: {({ paid: 'Paid', pending: 'Awaiting payment', refunded: 'Refunded', refund_pending: 'Refund processing', unpaid: 'Unpaid' } as Record<string, string>)[paymentStatuses[app.id]] || 'Checking…'}</p>
                     {app.patient_note && (
                       <div className="text-xs text-slate-600 bg-slate-100/80 p-2.5 rounded-xl italic mt-2">
                         "Your note: {app.patient_note}"

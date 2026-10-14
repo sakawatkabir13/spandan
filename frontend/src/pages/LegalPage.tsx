@@ -11,6 +11,7 @@ const documents: Record<LegalDocument, { title: string; sections: Array<[string,
       ['Information we process', 'Spandan processes account details, contact information, doctor credentials, appointment records, queue activity, and the symptoms you choose to submit. Symptoms sent to AI triage are shared with the configured AI provider to generate a specialty recommendation.'],
       ['How information is used', 'We use this information to authenticate users, verify practitioners, operate appointments and queues, provide requested recommendations, prevent abuse, and maintain service reliability.'],
       ['Storage and access', 'Account and appointment access is restricted by role. Symptom submissions are deleted from the active database after 30 days; operational notifications after 90 days. Appointment and payment records are retained for chamber administration. Encrypted recovery backups may retain older records until the backup retention period expires.'],
+      ['Medical history and reports', 'You may add medical history and upload reports to your private profile. Report files are encrypted in storage and require authenticated access. When you enable sharing, your booked doctor can access these records for eligible appointments and 30 days of follow-up. Cancelled appointments, other patients, and administrative or assistant accounts do not grant access. Account-holder records are not shared for family-member appointments. Access and downloads are audited. You can disable sharing or remove reports at any time; copies already downloaded by a doctor cannot be recalled. These records are not sent to the AI provider. Eligible account anonymization removes the medical history and stored report files; encrypted backups expire separately.'],
       ['Your choices', 'Use Account & Chamber Tools to export your data or request deletion. Eligible patient accounts are anonymized after active appointments are resolved. Contact community.cuetinsights@gmail.com for corrections, staff record review, and privacy questions. Do not submit unnecessary identifying or clinical information.'],
       ['AI consent and external services', 'Groq receives the symptoms you submit only when you consent to external processing. Emergency screening runs locally. Configured email, SMS, payment, video, and storage providers receive only the information required for those services.'],
     ],
@@ -44,7 +45,7 @@ export const LegalPage: React.FC<{ document: LegalDocument }> = ({ document }) =
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-12 sm:px-6">
         <article className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-10 shadow-sm">
           <h1 className="text-3xl font-bold text-slate-900">{content.title}</h1>
-          <p className="mt-2 text-sm text-slate-500">Effective 5 October 2026</p>
+          <p className="mt-2 text-sm text-slate-500">Updated 15 October 2026</p>
           <div className="mt-8 space-y-7">
             {content.sections.map(([heading, body]) => (
               <section key={heading}>

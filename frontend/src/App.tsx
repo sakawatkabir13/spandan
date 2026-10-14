@@ -1,6 +1,6 @@
 import { DirectoryDetailPage } from './pages/doctors/DirectoryDetailPage';
-import React from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 
@@ -21,6 +21,7 @@ import { ProfilePage } from './pages/dashboard/ProfilePage';
 import { LegalPage } from './pages/LegalPage';
 import { AccountActionPage } from './pages/auth/AccountActionPage';
 import { ToolsPage } from './pages/dashboard/ToolsPage';
+import { PatientRecordsPage } from './pages/dashboard/PatientRecordsPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> = ({
   children,
@@ -60,6 +61,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> 
 };
 
 const AppRoutes: React.FC = () => {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return (
     <Routes>
       {/* Public Routes */}
@@ -78,6 +81,7 @@ const AppRoutes: React.FC = () => {
 
       {/* Patient Routes */}
       <Route path="/dashboard/:role/tools" element={<ProtectedRoute><ToolsPage /></ProtectedRoute>} />
+      <Route path="/dashboard/doctor/patients/:appointmentId" element={<ProtectedRoute roles={['doctor']}><PatientRecordsPage /></ProtectedRoute>} />
       <Route
         path="/dashboard/patient"
         element={

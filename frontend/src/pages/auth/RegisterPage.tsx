@@ -44,7 +44,7 @@ export const RegisterPage: React.FC = () => {
           phone_number: phoneNumber,
           full_name: fullName,
         });
-        navigate('/dashboard/patient');
+        navigate('/dashboard/patient/profile?onboarding=1');
       } else {
         await registerDoctor({
           email,

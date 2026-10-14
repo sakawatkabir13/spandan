@@ -429,6 +429,9 @@ async def export_personal_data(user=Depends(get_current_active_user), db=Depends
     data["privacy_requests"] = [
         record(row) for row in await db.scalars(select(PrivacyRequest).where(PrivacyRequest.user_id == user.id))
     ]
+    if profile:
+        from app.api.routes.medical import medical_payload
+        data["medical_records"] = await medical_payload(db, profile)
     return create_success_response("Personal data export.", data)
 
 
@@ -442,6 +445,7 @@ async def resolve_privacy(
     if not row or row.status != "pending":
         raise SpandanException("NOT_FOUND", "Pending privacy request not found.", 404)
     target = await db.get(User, row.user_id)
+    medical_file_keys = []
     if row.kind == "deletion":
         if target.role == UserRole.ADMINISTRATOR:
             raise SpandanException(
@@ -476,6 +480,13 @@ async def resolve_privacy(
                 raise SpandanException(
                     "CONFLICT", "Resolve active appointments before anonymizing this account.", 409
                 )
+            from app.models.medical import MedicalHistory, MedicalReport
+            for report in await db.scalars(select(MedicalReport).where(MedicalReport.patient_id == profile.id)):
+                medical_file_keys.append(report.storage_key)
+                await db.delete(report)
+            history = await db.get(MedicalHistory, profile.id)
+            if history:
+                await db.delete(history)
             for rec in await db.scalars(
                 select(SpecialistRecommendation).where(
                     SpecialistRecommendation.patient_id == profile.id
@@ -535,6 +546,15 @@ async def resolve_privacy(
         )
     )
     await db.commit()
+    if medical_file_keys:
+        import logging
+
+        from app.services.medical_records import remove_report
+        for key in medical_file_keys:
+            try:
+                await remove_report(key)
+            except OSError:
+                logging.getLogger(__name__).warning("medical_file_cleanup_failed")
     return create_success_response(
         "Request resolved. Appointment transaction records remain subject to retention obligations."
     )

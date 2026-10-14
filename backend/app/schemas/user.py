@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.models.user import UserRole
 from app.schemas.doctor import DoctorProfileResponse
@@ -24,6 +24,14 @@ class PatientProfileResponse(BaseModel):
 
 
 class PatientProfileUpdate(BaseModel):
+    @field_validator("date_of_birth")
+    @classmethod
+    def reject_future_birth_date(cls, value):
+        from app.core.time import local_now
+        if value and value > local_now().date():
+            raise ValueError("Date of birth cannot be in the future")
+        return value
+
     @model_validator(mode="before")
     @classmethod
     def reject_null_required_fields(cls, values):

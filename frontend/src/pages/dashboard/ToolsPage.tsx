@@ -1,3 +1,4 @@
+import { PaymentsPanel } from '../../components/common/PaymentsPanel';
 import { useLanguage } from '../../context/LanguageContext';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -26,8 +27,6 @@ export function ToolsPage() {
   const [secret, setSecret] = useState('');
   const [editing, setEditing] = useState<Schedule | null>(null);
   const [month, setMonth] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' }).slice(0, 7));
-  const [receipt, setReceipt] = useState<Row | null>(null);
-  const [payment, setPayment] = useState<Row | null>(null);
   const patient = user?.role === 'patient';
   const admin = user?.role === 'administrator';
   const tabs = ['notifications', 'security', 'privacy', ...(patient ? ['family', 'waitlist', 'billing'] : ['calendar', 'analytics', 'billing']), ...(admin ? ['directory'] : [])];
@@ -36,16 +35,12 @@ export function ToolsPage() {
       if (tab === 'analytics') { setAnalytics((await apiClient.get('/analytics')).data.data); if (admin) setSystem((await apiClient.get('/system/status')).data.data); return; }
       const endpoint = { notifications: '/notifications', family: '/dependents', waitlist: '/waitlist', privacy: '/privacy/requests', calendar: '/schedules/me', directory: admin ? '/directory/admin/doctors' : undefined }[tab];
       setRows(endpoint ? (await apiClient.get(endpoint)).data.data : []);
-      if (tab === 'billing' && (params.get('appointment_id') || payment?.appointment_id)) {
-        const id = params.get('appointment_id') || payment?.appointment_id;
-        setPayment({ ...(await apiClient.get(`/payments/appointment/${id}`)).data.data, appointment_id: id });
-      }
+
     } catch (error) { setMessage(errorMessage(error)); }
   };
   useEffect(() => { setMessage(''); setRows([]); void load(); }, [tab, params.get('appointment_id')]);
   const act = async (path: string, data: any = {}, method = 'post') => {
     setBusy(true); setMessage('');
-    if (tab === 'billing' && method !== 'get') setReceipt(null);
     try { const r = await apiClient.request({ url: path, method, data }); setMessage(r.data.message); await load(); return r.data.data; }
     catch (error) { setMessage(errorMessage(error)); }
     finally { setBusy(false); }
@@ -108,18 +103,7 @@ export function ToolsPage() {
       {!admin && <div className="flex gap-3"><button disabled={busy} className="btn-secondary" onClick={() => void act('/privacy/requests', { kind: 'access' })}>Request access review</button><button disabled={busy} className="btn-danger" onClick={() => { if (confirm('Request account anonymization? Active appointments must be resolved first.')) void act('/privacy/requests', { kind: 'deletion' }); }}>Request deletion review</button></div>}
       {rows.map(row => <article key={row.id} className="border-t py-3"><p>{row.kind} · {row.status} · {new Date(row.created_at).toLocaleDateString()}</p>{admin && row.status === 'pending' && <button className="btn-secondary mt-2" onClick={() => { if (confirm('Resolve this privacy request? Deletion requests anonymize the account.')) void act(`/privacy/requests/${row.id}/resolve`); }}>Resolve request</button>}</article>)}
     </section>}
-    {tab === 'billing' && <section className="glass-card p-6 space-y-4"><h2 className="text-xl font-bold">Payments & receipts</h2><p>Use the appointment ID from your booking. Stripe checkout runs in test mode only. You can also test payment outcomes without entering card details. No real money is charged.</p>
-      <form className="flex flex-wrap gap-3" onSubmit={async e => { e.preventDefault(); const fields = Object.fromEntries(new FormData(e.currentTarget)); const r = await act(`/payments/appointment/${fields.appointment_id}`, {}, 'get'); if (r) setPayment({ ...r, appointment_id: fields.appointment_id }); }}><Input name="appointment_id" label="Appointment ID" /><button disabled={busy} className="btn-secondary">Find payment</button></form>
-      {payment && <div className="space-y-3"><p>Fee: {payment.fee} {payment.currency.toUpperCase()} · {payment.payment?.status || 'Unpaid'}</p>
-        {patient && payment.online_enabled && (!payment.payment || payment.payment.status === 'pending') && <button className="btn-primary" onClick={async () => { const r = await act(`/payments/appointment/${payment.appointment_id}/checkout`); if (r?.url) window.location.assign(r.url); }} disabled={busy}>Open Stripe test checkout</button>}
-        {patient && payment.payment?.status === 'pending' && payment.payment.provider === 'stripe' && <button disabled={busy} className="btn-secondary" onClick={() => void act(`/payments/${payment.payment.id}/cancel-checkout`)}>Cancel pending test checkout</button>}
-        {patient && payment.demo_enabled && !payment.payment && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3"><p>Payment simulator: no card details, no money charged, no Stripe transaction.</p><div className="flex flex-wrap gap-3"><button disabled={busy} className="btn-primary" onClick={() => void act(`/payments/appointment/${payment.appointment_id}/demo`, { outcome: 'success' })}>Simulate successful payment</button><button disabled={busy} className="btn-secondary" onClick={() => void act(`/payments/appointment/${payment.appointment_id}/demo`, { outcome: 'declined' })}>Simulate declined payment</button></div></div>}
-        {!patient && !payment.payment && <button className="btn-secondary" onClick={() => { if (confirm('Confirm that the consultation fee was received in cash?')) void act(`/payments/appointment/${payment.appointment_id}/cash`, { method: 'cash' }); }}>Record cash received</button>}
-        {payment.payment && ['paid', 'refunded', 'refund_pending'].includes(payment.payment.status) && <button className="btn-secondary" onClick={async () => { const r = await act(`/payments/${payment.payment.id}/receipt`, {}, 'get'); if (r) setReceipt(r); }}>View receipt</button>}
-        {['doctor', 'administrator'].includes(user?.role || '') && payment.payment?.status === 'paid' && <button className="btn-danger" onClick={() => { if (confirm('Refund this cancelled appointment? Return any cash payment to the patient.')) void act(`/payments/${payment.payment.id}/refund`); }}>Refund cancelled visit</button>}
-      </div>}
-      {receipt && <article className="border rounded-xl p-5 space-y-2"><h3 className="text-xl font-bold">{receipt.operator} receipt</h3>{receipt.is_test && <p className="font-semibold text-amber-800">TEST RECEIPT — no real payment. Provider: {receipt.provider === 'demo' ? 'Payment simulator' : receipt.provider}</p>}<p>{receipt.contact}</p><p>Receipt: {receipt.receipt_number}</p><p>Serial {receipt.serial_number} · {receipt.session_date}</p><p>{receipt.amount} {receipt.currency.toUpperCase()} · {receipt.status}</p><button className="btn-secondary print:hidden" onClick={() => window.print()}>Print receipt</button></article>}
-    </section>}
+    {tab === 'billing' && <PaymentsPanel />}
     <Modal isOpen={!!editing} onClose={() => setEditing(null)} title="Edit consultation session">{editing && <ScheduleEditor schedule={editing} saved={() => { setEditing(null); void load(); }} />}</Modal>
   </div></DashboardLayout>;
 }

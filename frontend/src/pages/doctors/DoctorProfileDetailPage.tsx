@@ -344,6 +344,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
                 You can track running serial numbers live from your Patient Dashboard right before leaving home.
               </p>
               <div className="flex gap-3 pt-2">
+                <Link to={`/dashboard/patient/tools?tab=billing&appointment_id=${bookedResult.id}`} className="btn-primary flex-1 py-2.5 text-xs font-semibold">Pay consultation fee</Link>
                 <button
                   onClick={() => setSelectedSchedule(null)}
                   className="btn-secondary flex-1 py-2.5 text-xs font-semibold"

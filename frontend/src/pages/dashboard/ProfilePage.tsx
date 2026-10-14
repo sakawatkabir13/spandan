@@ -11,9 +11,12 @@ import {
 import { DashboardLayout } from "../../components/layout/DashboardLayout";
 import { LoadingSpinner } from "../../components/common/LoadingSpinner";
 import { AssistantManagement } from "../../components/common/AssistantManagement";
+import { MedicalRecords } from "../../components/common/MedicalRecords";
+import { Link, useSearchParams } from "react-router-dom";
 
 export const ProfilePage: React.FC = () => {
   const { user, updateUser, logout } = useAuth();
+  const [params] = useSearchParams();
   const [profile, setProfile] = useState<DoctorProfile | PatientProfile | null>(
     null,
   );
@@ -149,7 +152,9 @@ export const ProfilePage: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        <section className="glass-card p-6 space-y-4">
+        {!isDoctor && user?.role === 'patient' && params.get('onboarding') === '1' && <section className="rounded-2xl bg-spandan-50 border border-spandan-200 p-6 space-y-2"><h1 className="text-xl font-bold">Welcome to Spandan. Complete your health profile.</h1><p className="text-sm text-slate-600">Add your details, medical history, and any previous reports so your doctor can prepare for your appointment. You can update them at any time.</p><Link className="text-sm text-spandan-700 underline" to="/dashboard/patient">Continue to appointments</Link></section>}
+        {user?.role === 'patient' && <nav className="flex flex-wrap gap-4 text-sm text-spandan-700" aria-label="Profile sections"><a className="underline" href="#personal-details">Personal details</a><a className="underline" href="#medical-records">Medical history & reports</a><a className="underline" href="#account-security">Account security</a></nav>}
+        <section className="glass-card p-6 space-y-4 scroll-mt-24" id="personal-details">
           <h1 className="text-2xl font-bold">My Profile</h1>
           <p className="text-slate-600">
             {user?.email} · {user?.phone_number}
@@ -283,6 +288,7 @@ export const ProfilePage: React.FC = () => {
                         <input
                           name="date_of_birth"
                           type="date"
+                          max={new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' })}
                           defaultValue={patient.date_of_birth || ""}
                           className="input-field"
                         />
@@ -291,10 +297,12 @@ export const ProfilePage: React.FC = () => {
                         Gender
                         <select
                           name="gender"
+                          aria-label="Gender"
                           defaultValue={patient.gender || ""}
                           className="input-field"
                         >
-                          <option value="">Prefer not to say</option>
+                          <option value="">Choose an option</option>
+                          <option value="Not specified">Prefer not to say</option>
                           <option>Male</option>
                           <option>Female</option>
                           <option>Other</option>
@@ -326,7 +334,8 @@ export const ProfilePage: React.FC = () => {
             )
           )}
         </section>
-        <section className="glass-card p-6 space-y-4">
+        {patient && user?.role === 'patient' && <MedicalRecords profile={patient} />}
+        <section className="glass-card p-6 space-y-4 scroll-mt-24" id="account-security">
           <h2 className="text-xl font-bold">Change Password</h2>
           <p className="text-sm text-slate-600">
             You will need to sign in again on all devices after changing your

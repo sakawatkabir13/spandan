@@ -8,7 +8,7 @@ from typing import Literal
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -16,9 +16,12 @@ from app.api.dependencies.auth import get_current_active_user, require_roles
 from app.core.config import settings
 from app.core.exceptions import SpandanException, create_success_response
 from app.db.session import get_db
-from app.models.appointment import AppointmentStatus
+from app.models.appointment import Appointment, AppointmentStatus
+from app.models.chamber import Chamber
+from app.models.doctor import DoctorProfile
 from app.models.operations import Payment
-from app.models.user import UserRole
+from app.models.schedule import Schedule
+from app.models.user import PatientProfile, UserRole
 from app.repositories.appointment import appointment_repo
 from app.repositories.user import patient_repo
 from app.services.permissions import require_doctor_access
@@ -69,6 +72,29 @@ async def stripe(method, path, data=None, key=None):
         raise SpandanException("PAYMENT_PROVIDER_ERROR", "Invalid payment provider response.", 502)
 
 
+@router.get("/appointments")
+async def billing_appointments(
+    limit: int = Query(100, ge=1, le=100),
+    user=Depends(get_current_active_user), db=Depends(get_db),
+):
+    stmt = select(Appointment, Payment, DoctorProfile.full_name, Chamber.name, Chamber.consultation_fee, Schedule.schedule_date, Schedule.start_time, PatientProfile.full_name).join(DoctorProfile, DoctorProfile.id == Appointment.doctor_id).join(Chamber, Chamber.id == Appointment.chamber_id).join(Schedule, Schedule.id == Appointment.schedule_id).join(PatientProfile, PatientProfile.id == Appointment.patient_id).outerjoin(Payment, Payment.appointment_id == Appointment.id)
+    if user.role == UserRole.PATIENT:
+        profile = await patient_repo.get_by_user_id(db, user.id)
+        stmt = stmt.where(Appointment.patient_id == profile.id)
+    elif user.role == UserRole.DOCTOR:
+        stmt = stmt.where(Appointment.doctor_id == user.doctor_profile.id)
+    elif user.role == UserRole.ASSISTANT:
+        doctor_ids = [a.doctor_id for a in user.assistant_assignments if a.is_active and a.can_manage_appointments]
+        stmt = stmt.where(Appointment.doctor_id.in_(doctor_ids))
+    elif user.role != UserRole.ADMINISTRATOR:
+        raise SpandanException("FORBIDDEN", "Billing access is not available.", 403)
+    rows = await db.execute(stmt.order_by(Appointment.created_at.desc()).limit(limit))
+    data = []
+    for appointment, payment, doctor, chamber, fee, day, start, patient in rows:
+        data.append({"id": appointment.id, "doctor_name": doctor, "chamber_name": chamber, "patient_name": appointment.attendee_name if appointment.dependent_id else patient, "session_date": day, "start_time": start, "serial_number": appointment.serial_number, "appointment_status": appointment.appointment_status.value, "amount": payment.amount if payment else fee, "currency": payment.currency if payment else settings.PAYMENT_CURRENCY, "payment_status": payment.status if payment else "unpaid", "payment_id": payment.id if payment else None})
+    return create_success_response("Appointments and payments.", data)
+
+
 @router.get("/appointment/{appointment_id}")
 async def payment_details(
     appointment_id: UUID, user=Depends(get_current_active_user), db=Depends(get_db)
@@ -81,17 +107,19 @@ async def payment_details(
         "Payment details.",
         {
             "payment": record(payment) if payment else None,
-            "fee": appointment.chamber.consultation_fee,
+            "fee": payment.amount if payment else appointment.chamber.consultation_fee,
             "currency": settings.PAYMENT_CURRENCY,
             "online_enabled": settings.online_payments_enabled,
             "test_mode": True,
             "demo_enabled": bool(settings.DEMO_MODE and appointment.doctor.is_demo),
+            "can_pay": appointment.appointment_status not in (AppointmentStatus.CANCELLED, AppointmentStatus.ABSENT) and (not payment or payment.status == "pending") and Decimal(payment.amount if payment else appointment.chamber.consultation_fee) > 0,
+            "appointment": {"id": appointment.id, "doctor_name": appointment.doctor.full_name, "patient_name": appointment.attendee_name, "chamber_name": appointment.chamber.name, "session_date": appointment.schedule.schedule_date, "start_time": appointment.schedule.start_time, "serial_number": appointment.serial_number, "status": appointment.appointment_status.value},
         },
     )
 
 
 @router.post("/appointment/{appointment_id}/checkout")
-async def checkout(appointment_id: UUID, user=Depends(get_current_active_user), db=Depends(get_db)):
+async def checkout(appointment_id: UUID, user=Depends(require_roles(UserRole.PATIENT)), db=Depends(get_db)):
     appointment = await authorize(db, user, appointment_id)
     if appointment.appointment_status in (AppointmentStatus.CANCELLED, AppointmentStatus.ABSENT):
         raise SpandanException("CONFLICT", "This appointment cannot be paid.", 409)
@@ -127,12 +155,12 @@ async def checkout(appointment_id: UUID, user=Depends(get_current_active_user), 
         existing = await stripe("GET", f"checkout/sessions/{payment.provider_reference}")
         if existing.get("status") == "open" and existing.get("url"):
             return create_success_response(
-                "Continue to Stripe test checkout.", {"url": existing["url"]}
+                "Continue to secure checkout.", {"url": existing["url"]}
             )
         if existing.get("status") == "complete":
             raise SpandanException(
                 "PAYMENT_PROCESSING",
-                "Stripe is confirming this test payment. Refresh shortly.",
+                "Stripe is confirming your payment. Refresh the payment status shortly.",
                 409,
             )
         if existing.get("status") != "expired":
@@ -150,8 +178,11 @@ async def checkout(appointment_id: UUID, user=Depends(get_current_active_user), 
         "checkout/sessions",
         {
             "mode": "payment",
-            "success_url": f"{settings.FRONTEND_URL}/dashboard/patient?payment=returned",
-            "cancel_url": f"{settings.FRONTEND_URL}/dashboard/patient?payment=cancelled",
+            "payment_method_types[0]": "card",
+            "success_url": f"{settings.FRONTEND_URL}/dashboard/patient/tools?tab=billing&appointment_id={appointment.id}&checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": f"{settings.FRONTEND_URL}/dashboard/patient/tools?tab=billing&appointment_id={appointment.id}&checkout=cancelled",
+            "client_reference_id": str(appointment.id),
+            "customer_email": user.email,
             "metadata[payment_id]": str(payment.id),
             "line_items[0][price_data][currency]": payment.currency,
             "line_items[0][price_data][unit_amount]": str(amount),
@@ -167,7 +198,7 @@ async def checkout(appointment_id: UUID, user=Depends(get_current_active_user), 
     payment.provider_reference = session["id"]
     await db.commit()
     return create_success_response(
-        "Continue to Stripe test checkout. No real money will be charged.", {"url": session["url"]}
+        "Continue to secure checkout.", {"url": session["url"]}
     )
 
 
@@ -216,8 +247,28 @@ async def cancel_checkout(id: UUID, user=Depends(get_current_active_user), db=De
     await db.delete(payment)
     await db.commit()
     return create_success_response(
-        "Test checkout cancelled. You can reschedule or choose another payment method."
+        "Checkout cancelled. You can reschedule or choose another payment method."
     )
+
+
+@router.post("/{id}/refresh")
+async def refresh_payment(id: UUID, user=Depends(get_current_active_user), db=Depends(get_db)):
+    initial = await db.get(Payment, id)
+    if not initial:
+        raise SpandanException("NOT_FOUND", "Payment not found.", 404)
+    await authorize(db, user, initial.appointment_id)
+    payment = await db.scalar(select(Payment).where(Payment.id == id).with_for_update().execution_options(populate_existing=True))
+    if payment.provider == "stripe" and payment.status == "pending" and payment.provider_reference:
+        session = await stripe("GET", f"checkout/sessions/{payment.provider_reference}")
+        if session.get("livemode") is True or session.get("id") != payment.provider_reference or session.get("amount_total") != int(Decimal(payment.amount) * 100) or session.get("currency") != payment.currency:
+            raise SpandanException("PAYMENT_MISMATCH", "Payment details could not be verified.", 409)
+        if session.get("status") == "complete" and session.get("payment_status") == "paid":
+            payment.status = "paid"
+            payment.paid_at = datetime.now(timezone.utc)
+            from app.models.audit import AuditLog
+            db.add(AuditLog(actor_user_id=user.id, action="payment.confirmed", entity_type="payment", entity_id=str(id)))
+    await db.commit()
+    return create_success_response("Payment status refreshed.", {"status": payment.status})
 
 
 class DemoPaymentBody(BaseModel):
@@ -401,6 +452,9 @@ async def receipt(id: UUID, user=Depends(get_current_active_user), db=Depends(ge
             "appointment_id": appointment.id,
             "serial_number": appointment.serial_number,
             "session_date": appointment.schedule.schedule_date,
+            "patient_name": appointment.attendee_name,
+            "doctor_name": appointment.doctor.full_name,
+            "chamber_name": appointment.chamber.name,
         },
     )
 

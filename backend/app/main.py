@@ -10,7 +10,6 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -26,6 +25,7 @@ from app.core.exceptions import (
     validation_exception_handler,
 )
 from app.db.session import engine
+from app.services.public_uploads import PublicUploads
 
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
@@ -86,7 +86,7 @@ async def request_safety_middleware(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-    response.headers["Cache-Control"] = (
+    response.headers["Cache-Control"] = response.headers.get("Cache-Control") or (
         "no-store" if request.url.path.startswith("/api/") else "no-cache"
     )
     logger.info(
@@ -99,7 +99,7 @@ async def request_safety_middleware(request: Request, call_next):
     )
     return response
 
-app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+app.mount("/uploads", PublicUploads(directory=settings.UPLOAD_DIR), name="uploads")
 
 app.add_exception_handler(IntegrityError, integrity_exception_handler)
 app.add_exception_handler(SpandanException, spandan_exception_handler)

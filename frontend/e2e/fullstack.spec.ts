@@ -63,7 +63,8 @@ test.describe.serial('Full-stack chamber operations', () => {
     await page.getByLabel('Password', { exact: true }).fill(password);
     await verifyEmail(page, patientEmail);
     await page.getByRole('button', { name: 'Register as Patient' }).click();
-    await expect(page).toHaveURL(/dashboard\/patient/);
+    await expect(page).toHaveURL(/dashboard\/patient\/profile\?onboarding=1/);
+    await expect(page.getByRole('heading', { name: 'Welcome to Spandan. Complete your health profile.' })).toBeVisible();
     // An expired access token must recover through the real refresh endpoint.
     await page.evaluate(() => localStorage.setItem('spandan_access_token', 'expired-test-token'));
     const refreshed = page.waitForResponse(r => r.url().endsWith('/auth/refresh') && r.status() === 200);
@@ -115,8 +116,7 @@ test.describe.serial('Full-stack chamber operations', () => {
     await page.getByRole('link', { name: 'Payment & receipt', exact: true }).last().click();
     const appointmentId = new URL(page.url()).searchParams.get('appointment_id')!;
     await page.goto('/dashboard/doctor/tools?tab=billing');
-    await page.getByLabel('Appointment ID', { exact: true }).fill(appointmentId);
-    await page.getByRole('button', { name: 'Find payment', exact: true }).click();
+    await page.getByLabel('Choose appointment', { exact: true }).selectOption(appointmentId);
     page.once('dialog', dialog => dialog.accept());
     await page.getByRole('button', { name: 'Record cash received', exact: true }).click();
     await page.getByRole('button', { name: 'View receipt', exact: true }).click();

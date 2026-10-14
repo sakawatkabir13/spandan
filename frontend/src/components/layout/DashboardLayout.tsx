@@ -7,6 +7,7 @@ import {
   Activity,
   Calendar,
   Clock,
+  CreditCard,
   MapPin,
   Sparkles,
   Stethoscope,
@@ -28,6 +29,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           { name: 'Find Doctors', path: '/doctors', icon: Stethoscope },
           { name: 'AI Symptom Triage', path: '/ai-triage', icon: Sparkles },
           { name: 'My Profile', path: '/dashboard/patient/profile', icon: UserIcon },
+          { name: 'Payments & receipts', path: '/dashboard/patient/tools?tab=billing', icon: CreditCard },
         ];
       case 'doctor':
         return [
@@ -79,7 +81,8 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             <nav className="space-y-1">
               {links.map((link) => {
                 const Icon = link.icon;
-                const isActive = location.pathname === link.path;
+                const [pathname, query] = link.path.split('?');
+                const isActive = location.pathname === pathname && (query ? location.search.includes(query) : !(pathname.endsWith('/tools') && location.search.includes('tab=billing') && user.role === 'patient'));
                 return (
                   <Link
                     key={link.path}

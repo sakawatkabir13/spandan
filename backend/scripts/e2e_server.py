@@ -31,6 +31,9 @@ def main():
         destination.chmod(0o600)
 
     mail.send_email = capture
+    from app.main import app
+    from scripts.e2e_payments import install
+    install(app, settings)
     uvicorn.run("app.main:app", host="127.0.0.1", port=18000)
 
 
