@@ -7,6 +7,7 @@ from sqlalchemy import select, update
 
 from app.api.dependencies.auth import get_current_active_user
 from app.core.exceptions import SpandanException, create_success_response
+from app.core.time import aware
 from app.db.base import utcnow
 from app.db.session import get_db
 from app.models.chat import ChatAction, ChatConversation, ChatMessage
@@ -111,7 +112,10 @@ async def get_conversation(
             "title": row.title,
             "messages": output,
             "expires_at": row.expires_at,
-            "generating": bool(row.generation_id),
+            "generating": bool(
+                row.generation_id and row.generation_until
+                and aware(row.generation_until) > utcnow()
+            ),
         },
     )
 

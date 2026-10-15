@@ -328,7 +328,24 @@ async def read_tool(db, user, name, args):
             .offset(offset)
             .limit(11)
         )
-        return page([schedule_card(x) for x in rows], offset)
+        items = []
+        for row in rows:
+            doctor = await db.get(DoctorProfile, row.doctor_id)
+            if doctor.is_demo:
+                availability_note = "Hospital-sourced profile. Contact the hospital to confirm availability."
+            elif row.confirmed_at:
+                availability_note = "Availability published by chamber staff. Queue times are estimates."
+            else:
+                availability_note = "Contact the chamber to confirm availability. Queue times are estimates."
+            items.append({
+                **schedule_card(row),
+                "doctor_name": doctor.full_name,
+                "confirmed_at": row.confirmed_at.isoformat() if row.confirmed_at else None,
+                "availability_note": availability_note,
+                "href": f"/doctors/{row.doctor_id}" if user.role == UserRole.PATIENT
+                else f"/dashboard/{dashboard_role(user)}/queue?schedule_id={row.id}",
+            })
+        return page(items, offset)
     if name in {"list_appointments", "list_payments"}:
         stmt = select(Appointment.id)
         if user.role == UserRole.PATIENT:
@@ -404,7 +421,7 @@ async def read_tool(db, user, name, args):
         stmt = (
             stmt.where(cls.is_active.is_(True))
             if cls == Dependent
-            else stmt.where(cls.status == "waiting")
+            else stmt.where(cls.status.in_(["waiting", "offered", "expired", "unavailable"]))
         )
         rows = await db.scalars(stmt.order_by(cls.created_at, cls.id).offset(offset).limit(11))
         fields = (
@@ -412,7 +429,22 @@ async def read_tool(db, user, name, args):
             if cls == Dependent
             else ["id", "schedule_id", "status"]
         )
-        return page([project(x, fields) for x in rows], offset)
+        items = []
+        for row in rows:
+            item = project(row, fields)
+            if cls == WaitlistEntry:
+                session = await schedule_repo.get_by_id_with_queue(db, row.schedule_id)
+                doctor = await db.get(DoctorProfile, session.doctor_id)
+                item.update({
+                    "doctor_name": doctor.full_name,
+                    "chamber": session.chamber.name,
+                    "session_date": session.schedule_date.isoformat(),
+                    "start_time": session.start_time.isoformat(),
+                    "offer_expires_at": row.offer_expires_at.isoformat() if row.offer_expires_at else None,
+                    "href": "/dashboard/patient/tools?tab=waitlist",
+                })
+            items.append(item)
+        return page(items, offset)
     if name == "list_assistant_assignments":
         stmt = select(AssistantAssignment).options(selectinload(AssistantAssignment.assistant))
         if user.role == UserRole.DOCTOR:

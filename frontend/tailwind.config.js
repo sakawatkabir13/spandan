@@ -8,17 +8,17 @@ export default {
     extend: {
       colors: {
         spandan: {
-          50: '#eef8f3',
-          100: '#dcefe4',
-          200: '#b9dfcc',
-          300: '#8cc7ab',
-          400: '#54a980',
-          500: '#28865f',
-          600: '#14734f',
-          700: '#0c5d40',
-          800: '#104a36',
-          900: '#123e30',
-          950: '#092b21',
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+          950: '#052e16',
         },
         slateDark: {
           800: '#1e293b',
@@ -26,7 +26,7 @@ export default {
           950: '#020617',
         }
       },
-      fontFamily: { sans: ['"Segoe UI"', '"Noto Sans Bengali"', 'Arial', 'sans-serif'] },
+      fontFamily: { sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Noto Sans Bengali"', 'sans-serif'] },
       boxShadow: {
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
         'glass-lg': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',

@@ -8,7 +8,7 @@ export const Footer: React.FC<{ compact?: boolean }> = ({ compact = false }) => 
   const { t: uiText } = useLanguage();
   if (compact) return <footer className="border-t border-slate-200 bg-white py-5 text-xs text-slate-500"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-3"><p>© {new Date().getFullYear()}  <I18nText text={"Spandan"} /> </p><nav aria-label={uiText("Legal information")} className="flex flex-wrap gap-x-4 gap-y-2"><Link to="/privacy" className="hover:text-spandan-700"> <I18nText text={"Privacy policy"} /> </Link><Link to="/terms" className="hover:text-spandan-700"> <I18nText text={"Terms of service"} /> </Link><Link to="/medical-disclaimer" className="hover:text-spandan-700"> <I18nText text={"Medical disclaimer"} /> </Link></nav></div></footer>;
   return (
-    <footer className="bg-spandan-950 text-slate-300 pt-10 pb-6 border-t border-spandan-900">
+    <footer className="bg-slate-900 text-slate-300 pt-12 pb-8 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-white/10">
           <div className="md:col-span-2 space-y-3">

@@ -6,7 +6,7 @@ export type ChatAction = {
   result?: { message: string; href?: string; checkout_url?: string; [key: string]: unknown };
 };
 export type ToolCard = { tool: string; data: { proposal?: ChatAction; items?: Record<string, unknown>[]; next_offset?: number | null; [key: string]: unknown } };
-export type ChatMessage = { id?: string; role: 'user' | 'assistant'; text: string; cards?: ToolCard[] };
+export type ChatMessage = { id?: string; role: 'user' | 'assistant'; text: string; cards?: ToolCard[]; created_at?: string; delivery?: 'streaming' | 'complete' | 'stopped' | 'error' };
 export type Conversation = { id: string; title: string; created_at: string; expires_at: string };
 
 export async function readEvents(stream: ReadableStream<Uint8Array>, onEvent: (event: string, data: any) => void) {
@@ -16,7 +16,7 @@ export async function readEvents(stream: ReadableStream<Uint8Array>, onEvent: (e
   try {
     while (true) {
       const { done, value } = await reader.read();
-      buffer += decoder.decode(value, { stream: !done }).replace(/\r\n/g, '\n');
+      buffer = (buffer + decoder.decode(value, { stream: !done })).replace(/\r\n/g, '\n');
       let boundary: number;
       while ((boundary = buffer.indexOf('\n\n')) !== -1) {
         const block = buffer.slice(0, boundary);
@@ -37,11 +37,16 @@ export async function streamMessage(conversationId: string, text: string, client
   const response = await apiClient.post(`/chat/conversations/${conversationId}/messages`,
     { text, client_message_id: clientMessageId },
     { adapter: 'fetch', responseType: 'stream', timeout: 0, signal, headers: { Accept: 'text/event-stream' } });
-  await readEvents(response.data, onEvent);
+  let terminal = false;
+  await readEvents(response.data, (event, data) => {
+    if (event === 'done' || event === 'error') terminal = true;
+    onEvent(event, data);
+  });
+  if (!terminal && !signal.aborted) throw new Error('The reply ended early. Reload the conversation to check its latest status.');
 }
 
 export function safeChatLink(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined;
+  if (typeof value !== 'string' || /[\u0000-\u0020\u007f]/.test(value)) return undefined;
   if (value.startsWith('/') && !value.startsWith('//') && !value.includes('\\')) return value;
   try { const url = new URL(value); if (url.protocol === 'https:' && url.hostname === 'checkout.stripe.com' && !url.username && !url.password) return value; } catch { /* Ignore invalid links. */ }
   return undefined;

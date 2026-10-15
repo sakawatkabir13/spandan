@@ -18,6 +18,56 @@ from app.services.chat_tools import read_tool
 from tests.test_chat import actor, mcp_bridge, propose, world  # noqa: F401
 
 
+async def test_waitlist_answers_include_reserved_offers_for_only_the_current_patient(world, db_session):
+    from app.models.operations import WaitlistEntry
+
+    patient = await actor(db_session, world, "patient")
+    other = await actor(db_session, world, "other")
+    expires = utcnow() + timedelta(minutes=10)
+    db_session.add_all([
+        WaitlistEntry(patient_id=patient.patient_profile.id, schedule_id=world["schedules"][0].id,
+                      status="offered", offered_at=utcnow(), offer_expires_at=expires),
+        WaitlistEntry(patient_id=other.patient_profile.id, schedule_id=world["schedules"][1].id,
+                      status="waiting"),
+    ])
+    await db_session.commit()
+    answer = await read_tool(db_session, patient, "list_waitlist", {})
+    assert len(answer["items"]) == 1
+    offer = answer["items"][0]
+    assert offer["status"] == "offered"
+    assert offer["doctor_name"] == "Dr Chat Test"
+    assert offer["chamber"] == "Chat Test Chamber"
+    assert offer["offer_expires_at"]
+    assert offer["href"] == "/dashboard/patient/tools?tab=waitlist"
+
+
+async def test_session_answers_distinguish_staff_confirmation_from_hospital_sources(world, db_session, monkeypatch):
+    monkeypatch.setattr(settings, "DEMO_MODE", True)
+    patient = await actor(db_session, world, "patient")
+    args = {"doctor_id": str(world["doctor"].id)}
+    session = world["schedules"][0]
+    session.confirmed_at = utcnow()
+    await db_session.commit()
+    answer = await read_tool(db_session, patient, "list_sessions", args)
+    assert "published by chamber staff" in answer["items"][0]["availability_note"]
+    assert answer["items"][0]["href"] == f'/doctors/{world["doctor"].id}'
+    world["doctor"].is_demo = True
+    await db_session.commit()
+    answer = await read_tool(db_session, patient, "list_sessions", args)
+    assert "Contact the hospital" in answer["items"][0]["availability_note"]
+    assert answer["items"][0]["doctor_name"] == "Dr Chat Test"
+
+
+async def test_expired_generation_does_not_leave_history_stuck_processing(world, db_session, client):
+    row = await db_session.get(ChatConversation, world["conversations"]["patient"])
+    row.generation_id = uuid4()
+    row.generation_until = utcnow() - timedelta(seconds=1)
+    await db_session.commit()
+    response = await client.get(f"/api/v1/chat/conversations/{row.id}", headers=world["headers"]["patient"])
+    assert response.status_code == 200
+    assert response.json()["data"]["generating"] is False
+
+
 async def test_retention_expiry_and_pending_cancellation(world, db_session):  # noqa: F811
     conversation = await db_session.get(ChatConversation, world["conversations"]["patient"])
     conversation.expires_at = utcnow() - timedelta(seconds=1)

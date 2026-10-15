@@ -10,7 +10,7 @@ import { LoadingSpinner } from './components/common/LoadingSpinner';
 
 // Pages
 import { Home } from './pages/Home';
-import { ChatAssistant } from './components/chat/ChatAssistant';
+const ChatAssistant = lazy(() => import('./components/chat/ChatAssistant').then(module => ({ default: module.ChatAssistant })));
 
 const DirectoryDetailPage = lazy(() => import('./pages/doctors/DirectoryDetailPage').then(module => ({ default: module.DirectoryDetailPage })));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then(module => ({ default: module.LoginPage })));
@@ -228,12 +228,16 @@ const AppRoutes: React.FC = () => {
 };
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30000 } } });
+function SupportAssistant() {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Suspense fallback={null}><EnglishOnly><ChatAssistant /></EnglishOnly></Suspense> : null;
+}
 export const App: React.FC = () => {
   return (
     <AppErrorBoundary><QueryClientProvider client={queryClient}><AuthProvider>
       <BrowserRouter>
         <AppRoutes />
-        <EnglishOnly><ChatAssistant /></EnglishOnly>
+        <SupportAssistant />
       </BrowserRouter>
     </AuthProvider></QueryClientProvider></AppErrorBoundary>
   );

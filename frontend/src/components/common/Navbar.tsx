@@ -34,28 +34,29 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b border-slate-200/80">
+    <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-xl shadow-[0_1px_12px_-6px_#0f172a20] border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group shrink-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-spandan-600 flex items-center justify-center text-white group-hover:bg-spandan-700 transition duration-200">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-spandan-700 via-spandan-600 to-spandan-400 flex items-center justify-center text-white shadow-md shadow-spandan-500/20 group-hover:scale-105 transition duration-200">
             <Activity className="w-6 h-6" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-lg sm:text-xl tracking-tight text-spandan-950">
+            <span className="font-bold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-slate-900 via-spandan-800 to-spandan-600 bg-clip-text text-transparent">
                <I18nText text={"Spandan"} /> </span>
             <span className="hidden sm:block text-[10px] font-medium tracking-widest text-spandan-600 -mt-1">
-               <I18nText text={"Care, closer to you"} /> </span>
+               <I18nText text={"Find Care. Book Easily"} /> </span>
           </div>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 font-medium text-slate-600 text-sm">
-          <Link to="/doctors" className="hover:text-spandan-600 transition flex items-center gap-1.5">
+          <Link to="/doctors" aria-current={pathname.startsWith('/doctors') || pathname.startsWith('/directory') ? 'page' : undefined} className="navbar-link hover:text-spandan-600 transition flex items-center gap-1.5">
             <Search className="w-4 h-4 text-slate-400" />
             {t('Find Doctors')}
           </Link>
           <Link
             to="/ai-triage"
-            className="hover:text-spandan-600 transition flex items-center gap-1.5 bg-spandan-50 text-spandan-700 px-3 py-1 rounded-full border border-spandan-200"
+            aria-current={pathname === '/ai-triage' ? 'page' : undefined}
+            className="navbar-link hover:text-spandan-600 transition flex items-center gap-1.5 bg-spandan-50 text-spandan-700 px-3 py-1 rounded-full border border-spandan-200"
           >
             <Sparkles className="w-4 h-4 text-spandan-500" />
             {t('AI Symptom Checker')}
