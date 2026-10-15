@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     AWS_BEARER_TOKEN_BEDROCK: str = ""
     AWS_USE_INSTANCE_ROLE: bool = False
     BEDROCK_TRIAGE_MODEL: str = "openai.gpt-oss-120b-1:0"
-    BEDROCK_CHAT_MODEL: str = "openai.gpt-oss-20b-1:0"
+    BEDROCK_CHAT_MODEL: str = "openai.gpt-oss-120b-1:0"
     AI_TIMEOUT_SECONDS: float = 20
     AI_TOTAL_TIMEOUT_SECONDS: float = 25
     CHAT_ENABLED: bool = False
@@ -71,8 +71,8 @@ class Settings(BaseSettings):
     CHAT_MAX_TOOL_CALLS: int = Field(6, ge=1, le=6)
     CHAT_MAX_OUTPUT_TOKENS: int = Field(1500, ge=1, le=1500)
     CHAT_DEADLINE_SECONDS: int = Field(60, ge=1, le=60)
-    CHAT_INPUT_PRICE_PER_MILLION: float = 0.07
-    CHAT_OUTPUT_PRICE_PER_MILLION: float = 0.30
+    CHAT_INPUT_PRICE_PER_MILLION: float = 0.15
+    CHAT_OUTPUT_PRICE_PER_MILLION: float = 0.60
 
     @property
     def ai_configured(self) -> bool:

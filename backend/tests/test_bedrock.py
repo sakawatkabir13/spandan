@@ -106,6 +106,8 @@ def test_release_selection_rejects_unsafe_or_unqualified_models():
     assert not select_model(reports, security_passed=False)["qualified"]
     reports[DEFAULT] = report(94, 0.01)
     assert not select_model(reports, security_passed=True)["qualified"]
+    assert select_model(reports, security_passed=True, approved_model=BASELINE)["selected_model"] == BASELINE
+    assert not select_model(reports, security_passed=False, approved_model=BASELINE)["qualified"]
     reports[DEFAULT]["results"].pop()
     with pytest.raises(ValueError):
         select_model(reports, security_passed=True)

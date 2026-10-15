@@ -168,7 +168,7 @@ For auth flow, queue locking, state machines, the ERD, and deployment topology, 
 | Validation | **Pydantic v2** |
 | Migrations | **Alembic** |
 | Auth | **JWT** (access + refresh) · **Argon2 / Bcrypt** hashing |
-| AI | **Amazon Bedrock** — GPT-OSS 120B triage; GPT-OSS 20B support |
+| AI | **Amazon Bedrock** — GPT-OSS 120B triage; GPT-OSS 120B support |
 
 ### Database & Tooling
 
@@ -333,7 +333,7 @@ Local configuration uses `.env`; production Compose explicitly loads `.env.produ
 | `AWS_BEARER_TOKEN_BEDROCK` | ⚙️ | Development/initial deployment credential; use an IAM role when available |
 | `AWS_REGION` | ⚙️ | Default `us-east-1` |
 | `BEDROCK_TRIAGE_MODEL` | ⚙️ | Default `openai.gpt-oss-120b-1:0`, independent of chat |
-| `BEDROCK_CHAT_MODEL` | ⚙️ | Initial `openai.gpt-oss-20b-1:0`; release evaluation controls selection |
+| `BEDROCK_CHAT_MODEL` | ⚙️ | Operator-approved `openai.gpt-oss-120b-1:0`; release evaluation controls selection |
 | `CHAT_ENABLED` | ⚙️ | Off until private MCP connectivity and the 100-scenario evaluation qualify |
 | `UPLOAD_DIR` | ✅ | Server-side upload path (default `uploads`) |
 | `MAX_UPLOAD_SIZE_MB` | ✅ | Default `5` |
@@ -520,3 +520,5 @@ Set independent `CHAT_ENCRYPTION_KEY`, Ed25519 `CHAT_SIGNING_PRIVATE_KEY`, `CHAT
 Run the opt-in comparison against isolated synthetic test data using `RUN_CHAT_EVALUATION=1 PYTHONPATH=../../spandan-mcp-server/src pytest -s -q tests/test_chat_evaluation.py` from `backend`. It exercises the real MCP transport and all three configured model candidates. Run `python -m scripts.qualify_chat` afterwards; this reruns security/regression checks and writes the ignored `.runtime/chat-evaluation.json`. Qualification requires 100 scenarios per model and the agreed accuracy, mutation safety, cost and latency thresholds. Copy the gate to `.runtime/chat/chat-evaluation.json` on the application host, select the qualifying model and its token prices, then enable the flag and release. Incompatible prompt or tool changes invalidate the gate. Never enable chat merely because inference connectivity works.
 
 Every write uses a five-minute proposal and an explicit Confirm button. Finance, permissions and moderation also require fresh password/MFA verification in a secure form. Conversation content is encrypted, removed after 30 days by the scheduled worker, and deletable by its owner. Pending proposals are cancelled on deletion; verified business actions retain separate audit records. Usage records include model, feature, billed input/output token counts and estimated cost, with monthly USD 5/10 alerts. Disabling the flag preserves the normal website workflows.
+
+The evaluated 120B baseline was explicitly selected by the operator after the cheaper candidates failed the complete release rule. To qualify that approved choice, use `python -m scripts.qualify_chat --approved-model openai.gpt-oss-120b-1:0`. This requires the same accuracy and security checks; it does not automatically escalate requests or change the triage model.

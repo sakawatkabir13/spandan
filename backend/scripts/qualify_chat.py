@@ -1,5 +1,6 @@
 """Verify security/regression tests, compare all models and write a private release gate."""
 
+import fcntl
 import json
 import os
 import subprocess
@@ -13,7 +14,18 @@ from app.services.chat_service import SYSTEM
 
 
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--approved-model",
+        choices=[BASELINE],
+        help="Use only after explicit operator approval of the evaluated baseline",
+    )
+    options = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
+    lock = (root / ".runtime/chat-qualification.lock").open("w")
+    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     folder = root / ".runtime/chat-evaluations"
     reports = {
         model: json.loads((folder / (model.replace(":", "_") + ".json")).read_text())
@@ -33,9 +45,12 @@ def main():
         [sys.executable, "-m", "pytest", "-q", "--ignore=tests/test_chat_evaluation.py"],
         cwd=root / "backend",
         env=environment,
+        timeout=240,
     )
     gate = {
-        **select_model(reports, security_passed=result.returncode == 0),
+        **select_model(
+            reports, security_passed=result.returncode == 0, approved_model=options.approved_model
+        ),
         "contract_sha256": digest(TOOL_CATALOG),
         "prompt_sha256": digest(SYSTEM),
     }

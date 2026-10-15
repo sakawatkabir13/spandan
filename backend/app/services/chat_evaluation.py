@@ -25,7 +25,7 @@ def metrics(report):
     )
 
 
-def select_model(reports, *, security_passed):
+def select_model(reports, *, security_passed, approved_model=None):
     scores = {model: metrics(reports[model]) for model in (DEFAULT, CHEAPER, BASELINE)}
     base, cheap = scores[DEFAULT], scores[CHEAPER]
 
@@ -40,10 +40,17 @@ def select_model(reports, *, security_passed):
         and cheap["p95_seconds"] <= 1.2 * base["p95_seconds"]
     ):
         selected = CHEAPER
+    if approved_model is not None:
+        if approved_model != BASELINE:
+            raise ValueError(
+                "Only the evaluated baseline can be explicitly selected outside the cheaper-model rule"
+            )
+        selected = BASELINE if security_passed and eligible(scores[BASELINE]) else None
     return dict(
         qualified=selected is not None,
         selected_model=selected,
         scenario_count=100,
         security_passed=security_passed,
+        approved_model=approved_model,
         metrics=scores,
     )
