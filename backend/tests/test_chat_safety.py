@@ -190,3 +190,120 @@ async def test_postgres_duplicate_execution_across_sessions(world, db_session): 
     results = await asyncio.gather(execute(), execute())
     assert all(result["action"]["status"] == "succeeded" for result in results)
     assert len(list(await db_session.scalars(select(Appointment)))) == 1
+
+
+async def test_checkout_recovers_uncertain_provider_outcome_with_same_operation(
+    world, db_session, monkeypatch
+):
+    from app.core.exceptions import SpandanException
+    from app.models.operations import Payment
+    from app.schemas.appointment import AppointmentCreate
+    from app.services import billing
+    from app.services.appointment import appointment_service
+
+    patient = await actor(db_session, world, "patient")
+    appointment = await appointment_service.book_appointment(
+        db_session, patient, AppointmentCreate(schedule_id=world["schedules"][0].id)
+    )
+    proposal = await propose(
+        db_session, world, "patient", "propose_checkout", {"appointment_id": str(appointment.id)}
+    )
+    aid = UUID(proposal["id"])
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_fixture")
+    monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", "whsec_fixture")
+    keys = []
+
+    async def provider(method, path, data=None, key=None):
+        keys.append(key)
+        if len(keys) == 1:
+            raise SpandanException("PAYMENT_PROVIDER_ERROR", "Response interrupted.", 502)
+        return {
+            "id": "cs_test_reconciled",
+            "url": "https://checkout.stripe.com/test_reconciled",
+            "livemode": False,
+        }
+
+    monkeypatch.setattr(billing, "stripe", provider)
+    await confirm_action(db_session, patient, aid)
+    with pytest.raises(SpandanException):
+        await execute_action(db_session, patient, aid)
+    patient = await actor(db_session, world, "patient")
+    result = await execute_action(db_session, patient, aid)
+    assert result["action"]["status"] == "succeeded"
+    assert keys[0] == keys[1]
+    assert len(list(await db_session.scalars(select(Payment)))) == 1
+
+
+async def test_confirmed_operation_survives_transcript_deletion(world, client, db_session):
+    proposal = await propose(
+        db_session,
+        world,
+        "patient",
+        "propose_book_appointment",
+        {"schedule_id": str(world["schedules"][0].id)},
+    )
+    patient = await actor(db_session, world, "patient")
+    aid = UUID(proposal["id"])
+    await confirm_action(db_session, patient, aid)
+    response = await client.delete(
+        f"/api/v1/chat/conversations/{world['conversations']['patient']}",
+        headers=world["headers"]["patient"],
+    )
+    assert response.status_code == 200
+    assert (await execute_action(db_session, patient, aid))["action"]["status"] == "succeeded"
+
+
+async def test_staff_session_and_queue_actions_use_common_services(world, db_session):
+    from app.core.time import local_now
+
+    assistant = await actor(db_session, world, "assistant")
+    proposal = await propose(
+        db_session,
+        world,
+        "assistant",
+        "propose_create_session",
+        {
+            "chamber_id": str(world["chamber"].id),
+            "schedule_date": str(local_now().date() + timedelta(days=5)),
+            "start_time": "17:00",
+            "end_time": "20:00",
+            "maximum_patients": 12,
+        },
+    )
+    aid = UUID(proposal["id"])
+    await confirm_action(db_session, assistant, aid)
+    result = await execute_action(db_session, assistant, aid)
+    schedule_id = result["action"]["result"]["schedule_id"]
+    proposal = await propose(
+        db_session,
+        world,
+        "assistant",
+        "propose_queue_delay",
+        {"schedule_id": schedule_id, "delay_minutes": 15},
+    )
+    aid = UUID(proposal["id"])
+    await confirm_action(db_session, assistant, aid)
+    result = await execute_action(db_session, assistant, aid)
+    assert result["action"]["result"]["delay_minutes"] == 15
+
+
+async def test_restoring_permissions_does_not_resurrect_old_conversation(world, db_session):
+    from app.services.appointment_operations import update_assistant_permissions
+    from app.services.chat_security import conversation_for_user
+
+    doctor = await actor(db_session, world, "doctor")
+    assignment_id = world["assignment"].id
+    changes = dict(
+        is_active=True,
+        can_manage_schedules=True,
+        can_manage_appointments=True,
+        can_update_queue=False,
+    )
+    await update_assistant_permissions(db_session, doctor, assignment_id, changes)
+    await update_assistant_permissions(
+        db_session, doctor, assignment_id, {**changes, "can_update_queue": True}
+    )
+    assistant = await actor(db_session, world, "assistant")
+    with pytest.raises(Exception) as error:
+        await conversation_for_user(db_session, assistant, world["conversations"]["assistant"])
+    assert error.value.code == "CHAT_ACCESS_CHANGED"

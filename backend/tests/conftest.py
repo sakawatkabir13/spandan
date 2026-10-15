@@ -3,6 +3,7 @@ import os
 os.environ["GROQ_API_KEY"] = ""
 os.environ["AI_ENABLED"] = "false"
 os.environ["AWS_EC2_METADATA_DISABLED"] = "true"
+os.environ["ALLOWED_HOSTS"] = "test,localhost,127.0.0.1,backend,mcp"
 from typing import AsyncGenerator
 
 import pytest_asyncio

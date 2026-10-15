@@ -9,12 +9,13 @@ import jwt
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.core.config import settings
 from app.core.exceptions import SpandanException
 from app.core.time import aware
 from app.db.base import utcnow
+from app.models.audit import AuditLog
 from app.models.chat import ChatAction, ChatConversation
 from app.models.doctor import AssistantAssignment, DoctorProfile
 from app.repositories.user import user_repo
@@ -130,17 +131,19 @@ def decode_delegation(token, audience):
 async def fingerprint(db, user):
     # Query permission columns each time; do not trust cached ORM relationships or JWT roles.
     await db.refresh(user, ["role", "is_active", "token_version"])
-    rows = await db.execute(
-        select(
-            AssistantAssignment.id,
-            AssistantAssignment.doctor_id,
-            AssistantAssignment.is_active,
-            AssistantAssignment.can_manage_schedules,
-            AssistantAssignment.can_manage_appointments,
-            AssistantAssignment.can_update_queue,
+    rows = list(
+        await db.execute(
+            select(
+                AssistantAssignment.id,
+                AssistantAssignment.doctor_id,
+                AssistantAssignment.is_active,
+                AssistantAssignment.can_manage_schedules,
+                AssistantAssignment.can_manage_appointments,
+                AssistantAssignment.can_update_queue,
+            )
+            .where(AssistantAssignment.assistant_user_id == user.id)
+            .order_by(AssistantAssignment.id)
         )
-        .where(AssistantAssignment.assistant_user_id == user.id)
-        .order_by(AssistantAssignment.id)
     )
     doctor = (
         await db.execute(
@@ -149,6 +152,24 @@ async def fingerprint(db, user):
             )
         )
     ).first()
+    # Include durable access-change events. Restoring an old permission value must
+    # never resurrect a conversation or proposal created before its revocation.
+    targets = [str(user.id), *(str(row[0]) for row in rows)]
+    if doctor:
+        targets.append(str(doctor[0]))
+    access_event = await db.scalar(
+        select(AuditLog.id)
+        .where(
+            AuditLog.entity_id.in_(targets),
+            or_(
+                AuditLog.action == "assistant.permissions_updated",
+                AuditLog.action == "user.status_updated",
+                AuditLog.action == "doctor.verification_updated",
+            ),
+        )
+        .order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+        .limit(1)
+    )
     return digest(
         {
             "role": user.role.value,
@@ -156,6 +177,7 @@ async def fingerprint(db, user):
             "ver": user.token_version,
             "assignments": [list(r) for r in rows],
             "doctor": list(doctor) if doctor else None,
+            "access_event": str(access_event) if access_event else None,
         }
     )
 

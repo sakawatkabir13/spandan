@@ -1,5 +1,7 @@
 import asyncio
 import json
+import logging
+import time
 from datetime import timedelta
 from decimal import Decimal
 from uuid import uuid4
@@ -16,6 +18,8 @@ from app.services.chat_contract import validate_tool
 from app.services.chat_mcp import mcp_client
 from app.services.chat_security import conversation_for_user, seal, unseal
 from app.services.llm import bedrock_provider
+
+logger = logging.getLogger(__name__)
 
 SYSTEM = """You are Spandan Assistant, an English-only appointment and chamber support assistant.
 Support English conversations only. For other languages, ask the user in English to rephrase.
@@ -179,6 +183,9 @@ async def record_usage(db, user, conversation, reply):
 
 async def generate(db, user, conversation, generation_id, text):
     conversation_id = conversation.id
+    actor_id = user.id
+    started = time.monotonic()
+    outcome = "stopped"
     cards = []
     protocol = []
     answer = ""
@@ -352,6 +359,7 @@ async def generate(db, user, conversation, generation_id, text):
             )
             await db.commit()
             yield event("done", {"conversation_id": str(conversation.id)})
+            outcome = "completed"
     except Exception as exc:
         await db.rollback()
         message = (
@@ -368,6 +376,7 @@ async def generate(db, user, conversation, generation_id, text):
             if isinstance(exc, TimeoutError)
             else "CHAT_ERROR"
         )
+        outcome = code
         yield event("error", {"code": code, "message": message})
         # Do not recreate deleted transcripts or append after stop/revocation.
         row = await db.scalar(
@@ -392,6 +401,15 @@ async def generate(db, user, conversation, generation_id, text):
             )
             await db.commit()
     finally:
+        logger.info(
+            "chat_turn_complete actor=%s conversation=%s model=%s outcome=%s duration_ms=%.1f tools=%s",
+            actor_id,
+            conversation_id,
+            settings.BEDROCK_CHAT_MODEL,
+            outcome,
+            (time.monotonic() - started) * 1000,
+            len(cards),
+        )
         await db.rollback()
         row = await db.scalar(
             select(ChatConversation)

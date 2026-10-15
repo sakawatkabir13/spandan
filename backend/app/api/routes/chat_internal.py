@@ -4,10 +4,13 @@ import secrets
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header
+from sqlalchemy import update
 
 from app.core.config import settings
 from app.core.exceptions import SpandanException
 from app.db.session import get_db
+from app.models.audit import AuditLog
+from app.models.chat import ChatAction
 from app.schemas.chat import TokenExchange, ToolCall
 from app.services.chat_actions import execute_action, prepare_action
 from app.services.chat_contract import CONTRACT_VERSION, validate_tool
@@ -56,16 +59,42 @@ async def call_tool(
         raise SpandanException("INVALID_DELEGATION", "Delegated access is required.", 401)
     claims = decode_delegation(authorization[7:], "spandan-chat-api")
     user, conversation = await actor_from_claims(db, claims, tool_name)
-    executing = tool_name == "execute_confirmed_action"
-    validate_tool(tool_name, request.arguments, user.role.value, execution=executing)
-    if executing:
-        if claims.get("action_id") != request.arguments["action_id"]:
-            raise SpandanException(
-                "CONFIRMATION_REQUIRED", "An exact-action grant is required.", 403
+    actor_id = user.id
+    try:
+        executing = tool_name == "execute_confirmed_action"
+        validate_tool(tool_name, request.arguments, user.role.value, execution=executing)
+        if executing:
+            if claims.get("action_id") != request.arguments["action_id"]:
+                raise SpandanException(
+                    "CONFIRMATION_REQUIRED", "An exact-action grant is required.", 403
+                )
+            data = await execute_action(db, user, UUID(request.arguments["action_id"]))
+        elif tool_name.startswith("propose_"):
+            data = await prepare_action(db, user, conversation, tool_name, request.arguments)
+        else:
+            data = await read_tool(db, user, tool_name, request.arguments)
+    except SpandanException as exc:
+        await db.rollback()
+        target = claims.get("action_id")
+        if target:
+            await db.execute(
+                update(ChatAction)
+                .where(
+                    ChatAction.id == UUID(target),
+                    ChatAction.actor_user_id == actor_id,
+                    ChatAction.status == "confirmed",
+                )
+                .values(error_code=exc.code)
             )
-        data = await execute_action(db, user, UUID(request.arguments["action_id"]))
-    elif tool_name.startswith("propose_"):
-        data = await prepare_action(db, user, conversation, tool_name, request.arguments)
-    else:
-        data = await read_tool(db, user, tool_name, request.arguments)
+        db.add(
+            AuditLog(
+                actor_user_id=actor_id,
+                action="chat.tool_denied" if exc.status_code in {401, 403} else "chat.tool_failed",
+                entity_type="chat_action" if target else "chat_tool",
+                entity_id=target or tool_name,
+                metadata_json={"tool": tool_name, "code": exc.code},
+            )
+        )
+        await db.commit()
+        raise
     return {"contract_version": CONTRACT_VERSION, "success": True, "data": data}

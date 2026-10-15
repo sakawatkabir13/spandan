@@ -450,6 +450,7 @@ async def execute_action(db, user, action_id):
             raise SpandanException("ACTION_CHANGED", "Details changed. Prepare a new action.", 409)
         result = await mutate(db, user, name, args, action.id)
         action.status = "succeeded"
+        action.error_code = None
         action.completed_at = utcnow()
         action.result_ciphertext = seal(result)
         db.add(
