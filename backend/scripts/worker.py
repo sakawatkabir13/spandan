@@ -38,6 +38,8 @@ async def run():
         if settings.DEMO_MODE:
             from scripts.seed_demo_directory import ensure_demo_sessions
             await ensure_demo_sessions(db)
+        from app.services.chat_retention import cleanup_chat
+        await cleanup_chat(db, now)
         appointments = await db.scalars(
             select(Appointment)
             .join(Schedule, Schedule.id == Appointment.schedule_id)

@@ -22,6 +22,8 @@ from app.models.operations import (
 from app.models.schedule import Schedule, ScheduleStatus
 from app.models.user import PatientProfile, User, UserRole
 from app.repositories.user import patient_repo
+from app.services import appointment_operations
+from app.services.chat_security import chat_release_ready
 from app.services.permissions import require_doctor_access
 
 router = APIRouter(tags=["Chamber operations"])
@@ -94,6 +96,8 @@ async def capabilities():
             "operator": settings.OPERATOR_NAME,
             "contact": settings.OPERATOR_EMAIL,
             "symptom_retention_days": settings.SYMPTOM_RETENTION_DAYS,
+            "chat": chat_release_ready(),
+            "ai_provider": "Amazon Bedrock" if settings.AI_PROVIDER == "bedrock" else "Groq",
         },
     )
 
@@ -103,10 +107,10 @@ async def video_room(id: UUID, user=Depends(get_current_active_user), db=Depends
     import secrets
     from urllib.parse import urlparse
 
-    from app.api.routes.payments import authorize
     from app.core.config import settings
     from app.core.time import session_time
     from app.repositories.schedule import schedule_repo
+    from app.services.billing import authorize
 
     appointment = await authorize(db, user, id)
     schedule = await schedule_repo.get_by_id_with_queue(db, appointment.schedule_id, lock=True)
@@ -147,8 +151,8 @@ async def video_room(id: UUID, user=Depends(get_current_active_user), db=Depends
 
 @router.get("/appointments/{id}/fhir")
 async def export_fhir(id: UUID, user=Depends(get_current_active_user), db=Depends(get_db)):
-    from app.api.routes.payments import authorize
     from app.core.time import session_time
+    from app.services.billing import authorize
 
     appointment = await authorize(db, user, id)
     status = {
@@ -283,41 +287,7 @@ async def read_notification(id: UUID, user=Depends(get_current_active_user), db=
 async def join_waitlist(
     schedule_id: UUID, user=Depends(require_roles(UserRole.PATIENT)), db=Depends(get_db)
 ):
-    from app.models.doctor import DoctorVerificationStatus
-    from app.repositories.appointment import appointment_repo
-    from app.repositories.schedule import schedule_repo
-
-    schedule = await schedule_repo.get_by_id_with_queue(db, schedule_id, lock=True)
-    if not schedule or schedule.status not in (ScheduleStatus.OPEN, ScheduleStatus.FULL):
-        raise SpandanException("SCHEDULE_CLOSED", "This session is unavailable.")
-    from app.core.time import session_time
-
-    doctor = await db.get(DoctorProfile, schedule.doctor_id)
-    owner = await db.get(User, doctor.user_id)
-    if (
-        session_time(schedule, schedule.end_time) <= datetime.now(timezone.utc)
-        or doctor.verification_status != DoctorVerificationStatus.APPROVED
-        or not owner.is_active
-        or not schedule.chamber.is_active
-    ):
-        raise SpandanException("SCHEDULE_CLOSED", "This session is unavailable.")
-    profile = await patient_repo.get_by_user_id(db, user.id)
-    if await appointment_repo.check_patient_already_booked(db, schedule_id, profile.id):
-        raise SpandanException("CONFLICT", "You already have a booking for this session.", 409)
-    entry = await db.scalar(
-        select(WaitlistEntry).where(
-            WaitlistEntry.schedule_id == schedule_id, WaitlistEntry.patient_id == profile.id
-        )
-    )
-    if not entry:
-        entry = WaitlistEntry(schedule_id=schedule_id, patient_id=profile.id)
-        db.add(entry)
-    entry.status = "waiting"
-    await db.commit()
-    return create_success_response(
-        "Joined the cancellation waitlist. You will be notified when space becomes available.",
-        record(entry),
-    )
+    return await appointment_operations.join_waitlist(schedule_id, user=user, db=db)
 
 
 @router.get("/waitlist")
@@ -335,13 +305,7 @@ async def my_waitlist(user=Depends(require_roles(UserRole.PATIENT)), db=Depends(
 async def leave_waitlist(
     id: UUID, user=Depends(require_roles(UserRole.PATIENT)), db=Depends(get_db)
 ):
-    profile = await patient_repo.get_by_user_id(db, user.id)
-    row = await db.get(WaitlistEntry, id)
-    if not row or row.patient_id != profile.id:
-        raise SpandanException("NOT_FOUND", "Waitlist entry not found.", 404)
-    row.status = "cancelled"
-    await db.commit()
-    return create_success_response("Left the waitlist.")
+    return await appointment_operations.leave_waitlist(id, user=user, db=db)
 
 
 class PrivacyRequestBody(BaseModel):
@@ -720,89 +684,7 @@ class RescheduleBody(BaseModel):
 async def reschedule(
     id: UUID, request: RescheduleBody, user=Depends(get_current_active_user), db=Depends(get_db)
 ):
-    from app.core.time import session_time
-    from app.models.operations import Payment
-    from app.repositories.appointment import appointment_repo
-    from app.repositories.schedule import schedule_repo
-    from app.schemas.appointment import AppointmentCreate, AppointmentResponse
-    from app.services.appointment import appointment_service
-
-    original = await appointment_repo.get_by_id_with_details(db, id)
-    if not original:
-        raise SpandanException("NOT_FOUND", "Appointment not found.", 404)
-    if user.role == UserRole.PATIENT:
-        profile = await patient_repo.get_by_user_id(db, user.id)
-        if not profile or profile.id != original.patient_id:
-            raise SpandanException("FORBIDDEN", "This is not your appointment.", 403)
-    else:
-        require_doctor_access(user, original.doctor_id, "can_manage_appointments")
-    if original.schedule_id == request.schedule_id:
-        raise SpandanException("CONFLICT", "Choose a different session.", 409)
-    for schedule_id in sorted((original.schedule_id, request.schedule_id), key=str):
-        await schedule_repo.get_by_id_with_queue(db, schedule_id, lock=True)
-    await db.refresh(original)
-    if original.appointment_status not in (AppointmentStatus.BOOKED, AppointmentStatus.CONFIRMED):
-        raise SpandanException(
-            "CONFLICT", "Only booked or confirmed visits may be rescheduled.", 409
-        )
-    target = await schedule_repo.get_by_id_with_queue(db, request.schedule_id)
-    if not target or target.doctor_id != original.doctor_id:
-        raise SpandanException("CONFLICT", "Choose another session with the same doctor.", 409)
-    payment = await db.scalar(
-        select(Payment).where(Payment.appointment_id == original.id).with_for_update()
-    )
-    if (
-        payment
-        and payment.status == "paid"
-        and target.chamber.consultation_fee != original.chamber.consultation_fee
-    ):
-        raise SpandanException(
-            "CONFLICT",
-            "Paid appointments can only move to a session with the same fee. Contact the chamber for a refund.",
-            409,
-        )
-    original.appointment_status = AppointmentStatus.CANCELLED
-    original.cancelled_at = datetime.now(timezone.utc)
-    original.cancellation_reason = "Rescheduled"
-    old_schedule = await schedule_repo.get_by_id_with_queue(db, original.schedule_id)
-    if old_schedule.status == ScheduleStatus.FULL and session_time(
-        old_schedule, old_schedule.end_time
-    ) > datetime.now(timezone.utc):
-        old_schedule.status = ScheduleStatus.OPEN
-    await db.flush()
-    new = await appointment_service.book_appointment(
-        db,
-        user,
-        AppointmentCreate(
-            schedule_id=target.id,
-            patient_id=original.patient_id,
-            dependent_id=original.dependent_id,
-            patient_note=original.patient_note,
-            consultation_mode=original.consultation_mode,
-            booking_source=original.booking_source,
-        ),
-        commit=False,
-    )
-    if payment:
-        if payment.status != "paid":
-            raise SpandanException(
-                "CONFLICT", "Finish or cancel the pending payment before rescheduling.", 409
-            )
-        payment.appointment_id = new.id
-    await appointment_service.notify_waitlist(db, old_schedule)
-    db.add(
-        AuditLog(
-            actor_user_id=user.id,
-            action="appointment.rescheduled",
-            entity_type="appointment",
-            entity_id=str(new.id),
-            metadata_json={"previous_appointment_id": str(original.id)},
-        )
-    )
-    await db.commit()
-    return create_success_response(
-        "Appointment rescheduled.", AppointmentResponse.model_validate(new)
-    )
+    return await appointment_operations.reschedule(id, request, user=user, db=db)
 
 
 @router.get("/availability/exceptions")
@@ -826,7 +708,6 @@ async def add_exception(
 ):
     from datetime import date
 
-    from app.models.doctor import DoctorProfile
 
     doctor_id = user.doctor_profile.id
     try:

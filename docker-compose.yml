@@ -43,10 +43,13 @@ services:
       BACKEND_URL: ${BACKEND_URL:-http://localhost:8000}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
-      GROQ_TIMEOUT_SECONDS: ${GROQ_TIMEOUT_SECONDS:-20}
-      GROQ_MAX_RETRIES: ${GROQ_MAX_RETRIES:-2}
+      AI_PROVIDER: ${AI_PROVIDER:-bedrock}
+      AI_ENABLED: ${AI_ENABLED:-true}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_BEARER_TOKEN_BEDROCK: ${AWS_BEARER_TOKEN_BEDROCK:-}
+      BEDROCK_TRIAGE_MODEL: ${BEDROCK_TRIAGE_MODEL:-openai.gpt-oss-120b-1:0}
+      BEDROCK_CHAT_MODEL: ${BEDROCK_CHAT_MODEL:-openai.gpt-oss-20b-1:0}
+      CHAT_ENABLED: ${CHAT_ENABLED:-false}
       UPLOAD_DIR: uploads
       MAX_UPLOAD_SIZE_MB: 5
       EMERGENCY_CONTACT_NUMBER: "${EMERGENCY_CONTACT_NUMBER:-999}"

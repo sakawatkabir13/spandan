@@ -6,6 +6,8 @@ from app.api.routes import (
     assistants,
     auth,
     chambers,
+    chat,
+    chat_internal,
     directory,
     doctors,
     events,
@@ -19,6 +21,8 @@ from app.api.routes import (
 )
 
 api_router = APIRouter(prefix="/api/v1")
+api_router.include_router(chat.router)
+api_router.include_router(chat_internal.router)
 api_router.include_router(auth.router)
 api_router.include_router(patients.router)
 api_router.include_router(medical.router)

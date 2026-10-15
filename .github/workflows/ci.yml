@@ -20,8 +20,13 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install --require-hashes -r requirements.lock
+      - uses: actions/checkout@v4
+        with:
+          repository: sakawatkabir13/spandan-mcp-server
+          ref: d2552727ab6f82d7d2d6e7bdbd57f6b1cb61922d
+          path: mcp-service
       - run: ruff check .
-      - run: pytest -q
+      - run: PYTHONPATH=$GITHUB_WORKSPACE/mcp-service/src pytest -q
       - run: pip install pip-audit && pip-audit --disable-pip -r requirements-prod.lock
 
   postgres:
@@ -46,9 +51,14 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install --require-hashes -r requirements.lock
+      - uses: actions/checkout@v4
+        with:
+          repository: sakawatkabir13/spandan-mcp-server
+          ref: d2552727ab6f82d7d2d6e7bdbd57f6b1cb61922d
+          path: mcp-service
       - run: alembic upgrade head
       - run: alembic check
-      - run: pytest -q
+      - run: PYTHONPATH=$GITHUB_WORKSPACE/mcp-service/src pytest -q
 
   frontend:
     runs-on: ubuntu-latest
@@ -107,7 +117,7 @@ jobs:
         options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql+asyncpg://postgres:test-only-spandan@localhost:5432/spandan_test_browser
-      GROQ_API_KEY: ''
+      AI_ENABLED: 'false'
       DEMO_MODE: 'true'
       VITE_PROXY_TARGET: http://127.0.0.1:18000
     steps:

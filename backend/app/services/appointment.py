@@ -232,6 +232,7 @@ class AppointmentService:
         current_user: User,
         appointment_id: UUID,
         request: AppointmentStatusUpdate,
+        *, commit: bool = True,
     ) -> Appointment:
         appointment = await appointment_repo.get_by_id_with_details(db, appointment_id)
         if not appointment:
@@ -364,7 +365,10 @@ class AppointmentService:
                 },
             )
         )
-        await db.commit()
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
         return await appointment_repo.get_by_id_with_details(db, appointment.id)
 
     async def notify_waitlist(self, db, schedule):

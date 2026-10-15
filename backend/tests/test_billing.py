@@ -3,9 +3,9 @@ from uuid import UUID
 
 from sqlalchemy import select
 
-from app.api.routes import payments
 from app.core.config import settings
 from app.models.operations import Payment
+from app.services import billing as payments
 from tests.test_operations import book
 from tests.test_workflows import register, session
 

@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import require_roles
-from app.core.exceptions import SpandanException, create_success_response
+from app.core.exceptions import create_success_response
 from app.db.session import get_db
 from app.models.audit import AuditLog
 from app.models.user import User, UserRole
@@ -61,28 +61,7 @@ async def update_user(
     current_user: User = Depends(require_roles(UserRole.ADMINISTRATOR)),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.services.appointment_operations import update_user_status
+    await update_user_status(db, current_user, id, request.is_active)
     user = await user_repo.get_by_id_with_profiles(db, id)
-    if not user:
-        raise SpandanException(code="NOT_FOUND", message="User not found.", status_code=404)
-    if user.role == UserRole.ADMINISTRATOR and not request.is_active:
-        raise SpandanException(
-            code="FORBIDDEN",
-            message="Administrator accounts cannot be deactivated here.",
-            status_code=403,
-        )
-    previous_status = user.is_active
-    user.is_active = request.is_active
-    db.add(
-        AuditLog(
-            actor_user_id=current_user.id,
-            action="user.status_updated",
-            entity_type="user",
-            entity_id=str(user.id),
-            metadata_json={
-                "previous_is_active": previous_status,
-                "new_is_active": request.is_active,
-            },
-        )
-    )
-    await db.commit()
     return create_success_response(message="Account status updated.", data=user)

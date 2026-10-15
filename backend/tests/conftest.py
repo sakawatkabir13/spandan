@@ -1,6 +1,8 @@
 import os
 
 os.environ["GROQ_API_KEY"] = ""
+os.environ["AI_ENABLED"] = "false"
+os.environ["AWS_EC2_METADATA_DISABLED"] = "true"
 from typing import AsyncGenerator
 
 import pytest_asyncio

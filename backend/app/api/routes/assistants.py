@@ -8,12 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.dependencies.auth import require_roles
-from app.core.exceptions import SpandanException, create_success_response
+from app.core.exceptions import create_success_response
 from app.db.session import get_db
 from app.models.doctor import AssistantAssignment
 from app.models.user import User, UserRole
 from app.schemas.common import ApiResponse
-from app.services.permissions import require_doctor_access
 
 router = APIRouter(prefix="/assistants", tags=["Assistant assignments"])
 
@@ -63,17 +62,7 @@ async def update_assignment(
     current_user: User = Depends(require_roles(UserRole.DOCTOR, UserRole.ADMINISTRATOR)),
     db: AsyncSession = Depends(get_db),
 ):
-    assignment = await db.scalar(
-        select(AssistantAssignment)
-        .options(selectinload(AssistantAssignment.assistant))
-        .where(AssistantAssignment.id == id)
-    )
-    if not assignment:
-        raise SpandanException(code="NOT_FOUND", message="Assignment not found.", status_code=404)
-    require_doctor_access(current_user, assignment.doctor_id, "can_manage_appointments")
-    for key, value in request.model_dump().items():
-        setattr(assignment, key, value)
-    from app.services.audit import audit
-    audit(db, current_user, "assistant.permissions_updated", assignment, request.model_fields_set)
-    await db.commit()
+    from app.services.appointment_operations import update_assistant_permissions
+    assignment = await update_assistant_permissions(db, current_user, id, request.model_dump())
+    assignment = await db.scalar(select(AssistantAssignment).options(selectinload(AssistantAssignment.assistant)).where(AssistantAssignment.id == id))
     return create_success_response(message="Assistant permissions updated.", data=assignment)

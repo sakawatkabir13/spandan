@@ -124,7 +124,7 @@ export const Home: React.FC = () => {
           </div>
           <h3 className="font-bold text-lg text-slate-900 mb-2">AI Symptom Triage</h3>
           <p className="text-sm text-slate-600 leading-relaxed">
-            Not sure whether to see a Neurologist or an ENT specialist? Enter your symptoms into our AI-assisted screening using openai/gpt-oss-120b to explore specialist categories and emergency alerts. It cannot diagnose you.
+            Not sure whether to see a Neurologist or an ENT specialist? Enter your symptoms into our AI-assisted screening  to explore specialist categories and emergency alerts. It cannot diagnose you.
           </p>
         </div>
 

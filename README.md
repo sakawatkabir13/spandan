@@ -12,7 +12,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![Groq](https://img.shields.io/badge/Groq-GPT--OSS%20120B-FF6B35?style=for-the-badge)](https://groq.com)
+[![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-GPT--OSS-FF9900?style=for-the-badge)](https://aws.amazon.com/bedrock/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](./docker-compose.yml)
 
 <br />
@@ -124,7 +124,7 @@ flowchart LR
     Browser["🖥️ React 18 + Vite + TS<br/>TanStack Query · Zod<br/>Tailwind · Lucide"]
     API["⚙️ FastAPI (Async)<br/>SQLAlchemy 2 · Alembic<br/>Pydantic v2 · JWT<br/>Argon2 / Bcrypt"]
     DB[("🗄️ PostgreSQL 16<br/>row-level locking<br/>SELECT FOR UPDATE")]
-    AI["🤖 AI Triage (3-tier)<br/>1. Local emergency keywords<br/>2. Groq GPT-OSS 120B<br/>3. Safe local fallback"]
+    AI["🤖 AI Triage (3-tier)<br/>1. Local emergency keywords<br/>2. Bedrock GPT-OSS 120B<br/>3. Safe local fallback"]
 
     Browser <-->|"HTTPS / REST / JWT"| API
     API <-->|"asyncpg"| DB
@@ -136,7 +136,7 @@ flowchart LR
 
 - **Auth & RBAC** — JWT access + refresh tokens; Argon2/Bcrypt hashing; four role-based portals (Patient, Doctor, Assistant, Admin).
 - **Queue engine** — PostgreSQL row-level locking (`SELECT FOR UPDATE`) guarantees **no double-booking** between online and walk-in serials.
-- **AI triage** — local emergency keyword screening → Groq `openai/gpt-oss-120b` strict structured output → safe fallback when the provider is unavailable.
+- **AI triage** — local emergency keyword screening → Amazon Bedrock `openai.gpt-oss-120b-1:0` strict structured output → safe fallback when the provider is unavailable.
 - **Doctor verification** — doctors only become publicly visible after admin approval (`PENDING → APPROVED / REJECTED / SUSPENDED`).
 
 For auth flow, queue locking, state machines, the ERD, and deployment topology, see [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
@@ -168,7 +168,7 @@ For auth flow, queue locking, state machines, the ERD, and deployment topology, 
 | Validation | **Pydantic v2** |
 | Migrations | **Alembic** |
 | Auth | **JWT** (access + refresh) · **Argon2 / Bcrypt** hashing |
-| AI | **Groq API** — `openai/gpt-oss-120b` |
+| AI | **Amazon Bedrock** — GPT-OSS 120B triage; GPT-OSS 20B support |
 
 ### Database & Tooling
 
@@ -202,7 +202,7 @@ cd spandan
 cp .env.example .env
 ```
 
-> 🔑 *(Optional)* add a real `GROQ_API_KEY` to `.env` to enable live AI triage. Without it, Spandan automatically runs the **local fallback engine**.
+> 🔑 Set `AI_ENABLED=true` and `AWS_BEARER_TOKEN_BEDROCK` in the private `.env` for Bedrock inference. Production can use an EC2 IAM role instead. Without configured inference, triage retains its **local fallback engine**.
 
 ### 3. Launch the stack
 
@@ -329,8 +329,12 @@ Local configuration uses `.env`; production Compose explicitly loads `.env.produ
 | `FRONTEND_URL` | ✅ | e.g. `https://spandan.cuetinsights.dev` |
 | `BACKEND_URL` | ✅ | e.g. `https://spandan.cuetinsights.dev` |
 | `CORS_ORIGINS` | ✅ | Comma-separated allow-list |
-| `GROQ_API_KEY` | ⚙️ | Enables live AI triage; fallback engine runs without it |
-| `GROQ_MODEL` | ⚙️ | Default `openai/gpt-oss-120b` |
+| `AI_ENABLED` | ⚙️ | Enables configured Amazon Bedrock inference |
+| `AWS_BEARER_TOKEN_BEDROCK` | ⚙️ | Development/initial deployment credential; use an IAM role when available |
+| `AWS_REGION` | ⚙️ | Default `us-east-1` |
+| `BEDROCK_TRIAGE_MODEL` | ⚙️ | Default `openai.gpt-oss-120b-1:0`, independent of chat |
+| `BEDROCK_CHAT_MODEL` | ⚙️ | Initial `openai.gpt-oss-20b-1:0`; release evaluation controls selection |
+| `CHAT_ENABLED` | ⚙️ | Off until private MCP connectivity and the 100-scenario evaluation qualify |
 | `UPLOAD_DIR` | ✅ | Server-side upload path (default `uploads`) |
 | `MAX_UPLOAD_SIZE_MB` | ✅ | Default `5` |
 | `EMERGENCY_CONTACT_NUMBER` | ✅ | Default `999` |
@@ -359,7 +363,7 @@ cp .env.production.example .env.production
 chmod 600 .env.production
 ```
 
-Set the database credentials and matching URL, independent JWT and medical-record encryption secrets, Groq key, public URLs, allowed hosts, and integration credentials. Placeholder values must be replaced before startup.
+Set the database credentials and matching URL, independent JWT and medical-record encryption secrets, Bedrock credentials, public URLs, allowed hosts, and integration credentials. Placeholder values must be replaced before startup.
 
 Production binds the frontend to `HTTP_LISTEN_HOST=127.0.0.1` and `HTTP_LISTEN_PORT=8082`. Configure the host Nginx HTTPS proxy to forward to that address. The backend and database have no published host ports. A different network topology can override the listen address and port explicitly.
 
@@ -474,7 +478,7 @@ This project is licensed under the **MIT License** — see the [`LICENSE`](./LIC
 ## 🙏 Acknowledgements
 
 - [FastAPI](https://fastapi.tiangolo.com/) & [SQLAlchemy](https://www.sqlalchemy.org/) — rock-solid async backend foundations.
-- [Groq](https://groq.com/) — hosted inference for the configured GPT-OSS model.
+- [Amazon Bedrock](https://aws.amazon.com/bedrock/) — inference for separately configured support and triage models.
 - [TanStack](https://tanstack.com/), [Tailwind CSS](https://tailwindcss.com/), and the [Vite](https://vitejs.dev/) team — delightful frontend DX.
 - [PostgreSQL](https://www.postgresql.org/) — the world's most advanced open-source database.
 - The Bangladeshi doctor and patient community — this project exists to serve you.
@@ -503,3 +507,16 @@ Contributions can be proposed through GitHub issues and pull requests.
 Made with 💚 in 🇧🇩 Bangladesh by the [Spandan team](#-contributors)
 
 </div>
+
+
+### Spandan Assistant deployment
+
+The signed-in English support interface is separate from the symptom checker. FastAPI runs Bedrock orchestration and the MCP client; [spandan-mcp-server](https://github.com/sakawatkabir13/spandan-mcp-server) is an independent stateless service. Its contract is `spandan-tools-v1` with MCP protocol `2026-07-28`. There are no database or Bedrock credentials on that instance.
+
+Keep `CHAT_ENABLED=false` until both private HTTPS listeners are reachable and model qualification passes. `ops/chat-private-nginx.conf` and `ops/mcp-private-nginx.conf` describe the reciprocal listeners on private TCP 8443. Restrict each EC2 security group to the other instance's private address, require trusted client certificates, and keep the backend callback port bound to host loopback. The public frontend proxy denies the internal API prefix.
+
+Set independent `CHAT_ENCRYPTION_KEY`, Ed25519 `CHAT_SIGNING_PRIVATE_KEY`, `CHAT_MCP_SERVICE_TOKEN`, `CHAT_MCP_URL`, and `CHAT_TLS_CA/CERT/KEY` in private configuration. Mount runtime certificates and the evaluation gate under `.runtime/chat`, readable by container UID/GID 10001. Certificate keys and the private CA must remain outside Git; renew service certificates before their expiry. `ops/create-chat-tls.py` creates initial trust material without overwriting an existing CA. For the eventual IAM role migration, use `ops/bedrock-iam-policy.json`, remove the bearer key, and set `AWS_USE_INSTANCE_ROLE=true`.
+
+Run the opt-in comparison against isolated synthetic test data using `RUN_CHAT_EVALUATION=1 PYTHONPATH=../../spandan-mcp-server/src pytest -s -q tests/test_chat_evaluation.py` from `backend`. It exercises the real MCP transport and all three configured model candidates. Run `python -m scripts.qualify_chat` afterwards; this reruns security/regression checks and writes the ignored `.runtime/chat-evaluation.json`. Qualification requires 100 scenarios per model and the agreed accuracy, mutation safety, cost and latency thresholds. Copy the gate to `.runtime/chat/chat-evaluation.json` on the application host, select the qualifying model and its token prices, then enable the flag and release. Incompatible prompt or tool changes invalidate the gate. Never enable chat merely because inference connectivity works.
+
+Every write uses a five-minute proposal and an explicit Confirm button. Finance, permissions and moderation also require fresh password/MFA verification in a secure form. Conversation content is encrypted, removed after 30 days by the scheduled worker, and deletable by its owner. Pending proposals are cancelled on deletion; verified business actions retain separate audit records. Usage records include model, feature, billed input/output token counts and estimated cost, with monthly USD 5/10 alerts. Disabling the flag preserves the normal website workflows.

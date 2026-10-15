@@ -80,6 +80,6 @@ async def track_serial(
 
 @router.get("/{id}", response_model=ApiResponse[AppointmentResponse])
 async def get_appointment(id: UUID, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)):
-    from app.api.routes.payments import authorize
+    from app.services.billing import authorize
     appointment = await authorize(db, current_user, id)
     return create_success_response(message="Appointment fetched.", data=appointment)

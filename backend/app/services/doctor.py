@@ -12,7 +12,7 @@ from app.models.doctor import (
     Qualification,
     Specialization,
 )
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.repositories.doctor import doctor_repo, specialization_repo
 from app.schemas.doctor import DoctorProfileUpdate, DoctorVerificationRequest
 
@@ -102,8 +102,10 @@ class DoctorService:
         return await specialization_repo.get_active_all(db)
 
     async def verify_doctor(
-        self, db: AsyncSession, admin_user: User, doctor_id: UUID, req: DoctorVerificationRequest
+        self, db: AsyncSession, admin_user: User, doctor_id: UUID, req: DoctorVerificationRequest, *, commit: bool = True
     ) -> DoctorProfile:
+        if admin_user.role != UserRole.ADMINISTRATOR:
+            raise SpandanException("FORBIDDEN", "Administrator access is required.", 403)
         profile = await self.get_doctor_profile(db, doctor_id)
         previous_status = profile.verification_status.value
         profile.verification_status = req.status
@@ -124,7 +126,10 @@ class DoctorService:
                 },
             )
         )
-        await db.commit()
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
         return await doctor_repo.get_by_id_with_details(db, profile.id)
 
 

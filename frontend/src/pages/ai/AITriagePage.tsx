@@ -79,7 +79,7 @@ export const AITriagePage: React.FC = () => {
 
   return (
     <MainLayout>
-      <label className="block max-w-4xl mx-auto my-4 rounded-xl border p-4 text-sm"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I consent to sharing the symptoms I submit with Groq for specialty guidance. Avoid identifying details. Symptom records are retained for 30 days; contact community.cuetinsights@gmail.com for privacy requests.</label>
+      <label className="block max-w-4xl mx-auto my-4 rounded-xl border p-4 text-sm"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I consent to sharing the symptoms I submit with Amazon Bedrock for specialty guidance. Avoid identifying details. Symptom records are retained for 30 days; contact community.cuetinsights@gmail.com for privacy requests.</label>
       {result?.model_identifier === 'fallback-general-medicine' && <p role="status" className="max-w-4xl mx-auto rounded-xl bg-amber-50 p-4 text-amber-900">AI inference is temporarily unavailable. This result is a general fallback recommendation.</p>}
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Banner */}

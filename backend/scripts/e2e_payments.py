@@ -13,7 +13,7 @@ from httpx import ASGITransport, AsyncClient
 
 
 def install(app, settings):
-    from app.api.routes import payments
+    from app.services import billing as payments
 
     settings.STRIPE_SECRET_KEY = "sk_test_browser_fixture"
     settings.STRIPE_WEBHOOK_SECRET = "whsec_browser_fixture"

@@ -23,6 +23,7 @@ import { AccountActionPage } from './pages/auth/AccountActionPage';
 import { ToolsPage } from './pages/dashboard/ToolsPage';
 import { PaymentsPage } from './pages/dashboard/PaymentsPage';
 import { PatientRecordsPage } from './pages/dashboard/PatientRecordsPage';
+import { ChatAssistant } from './components/chat/ChatAssistant';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> = ({
   children,
@@ -194,6 +195,7 @@ export const App: React.FC = () => {
     <AuthProvider>
       <BrowserRouter>
         <AppRoutes />
+        <ChatAssistant />
       </BrowserRouter>
     </AuthProvider>
   );

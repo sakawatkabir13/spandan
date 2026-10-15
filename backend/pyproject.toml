@@ -25,6 +25,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "cryptography>=50.0.2",
     "boto3>=1.43.108",
+    "mcp==2.3.0",
 ]
 
 [project.optional-dependencies]

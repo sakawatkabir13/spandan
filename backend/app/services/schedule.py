@@ -64,7 +64,7 @@ class ScheduleService:
                 )
 
     async def create_schedule(
-        self, db: AsyncSession, current_user: User, request: ScheduleCreate
+        self, db: AsyncSession, current_user: User, request: ScheduleCreate, *, commit: bool = True
     ) -> Schedule:
         chamber = await chamber_repo.get_by_id(db, request.chamber_id)
         if not chamber or not chamber.is_active:
@@ -105,7 +105,10 @@ class ScheduleService:
                 },
             )
         )
-        await db.commit()
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
         return await schedule_repo.get_by_id_with_queue(db, schedule.id)
 
     async def create_recurring_schedules(
@@ -320,7 +323,7 @@ class ScheduleService:
         return schedule
 
     async def update_queue_state(
-        self, db: AsyncSession, current_user: User, schedule_id: UUID, request: QueueStateUpdate
+        self, db: AsyncSession, current_user: User, schedule_id: UUID, request: QueueStateUpdate, *, commit: bool = True
     ) -> QueueState:
         schedule = await self.queue_for_update(db, current_user, schedule_id)
         queue = schedule.queue_state
@@ -344,12 +347,15 @@ class ScheduleService:
                 },
             )
         )
-        await db.commit()
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
         await db.refresh(queue)
         return queue
 
     async def increment_queue(
-        self, db: AsyncSession, current_user: User, schedule_id: UUID
+        self, db: AsyncSession, current_user: User, schedule_id: UUID, *, commit: bool = True
     ) -> QueueState:
         schedule = await self.queue_for_update(db, current_user, schedule_id)
         queue = schedule.queue_state
@@ -388,7 +394,10 @@ class ScheduleService:
                 metadata_json={"current_serial": queue.current_serial},
             )
         )
-        await db.commit()
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
         await db.refresh(queue)
         return queue
 

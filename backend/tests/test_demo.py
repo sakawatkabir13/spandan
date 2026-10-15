@@ -145,7 +145,7 @@ async def test_simulator_ownership_decline_receipt_refund(client, db_session, mo
 
 
 async def test_stripe_checkout_reuse_retry_webhook_and_refund(client, db_session, monkeypatch):
-    from app.api.routes import payments
+    from app.services import billing as payments
 
     monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_synthetic")
     monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", "whsec_synthetic")
@@ -275,7 +275,7 @@ def test_test_only_keys_and_google_smtp_readiness(monkeypatch):
 
 
 async def test_cancel_pending_stripe_checkout_allows_rescheduling(client, db_session, monkeypatch):
-    from app.api.routes import payments
+    from app.services import billing as payments
 
     staff, _, schedule, payload = await session(client, db_session)
     patient, _ = await register(client, "patient", "stripe-cancel")
