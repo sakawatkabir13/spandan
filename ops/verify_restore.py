@@ -28,7 +28,9 @@ def verify(archive):
             # No published port, mounted application volume, or network access.
             docker("run", "--detach", "--name", name, "--network", "none", "--env-file", str(environment), "postgres:16-alpine")
             for _ in range(45):
-                if subprocess.run(["docker", "exec", name, "pg_isready", "-U", "postgres", "-d", "spandan_restore_check"], capture_output=True).returncode == 0:
+                # The entrypoint briefly starts a Unix-socket-only server during initialization.
+                # TCP becomes ready only after that server stops and the final database starts.
+                if subprocess.run(["docker", "exec", name, "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "spandan_restore_check"], capture_output=True).returncode == 0:
                     break
                 time.sleep(1)
             else:
