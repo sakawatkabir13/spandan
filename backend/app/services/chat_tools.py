@@ -143,7 +143,11 @@ def schedule_card(row):
     }
 
 
-def appointment_card(row):
+def dashboard_role(user):
+    return "admin" if user.role == UserRole.ADMINISTRATOR else user.role.value
+
+
+def appointment_card(row, user=None):
     return {
         **project(
             row,
@@ -161,11 +165,13 @@ def appointment_card(row):
         "attendee_name": row.attendee_name or row.patient.full_name,
         "doctor_name": row.doctor.full_name,
         "session": schedule_card(row.schedule),
-        "href": "/dashboard/patient",
+        "href": "/dashboard/patient"
+        if user is None or user.role == UserRole.PATIENT
+        else f"/dashboard/{dashboard_role(user)}/queue?schedule_id={row.schedule_id}",
     }
 
 
-def payment_card(payment, appointment):
+def payment_card(payment, appointment, user=None):
     return {
         "id": str(payment.id) if payment else None,
         "appointment_id": str(appointment.id),
@@ -180,7 +186,9 @@ def payment_card(payment, appointment):
         "doctor_name": appointment.doctor.full_name,
         "serial_number": appointment.serial_number,
         "session_date": str(appointment.schedule.schedule_date),
-        "href": f"/dashboard/patient/payments?appointment_id={appointment.id}",
+        "href": f"/dashboard/patient/payments?appointment_id={appointment.id}"
+        if user is None or user.role == UserRole.PATIENT
+        else f"/dashboard/{dashboard_role(user)}/tools?tab=billing&appointment_id={appointment.id}",
     }
 
 
@@ -245,7 +253,17 @@ async def read_tool(db, user, name, args):
             key=lambda f: sum(w in (f["title"] + " " + f["text"]).lower() for w in topic),
             reverse=True,
         )
-        return {"items": matches[:3]}
+        items = [dict(item) for item in matches[:3]]
+        if user.role != UserRole.PATIENT:
+            base = f"/dashboard/{dashboard_role(user)}"
+            for item in items:
+                item["href"] = {
+                    "/dashboard/patient": base,
+                    "/dashboard/doctor": base,
+                    "/dashboard/patient/profile": base + "/profile",
+                    "/dashboard/patient/payments": base + "/tools?tab=billing",
+                }.get(item["href"], item["href"])
+        return {"items": items}
     if name == "search_doctors":
         args = {**args}
         args.pop("offset", None)
@@ -337,10 +355,10 @@ async def read_tool(db, user, name, args):
         for ident in ids:
             row = await authorized_appointment(db, user, ident)
             if name == "list_appointments":
-                items.append(appointment_card(row))
+                items.append(appointment_card(row, user))
             else:
                 p = await db.scalar(select(Payment).where(Payment.appointment_id == ident))
-                items.append(payment_card(p, row))
+                items.append(payment_card(p, row, user))
         return page(items, offset)
     if name in {"appointment_details", "payment_details", "receipt"}:
         p = None
@@ -356,8 +374,8 @@ async def read_tool(db, user, name, args):
         if name == "receipt" and p.status not in {"paid", "refunded", "refund_pending"}:
             raise SpandanException("CONFLICT", "No receipt is available until payment.", 409)
         if name == "appointment_details":
-            return {**appointment_card(row), "payment": payment_card(p, row)}
-        return payment_card(p, row)
+            return {**appointment_card(row, user), "payment": payment_card(p, row, user)}
+        return payment_card(p, row, user)
     if name == "queue_status":
         sid = uid(args["schedule_id"])
         if user.role == UserRole.PATIENT:

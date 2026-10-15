@@ -307,3 +307,20 @@ async def test_restoring_permissions_does_not_resurrect_old_conversation(world, 
     with pytest.raises(Exception) as error:
         await conversation_for_user(db_session, assistant, world["conversations"]["assistant"])
     assert error.value.code == "CHAT_ACCESS_CHANGED"
+
+
+async def test_staff_cards_link_to_their_own_authorized_workspace(world, db_session):
+    from app.schemas.appointment import AppointmentCreate
+    from app.services.appointment import appointment_service
+
+    patient = await actor(db_session, world, "patient")
+    await appointment_service.book_appointment(
+        db_session, patient, AppointmentCreate(schedule_id=world["schedules"][0].id)
+    )
+    for role in ["doctor", "assistant", "administrator"]:
+        user = await actor(db_session, world, role)
+        slug = "admin" if role == "administrator" else role
+        cards = await read_tool(db_session, user, "list_appointments", {})
+        assert cards["items"][0]["href"].startswith(f"/dashboard/{slug}/queue")
+        cards = await read_tool(db_session, user, "list_payments", {})
+        assert cards["items"][0]["href"].startswith(f"/dashboard/{slug}/tools?tab=billing")
