@@ -77,7 +77,8 @@ class ScheduleService:
             select(DoctorProfile.id).where(DoctorProfile.id == chamber.doctor_id).with_for_update()
         )
         schedule = Schedule(
-            **request.model_dump(), doctor_id=chamber.doctor_id, created_by_user_id=current_user.id
+            **request.model_dump(), doctor_id=chamber.doctor_id, created_by_user_id=current_user.id,
+            confirmed_by_user_id=current_user.id, confirmed_at=local_now(),
         )
         await self.validate_session(db, schedule)
         db.add(schedule)
@@ -158,6 +159,8 @@ class ScheduleService:
                 average_consultation_minutes=request.average_consultation_minutes,
                 status=request.status,
                 created_by_user_id=current_user.id,
+                confirmed_by_user_id=current_user.id,
+                confirmed_at=local_now(),
             )
             await self.validate_session(db, schedule)
             db.add(schedule)

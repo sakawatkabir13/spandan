@@ -143,11 +143,21 @@ class AppointmentService:
         await db.execute(select(PatientProfile.id).where(PatientProfile.id == patient.id).with_for_update())
         if not await db.scalar(select(User.is_active).where(User.id == patient.user_id)):
             raise SpandanException('ACCOUNT_INACTIVE', 'This patient account is inactive.', 403)
+        attendee = patient
         if request.dependent_id:
             from app.models.operations import Dependent
             dependent = await db.get(Dependent, request.dependent_id)
             if not dependent or dependent.patient_id != patient.id or not dependent.is_active:
                 raise SpandanException("FORBIDDEN", "Choose an active family member from this patient account.", 403)
+            attendee = dependent
+        if doctor.minimum_patient_age is not None or doctor.maximum_patient_age is not None:
+            if not attendee.date_of_birth:
+                raise SpandanException("PROFILE_INCOMPLETE", "Add this patient's date of birth before booking an age-restricted doctor.")
+            today = now.astimezone(__import__("zoneinfo").ZoneInfo(settings.APP_TIMEZONE)).date()
+            dob = attendee.date_of_birth
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            if (doctor.minimum_patient_age is not None and age < doctor.minimum_patient_age) or (doctor.maximum_patient_age is not None and age > doctor.maximum_patient_age):
+                raise SpandanException("AGE_RESTRICTION", "This doctor does not accept patients in the selected age group. Choose another doctor.")
         if request.consultation_mode == "video" and not settings.VIDEO_BASE_URL:
             raise SpandanException("VIDEO_UNAVAILABLE", "Video consultations are not configured for this deployment.", 503)
         if await appointment_repo.check_patient_already_booked(db, schedule.id, patient.id, request.dependent_id):
@@ -157,6 +167,10 @@ class AppointmentService:
                 status_code=409,
             )
         active_count = await appointment_repo.count_active_by_schedule(db, schedule.id)
+        from app.services.waitlist import reserved_places
+        reserved = await reserved_places(db, schedule.id, except_patient=patient.id)
+        if active_count + reserved >= schedule.maximum_patients and active_count < schedule.maximum_patients:
+            raise SpandanException("SCHEDULE_RESERVED", "The available places are temporarily reserved for waitlist offers. Please join the waitlist.", 409)
         if active_count >= schedule.maximum_patients:
             raise SpandanException(
                 code="SCHEDULE_FULL", message="This schedule has reached its patient limit."
@@ -205,6 +219,7 @@ class AppointmentService:
         entry = await db.scalar(select(WaitlistEntry).where(WaitlistEntry.schedule_id == schedule.id, WaitlistEntry.patient_id == patient.id))
         if entry:
             entry.status = "booked"
+            entry.appointment_id = appointment.id
         if commit:
             await db.commit()
         else:
@@ -372,15 +387,8 @@ class AppointmentService:
         return await appointment_repo.get_by_id_with_details(db, appointment.id)
 
     async def notify_waitlist(self, db, schedule):
-        from sqlalchemy import select
-
-        from app.models.operations import WaitlistEntry
-        from app.services.notifications import notify
-        for entry in await db.scalars(select(WaitlistEntry).where(WaitlistEntry.schedule_id == schedule.id, WaitlistEntry.status == "waiting").order_by(WaitlistEntry.created_at)):
-            patient = await patient_repo.get_by_id(db, entry.patient_id)
-            user = await db.get(User, patient.user_id)
-            if user and user.is_active:
-                await notify(db, user, "A booking space is available", f"A place may now be available for the session on {schedule.schedule_date}. Open the doctor profile to book. Availability is not reserved.")
+        from app.services.waitlist import offer_places
+        await offer_places(db, schedule)
 
     async def get_serial_tracking(
         self, db: AsyncSession, schedule_id: UUID, current_user: Optional[User] = None, appointment_id: Optional[UUID] = None

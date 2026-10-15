@@ -1,41 +1,52 @@
-import { DirectoryDetailPage } from './pages/doctors/DirectoryDetailPage';
-import React, { useEffect } from 'react';
+import { useLanguage } from './context/LanguageContext';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AppErrorBoundary } from './components/common/AppErrorBoundary';
+import { EnglishOnly } from './context/LanguageContext';
+import { MainLayout } from './components/layout/MainLayout';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 
 // Pages
 import { Home } from './pages/Home';
-import { LoginPage } from './pages/auth/LoginPage';
-import { RegisterPage } from './pages/auth/RegisterPage';
-import { DoctorDiscoveryPage } from './pages/doctors/DoctorDiscoveryPage';
-import { DoctorProfileDetailPage } from './pages/doctors/DoctorProfileDetailPage';
-import { AITriagePage } from './pages/ai/AITriagePage';
-import { PatientDashboard } from './pages/dashboard/PatientDashboard';
-import { DoctorDashboard } from './pages/dashboard/DoctorDashboard';
-import { LiveQueueConsolePage } from './pages/dashboard/LiveQueueConsolePage';
-import { AssistantDashboard } from './pages/dashboard/AssistantDashboard';
-import { AdminDashboard } from './pages/dashboard/AdminDashboard';
-import { UserManagementPage } from './pages/dashboard/UserManagementPage';
-import { ProfilePage } from './pages/dashboard/ProfilePage';
-import { LegalPage } from './pages/LegalPage';
-import { AccountActionPage } from './pages/auth/AccountActionPage';
-import { ToolsPage } from './pages/dashboard/ToolsPage';
-import { PaymentsPage } from './pages/dashboard/PaymentsPage';
-import { PatientRecordsPage } from './pages/dashboard/PatientRecordsPage';
 import { ChatAssistant } from './components/chat/ChatAssistant';
+
+const DirectoryDetailPage = lazy(() => import('./pages/doctors/DirectoryDetailPage').then(module => ({ default: module.DirectoryDetailPage })));
+const LoginPage = lazy(() => import('./pages/auth/LoginPage').then(module => ({ default: module.LoginPage })));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage').then(module => ({ default: module.RegisterPage })));
+const DoctorDiscoveryPage = lazy(() => import('./pages/doctors/DoctorDiscoveryPage').then(module => ({ default: module.DoctorDiscoveryPage })));
+const DoctorProfileDetailPage = lazy(() => import('./pages/doctors/DoctorProfileDetailPage').then(module => ({ default: module.DoctorProfileDetailPage })));
+const AITriagePage = lazy(() => import('./pages/ai/AITriagePage').then(module => ({ default: module.AITriagePage })));
+const PatientDashboard = lazy(() => import('./pages/dashboard/PatientDashboard').then(module => ({ default: module.PatientDashboard })));
+const DoctorDashboard = lazy(() => import('./pages/dashboard/DoctorDashboard').then(module => ({ default: module.DoctorDashboard })));
+const LiveQueueConsolePage = lazy(() => import('./pages/dashboard/LiveQueueConsolePage').then(module => ({ default: module.LiveQueueConsolePage })));
+const AssistantDashboard = lazy(() => import('./pages/dashboard/AssistantDashboard').then(module => ({ default: module.AssistantDashboard })));
+const AdminDashboard = lazy(() => import('./pages/dashboard/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const UserManagementPage = lazy(() => import('./pages/dashboard/UserManagementPage').then(module => ({ default: module.UserManagementPage })));
+const ProfilePage = lazy(() => import('./pages/dashboard/ProfilePage').then(module => ({ default: module.ProfilePage })));
+const LegalPage = lazy(() => import('./pages/LegalPage').then(module => ({ default: module.LegalPage })));
+const AccountActionPage = lazy(() => import('./pages/auth/AccountActionPage').then(module => ({ default: module.AccountActionPage })));
+const ToolsPage = lazy(() => import('./pages/dashboard/ToolsPage').then(module => ({ default: module.ToolsPage })));
+const PaymentsPage = lazy(() => import('./pages/dashboard/PaymentsPage').then(module => ({ default: module.PaymentsPage })));
+const PatientRecordsPage = lazy(() => import('./pages/dashboard/PatientRecordsPage').then(module => ({ default: module.PatientRecordsPage })));
+const AppointmentDetailsPage = lazy(() => import('./pages/dashboard/AppointmentDetailsPage').then(module => ({ default: module.AppointmentDetailsPage })));
+const HealthRecordsPage = lazy(() => import('./pages/dashboard/HealthRecordsPage').then(module => ({ default: module.HealthRecordsPage })));
+const PatientHomePage = lazy(() => import('./pages/dashboard/PatientHomePage').then(module => ({ default: module.PatientHomePage })));
+const TodayPage = lazy(() => import('./pages/dashboard/TodayPage').then(module => ({ default: module.TodayPage })));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> = ({
   children,
   roles,
 }) => {
+  const { t: uiText } = useLanguage();
   const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <LoadingSpinner size="lg" text="Verifying session..." />
+        <LoadingSpinner size="lg" text={uiText("Verifying session...")} />
       </div>
     );
   }
@@ -64,7 +75,29 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> 
 };
 
 const AppRoutes: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const { pathname, hash } = useLocation();
+  useEffect(() => {
+    // Announce a completed route and move keyboard focus past repeated navigation.
+    // Lazy routes may not have a heading until their chunk or data has arrived.
+    if (hash) return;
+    const announce = () => {
+      const heading = document.querySelector<HTMLElement>('main h1, main h2');
+      if (!heading || heading.closest('[aria-busy="true"]')) return false;
+      document.title = `${heading.textContent?.trim() || 'Care'} | Spandan`;
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+      return true;
+    };
+    let observer: MutationObserver | undefined;
+    const frame = requestAnimationFrame(() => {
+      if (announce()) return;
+      observer = new MutationObserver(() => { if (announce()) observer?.disconnect(); });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+    const timeout = window.setTimeout(() => observer?.disconnect(), 10000);
+    return () => { cancelAnimationFrame(frame); observer?.disconnect(); clearTimeout(timeout); };
+  }, [pathname, hash]);
   useEffect(() => {
     if (!hash) { window.scrollTo(0, 0); return; }
     let targetId: string;
@@ -82,7 +115,7 @@ const AppRoutes: React.FC = () => {
     return () => { observer.disconnect(); window.clearTimeout(timeout); };
   }, [pathname, hash]);
   return (
-    <Routes>
+    <Suspense fallback={<MainLayout compact><div className="flex min-h-[55dvh] items-center justify-center"><LoadingSpinner text={uiText("Opening page…")} /></div></MainLayout>}><Routes>
       {/* Public Routes */}
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<LoginPage />} />
@@ -98,6 +131,10 @@ const AppRoutes: React.FC = () => {
       <Route path="/medical-disclaimer" element={<LegalPage document="medical" />} />
 
       {/* Patient Routes */}
+      <Route path="/dashboard/patient/home" element={<ProtectedRoute roles={['patient']}><PatientHomePage /></ProtectedRoute>} />
+      <Route path="/dashboard/patient/records" element={<ProtectedRoute roles={['patient']}><HealthRecordsPage /></ProtectedRoute>} />
+      <Route path="/dashboard/patient/appointments/:appointmentId" element={<ProtectedRoute roles={['patient']}><AppointmentDetailsPage key={pathname} /></ProtectedRoute>} />
+      <Route path="/dashboard/doctor/today" element={<ProtectedRoute roles={['doctor']}><TodayPage /></ProtectedRoute>} />
       <Route path="/dashboard/patient/payments" element={<ProtectedRoute roles={['patient']}><PaymentsPage /></ProtectedRoute>} />
       <Route path="/dashboard/:role/tools" element={<ProtectedRoute><ToolsPage /></ProtectedRoute>} />
       <Route path="/dashboard/doctor/patients/:appointmentId" element={<ProtectedRoute roles={['doctor']}><PatientRecordsPage /></ProtectedRoute>} />
@@ -186,18 +223,19 @@ const AppRoutes: React.FC = () => {
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    </Routes></Suspense>
   );
 };
 
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30000 } } });
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
+    <AppErrorBoundary><QueryClientProvider client={queryClient}><AuthProvider>
       <BrowserRouter>
         <AppRoutes />
-        <ChatAssistant />
+        <EnglishOnly><ChatAssistant /></EnglishOnly>
       </BrowserRouter>
-    </AuthProvider>
+    </AuthProvider></QueryClientProvider></AppErrorBoundary>
   );
 };
 

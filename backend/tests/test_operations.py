@@ -86,7 +86,7 @@ async def test_family_ownership_waitlist_and_atomic_reschedule(client, db_sessio
     )
     assert moved.status_code == 201, moved.text
     notifications = (await client.get("/api/v1/notifications", headers=p2)).json()["data"]
-    assert any(row["subject"] == "A booking space is available" for row in notifications)
+    assert any(row["subject"] == "A waitlist place is reserved for you" for row in notifications)
     assert (
         await client.get(f"/api/v1/appointments/{family['id']}/fhir", headers=p2)
     ).status_code == 403

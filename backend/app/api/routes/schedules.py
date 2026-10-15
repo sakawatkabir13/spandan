@@ -23,6 +23,26 @@ from app.services.schedule import schedule_service
 router = APIRouter(prefix="/schedules", tags=["Schedules & Queue"])
 
 
+@router.post("/{id}/confirm", response_model=ApiResponse[ScheduleResponse])
+async def confirm_availability(id: UUID, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)):
+    from app.core.exceptions import SpandanException
+    from app.core.time import local_now, session_time
+    from app.models.audit import AuditLog
+    from app.repositories.schedule import schedule_repo
+    from app.services.permissions import require_doctor_access
+    schedule = await schedule_repo.get_by_id_with_queue(db, id, lock=True)
+    if not schedule:
+        raise SpandanException("NOT_FOUND", "Session not found.", 404)
+    require_doctor_access(current_user, schedule.doctor_id, "can_manage_schedules")
+    if schedule.status.value not in ("open", "full") or session_time(schedule, schedule.end_time) <= local_now():
+        raise SpandanException("CONFLICT", "Confirm an upcoming active session.", 409)
+    schedule.confirmed_by_user_id = current_user.id
+    schedule.confirmed_at = local_now()
+    db.add(AuditLog(actor_user_id=current_user.id, action="schedule.availability_confirmed", entity_type="schedule", entity_id=str(id)))
+    await db.commit()
+    return create_success_response("Availability confirmed by chamber staff.", schedule)
+
+
 @router.patch("/series/{series_id}", response_model=ApiResponse[List[ScheduleResponse]])
 async def update_series(series_id: UUID, request: ScheduleUpdate, from_date: date = Query(...), current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select

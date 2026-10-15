@@ -43,12 +43,15 @@ def create_refresh_token(
     role: str,
     expires_delta: Optional[timedelta] = None,
     token_version: int = 0,
+    extra_claims: Optional[Dict[str, Any]] = None,
 ) -> str:
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode = {"sub": str(subject), "role": role, "type": "refresh", "exp": expire, "ver": token_version}
+    if extra_claims:
+        to_encode.update(extra_claims)
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 

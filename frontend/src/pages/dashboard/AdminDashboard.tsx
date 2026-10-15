@@ -1,3 +1,5 @@
+import { I18nText } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../api/client';
 import { ApiResponse, AuditLog, DoctorProfile } from '../../types';
@@ -14,6 +16,7 @@ import {
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const [loadError, setLoadError] = useState('');
   const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -90,37 +93,35 @@ export const AdminDashboard: React.FC = () => {
         {/* Header */}
         <div className="glass-card p-6 border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">System Administration & BMDC Verification</h1>
+            <h1 className="text-2xl font-bold text-slate-900"> <I18nText text={"System Administration & BMDC Verification"} /> </h1>
             <p className="text-sm text-slate-600">
-              Audit participating practitioners, verify Bangladesh Medical & Dental Council (BMDC) credentials.
-            </p>
+               <I18nText text={"Audit participating practitioners, verify Bangladesh Medical & Dental Council (BMDC) credentials."} /> </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <div className="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl text-center">
-              <span className="text-[11px] font-bold uppercase text-amber-800 block">Pending Audit</span>
+              <span className="text-[11px] font-bold uppercase text-amber-800 block"> <I18nText text={"Pending Audit"} /> </span>
               <span className="text-xl font-extrabold text-amber-900">{pendingCount}</span>
             </div>
             <div className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl text-center">
-              <span className="text-[11px] font-bold uppercase text-emerald-800 block">BMDC Verified</span>
+              <span className="text-[11px] font-bold uppercase text-emerald-800 block"> <I18nText text={"BMDC Verified"} /> </span>
               <span className="text-xl font-extrabold text-emerald-900">{verifiedCount}</span>
             </div>
           </div>
         </div>
 
         {loading ? (
-          <LoadingSpinner size="lg" text="Loading doctor verification registry..." />
+          <LoadingSpinner size="lg" text={uiText("Loading doctor verification registry...")} />
         ) : doctors.length === 0 ? (
-          <div className="glass-card p-12 text-center text-slate-500">No doctors registered yet.</div>
+          <div className="glass-card p-12 text-center text-slate-500"> <I18nText text={"No doctors registered yet."} /> </div>
         ) : (
           <div className="glass-card p-6 border-slate-200 space-y-4">
             <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-100">
-              <ShieldCheck className="w-5 h-5 text-spandan-600" /> Practitioner Audit Registry
-            </h3>
+              <ShieldCheck className="w-5 h-5 text-spandan-600" />  <I18nText text={"Practitioner Audit Registry"} /> </h3>
 
-            <div className="grid sm:grid-cols-2 gap-3"><label className="text-sm font-medium">Find a practitioner<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Name, workplace, or registration number" className="input-field mt-1" /></label><label className="text-sm font-medium">Verification status<select value={verificationFilter} onChange={event => setVerificationFilter(event.target.value)} className="input-field mt-1"><option value="all">All statuses</option><option value="pending">Pending review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="suspended">Suspended</option></select></label></div>
-            <p className="text-sm text-slate-500">{filteredDoctors.length} of {doctors.length} practitioners</p>
-            {!filteredDoctors.length && <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-600">No practitioners match these filters.</p>}
+            <div className="grid sm:grid-cols-2 gap-3"><label className="text-sm font-medium"> <I18nText text={"Find a practitioner"} /> <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder={uiText("Name, workplace, or registration number")} className="input-field mt-1" /></label><label className="text-sm font-medium"> <I18nText text={"Verification status"} /> <select value={verificationFilter} onChange={event => setVerificationFilter(event.target.value)} className="input-field mt-1"><option value="all"> <I18nText text={"All statuses"} /> </option><option value="pending"> <I18nText text={"Pending review"} /> </option><option value="approved"> <I18nText text={"Approved"} /> </option><option value="rejected"> <I18nText text={"Rejected"} /> </option><option value="suspended"> <I18nText text={"Suspended"} /> </option></select></label></div>
+            <p className="text-sm text-slate-500">{filteredDoctors.length}  <I18nText text={"of"} /> {doctors.length}  <I18nText text={"practitioners"} /> </p>
+            {!filteredDoctors.length && <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-600"> <I18nText text={"No practitioners match these filters."} /> </p>}
             <div className="divide-y divide-slate-100">
               {filteredDoctors.map((doc) => (
                 <div key={doc.id} className="py-5 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
@@ -142,7 +143,7 @@ export const AdminDashboard: React.FC = () => {
                       </p>
 
                       <p className="text-xs text-slate-500">
-                        Workplace: {doc.current_workplace || 'Private Practice'}{!doc.is_demo && <> | Experience: {doc.years_of_experience} years</>}
+                         <I18nText text={"Workplace:"} /> {doc.current_workplace || 'Private Practice'}{!doc.is_demo && <>  <I18nText text={"| Experience:"} /> {doc.years_of_experience}  <I18nText text={"years"} /> </>}
                       </p>
                     </div>
                   </div>
@@ -160,16 +161,14 @@ export const AdminDashboard: React.FC = () => {
                           onClick={() => setRejectTarget(doc)}
                           className="btn-secondary py-2 px-4 text-xs font-semibold text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5"
                         >
-                          <XCircle className="w-4 h-4" /> Reject
-                        </button>
+                          <XCircle className="w-4 h-4" />  <I18nText text={"Reject"} /> </button>
                       </>
                     ) : (
                       <button
                         onClick={() => handleVerify(doc, false, 'Revoked by Admin')}
                         className="btn-secondary py-2 px-4 text-xs font-semibold text-amber-700 border-amber-200 hover:bg-amber-50"
                       >
-                        Revoke Verification
-                      </button>
+                         <I18nText text={"Revoke Verification"} /> </button>
                     )}
                   </div>
                 </div>
@@ -181,21 +180,20 @@ export const AdminDashboard: React.FC = () => {
         <section className="glass-card p-6 border-slate-200 space-y-4" aria-labelledby="audit-log-heading">
           <div className="flex flex-col gap-1 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 id="audit-log-heading" className="font-bold text-lg text-slate-900 flex items-center gap-2">
-              <History className="w-5 h-5 text-spandan-600" /> Recent System Activity
-            </h3>
-            <span className="text-xs font-semibold text-slate-500">Latest {auditLogs.length} audited events</span>
+              <History className="w-5 h-5 text-spandan-600" />  <I18nText text={"Recent System Activity"} /> </h3>
+            <span className="text-xs font-semibold text-slate-500"> <I18nText text={"Latest"} /> {auditLogs.length}  <I18nText text={"audited events"} /> </span>
           </div>
           {auditLogs.length === 0 ? (
-            <p className="py-5 text-center text-sm text-slate-500">No audited activity has been recorded yet.</p>
+            <p className="py-5 text-center text-sm text-slate-500"> <I18nText text={"No audited activity has been recorded yet."} /> </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200" tabIndex={0} role="region" aria-label="Recent system activity table">
+            <div className="overflow-x-auto rounded-xl border border-slate-200" tabIndex={0} role="region" aria-label={uiText("Recent system activity table")}>
               <table className="min-w-full text-left text-sm">
                 <thead className="text-xs uppercase text-slate-500">
                   <tr>
-                    <th className="px-3 py-2 font-semibold">Time</th>
-                    <th className="px-3 py-2 font-semibold">Action</th>
-                    <th className="px-3 py-2 font-semibold">Entity</th>
-                    <th className="px-3 py-2 font-semibold">Actor</th>
+                    <th className="px-3 py-2 font-semibold"> <I18nText text={"Time"} /> </th>
+                    <th className="px-3 py-2 font-semibold"> <I18nText text={"Action"} /> </th>
+                    <th className="px-3 py-2 font-semibold"> <I18nText text={"Entity"} /> </th>
+                    <th className="px-3 py-2 font-semibold"> <I18nText text={"Actor"} /> </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -221,21 +219,20 @@ export const AdminDashboard: React.FC = () => {
           )}
         </section>
 
-        <Modal isOpen={!!rejectTarget} onClose={() => setRejectTarget(null)} title="Reject Doctor Verification">
+        <Modal isOpen={!!rejectTarget} onClose={() => setRejectTarget(null)} title={uiText("Reject Doctor Verification")}>
           {rejectTarget && (
             <form onSubmit={handleConfirmReject} className="space-y-4">
               <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs">
-                You are about to reject verification for <strong>{rejectTarget.full_name}</strong> (BMDC: {rejectTarget.medical_registration_number}).
+                 <I18nText text={"You are about to reject verification for"} /> <strong>{rejectTarget.full_name}</strong>  <I18nText text={"(BMDC:"} /> {rejectTarget.medical_registration_number}).
               </div>
 
               <div>
                 <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
-                  Rejection Notes / Discrepancy details
-                </label>
+                   <I18nText text={"Rejection Notes / Discrepancy details"} /> </label>
                 <textarea
                   required
                   rows={3}
-                  placeholder="e.g. BMDC number expired or does not match council directory..."
+                  placeholder={uiText("e.g. BMDC number expired or does not match council directory...")}
                   value={rejectNotes}
                   onChange={(e) => setRejectNotes(e.target.value)}
                   className="input-field bg-white"
@@ -248,8 +245,7 @@ export const AdminDashboard: React.FC = () => {
                   onClick={() => setRejectTarget(null)}
                   className="btn-secondary py-2 px-4 text-xs font-semibold"
                 >
-                  Cancel
-                </button>
+                   <I18nText text={"Cancel"} /> </button>
                 <button
                   type="submit"
                   disabled={rejectSubmitting}

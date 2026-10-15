@@ -1,3 +1,4 @@
+import { I18nText } from '../../context/LanguageContext';
 import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -9,6 +10,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { Alert } from '../../components/common/Alert';
+import { SaveDoctorButton } from '../../components/common/DoctorBookingFacts';
 import {
   Award,
   Building2,
@@ -21,6 +23,7 @@ import {
 } from 'lucide-react';
 
 export const DoctorProfileDetailPage: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const { t } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const { user, isAuthenticated } = useAuth();
@@ -46,9 +49,9 @@ export const DoctorProfileDetailPage: React.FC = () => {
   const [notice, setNotice] = useState('');
   useEffect(() => { if (user?.role === 'patient') apiClient.get('/dependents').then(r => setDependents(r.data.data)).catch(() => {}); }, [user?.id]);
 
-  const fetchDoctorDetails = async () => {
+  const fetchDoctorDetails = async (showLoading = false) => {
     if (!id) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const [docResp, chamResp, schedResp] = await Promise.all([
         apiClient.get<ApiResponse<DoctorProfile>>(`/doctors/${id}`),
@@ -67,7 +70,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDoctorDetails();
+    void fetchDoctorDetails(true);
   }, [id]);
 
   const handleOpenBookingModal = (schedule: Schedule) => {
@@ -80,6 +83,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
       return;
     }
     setSelectedSchedule(schedule);
+    void apiClient.post('/patients/me/booking-events', { doctor_id: id, event: 'booking_started' }).catch(() => {});
     setBookingError(null);
     setBookedResult(null);
   };
@@ -110,7 +114,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
     }
   };
 
-  if (loading) return <MainLayout><LoadingSpinner size="lg" text="Loading doctor chamber details..." /></MainLayout>;
+  if (loading) return <MainLayout><LoadingSpinner size="lg" text={uiText("Loading doctor chamber details...")} /></MainLayout>;
   if (!doctor) return <MainLayout><Alert type="error" message={loadError || "Doctor profile not found."} /></MainLayout>;
 
   return (
@@ -156,21 +160,20 @@ export const DoctorProfileDetailPage: React.FC = () => {
                 )}
                 {!doctor.is_demo && <span className="flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-slate-400" />
-                  <strong>{doctor.years_of_experience}</strong> years clinical experience
-                </span>}
+                  <strong>{doctor.years_of_experience}</strong>  <I18nText text={"years clinical experience"} /> </span>}
               </div>
             </div>
           </div>
         </div>
 
-        {doctor.is_demo && <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-2"><p>Spandan schedules are separate from hospital availability. Contact the hospital to confirm consultation fees and appointments; a Spandan booking does not reserve a hospital visit.</p>{doctor.source_url && <a className="underline" href={doctor.source_url} target="_blank" rel="noopener noreferrer">Official hospital profile and real contact information</a>}</div>}
+        {doctor.is_demo && <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-2"><p> <I18nText text={"Spandan schedules are separate from hospital availability. Contact the hospital to confirm consultation fees and appointments; a Spandan booking does not reserve a hospital visit."} /> </p>{doctor.source_url && <a className="underline" href={doctor.source_url} target="_blank" rel="noopener noreferrer"> <I18nText text={"Official hospital profile and real contact information"} /> </a>}</div>}
+        <div className="flex flex-wrap items-center gap-4"><SaveDoctorButton doctorId={doctor.id} />{doctor.languages && <p className="text-sm text-slate-600"> <I18nText text={"Languages:"} /> {doctor.languages}</p>}{(doctor.minimum_patient_age != null || doctor.maximum_patient_age != null) && <p className="text-sm text-slate-600"> <I18nText text={"Patient ages:"} /> {doctor.minimum_patient_age ?? 0}–{doctor.maximum_patient_age ?? 'all ages'}</p>}</div>
         {/* Qualifications & Biography */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="glass-card p-6 border-slate-200">
               <h3 className="font-bold text-lg text-slate-900 mb-3 flex items-center gap-2">
-                <Stethoscope className="w-5 h-5 text-spandan-600" /> Biography & Clinical Profile
-              </h3>
+                <Stethoscope className="w-5 h-5 text-spandan-600" />  <I18nText text={"Biography & Clinical Profile"} /> </h3>
               <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                 {doctor.biography ||
                   'No biography has been provided.'}
@@ -179,8 +182,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
               {doctor.qualifications && doctor.qualifications.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-slate-100">
                   <h4 className="font-semibold text-sm text-slate-800 uppercase tracking-wider mb-3">
-                    Qualifications & Professional Degrees
-                  </h4>
+                     <I18nText text={"Qualifications & Professional Degrees"} /> </h4>
                   <div className="flex flex-wrap gap-2">
                     {doctor.qualifications.map((q) => (
                       <div
@@ -198,13 +200,11 @@ export const DoctorProfileDetailPage: React.FC = () => {
             {/* Available Schedules / Book Serial */}
             <div className="glass-card p-6 border-slate-200">
               <h3 className="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-spandan-600" /> Available Consultation Schedules
-              </h3>
+                <Calendar className="w-5 h-5 text-spandan-600" />  <I18nText text={"Available Consultation Schedules"} /> </h3>
 
               {schedules.length === 0 ? (
                 <p className="text-sm text-slate-500 italic py-4">
-                  No upcoming open schedules listed for this doctor currently.
-                </p>
+                   <I18nText text={"No upcoming open schedules listed for this doctor currently."} /> </p>
               ) : (
                 <div className="space-y-4">
                   {schedules.map((sched) => {
@@ -231,7 +231,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
                               {sched.status.toUpperCase()}
                             </Badge>
                           </div>
-
+                          <p className="text-xs text-slate-500">{sched.confirmed_at && !doctor.is_demo ? `Chamber staff confirmed ${new Date(sched.confirmed_at).toLocaleDateString('en-GB')}` : 'Attendance not confirmed by the chamber. Contact the hospital before travelling.'}</p>
                           <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5 text-spandan-600" />
@@ -244,13 +244,13 @@ export const DoctorProfileDetailPage: React.FC = () => {
                               </span>
                             )}
                             <span>
-                              Max Patients: <strong className="text-slate-800">{sched.maximum_patients}</strong>
+                               <I18nText text={"Max Patients:"} /> <strong className="text-slate-800">{sched.maximum_patients}</strong>
                             </span>
                           </div>
 
                           {sched.queue_state && (
                             <div className="text-xs text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-block">
-                              Live Queue: Running Serial #{sched.queue_state.current_serial}{' '}
+                               <I18nText text={"Live Queue: Running Serial #"} /> {sched.queue_state.current_serial}{' '}
                               {sched.queue_state.delay_minutes > 0 &&
                                 `(${sched.queue_state.delay_minutes} mins delay)`}
                             </div>
@@ -268,7 +268,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
                           >
                             {isOpen ? t('Book Serial') : sched.status === 'full' ? 'Schedule Full' : 'Booking Closed'}
                           </button>
-                          {sched.status === 'full' && user?.role === 'patient' && <button className="btn-secondary text-xs" onClick={async () => { try { const r = await apiClient.post(`/waitlist/${sched.id}`); setNotice(r.data.message); } catch (e: any) { setNotice(e.response?.data?.error?.message || 'Unable to join waitlist.'); } }}>Join cancellation waitlist</button>}
+                          {sched.status === 'full' && user?.role === 'patient' && <button className="btn-secondary text-xs" onClick={async () => { try { const r = await apiClient.post(`/waitlist/${sched.id}`); setNotice(r.data.message); } catch (e: any) { setNotice(e.response?.data?.error?.message || 'Unable to join waitlist.'); } }}> <I18nText text={"Join cancellation waitlist"} /> </button>}
                         </div>
                       </div>
                     );
@@ -282,11 +282,10 @@ export const DoctorProfileDetailPage: React.FC = () => {
           <div className="space-y-6">
             <div className="glass-card p-6 border-slate-200 space-y-4">
               <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-spandan-600" /> Chambers & Locations
-              </h3>
+                <MapPin className="w-5 h-5 text-spandan-600" />  <I18nText text={"Chambers & Locations"} /> </h3>
 
               {chambers.length === 0 ? (
-                <p className="text-xs text-slate-500">No active chambers found.</p>
+                <p className="text-xs text-slate-500"> <I18nText text={"No active chambers found."} /> </p>
               ) : (
                 chambers.map((c) => (
                   <div key={c.id} className="border-b border-slate-100 last:border-b-0 pb-4 last:pb-0 space-y-1.5">
@@ -301,9 +300,9 @@ export const DoctorProfileDetailPage: React.FC = () => {
                       </p>
                     )}
                     <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="text-slate-500">New Patient: <strong>৳{c.consultation_fee}</strong></span>
+                      <span className="text-slate-500"> <I18nText text={"New Patient:"} /> <strong>৳{c.consultation_fee}</strong></span>
                       {c.follow_up_fee && (
-                        <span className="text-slate-500">Follow-up: <strong>৳{c.follow_up_fee}</strong></span>
+                        <span className="text-slate-500"> <I18nText text={"Follow-up:"} /> <strong>৳{c.follow_up_fee}</strong></span>
                       )}
                     </div>
                   </div>
@@ -317,7 +316,7 @@ export const DoctorProfileDetailPage: React.FC = () => {
         <Modal
           isOpen={!!selectedSchedule}
           onClose={() => setSelectedSchedule(null)}
-          title="Confirm Serial Booking"
+          title={uiText("Confirm Serial Booking")}
         >
           {bookedResult ? (
             <div className="text-center space-y-4 py-4 animate-fade-in">
@@ -326,11 +325,11 @@ export const DoctorProfileDetailPage: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-slate-900">{t('Booking Confirmed!')}</h3>
               <div className="bg-spandan-50 p-4 rounded-2xl border border-spandan-200 text-slate-800 space-y-2">
-                <p className="text-sm font-medium">Your assigned serial number is:</p>
+                <p className="text-sm font-medium"> <I18nText text={"Your assigned serial number is:"} /> </p>
                 <div className="text-4xl font-extrabold text-spandan-700">#{bookedResult.serial_number}</div>
                 {bookedResult.estimated_consultation_at && (
                   <p className="text-xs text-slate-600 pt-1">
-                    Estimated Time:{' '}
+                     <I18nText text={"Estimated Time:"} /> {' '}
                     <strong>
                       {new Date(bookedResult.estimated_consultation_at).toLocaleTimeString([], {
                         hour: '2-digit',
@@ -341,39 +340,37 @@ export const DoctorProfileDetailPage: React.FC = () => {
                 )}
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">
-                You can track running serial numbers live from your Patient Dashboard right before leaving home.
-              </p>
-              <div className="flex gap-3 pt-2">
-                <Link to={`/dashboard/patient/payments?appointment_id=${bookedResult.id}`} className="btn-primary flex-1 py-2.5 text-xs font-semibold">Pay consultation fee</Link>
+                 <I18nText text={"You can track running serial numbers live from your Patient Dashboard right before leaving home."} /> </p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Link to={`/dashboard/patient/appointments/${bookedResult.id}`} className="btn-secondary w-full text-sm"> <I18nText text={"Open appointment details"} /> </Link>
+                <Link to={`/dashboard/patient/payments?appointment_id=${bookedResult.id}`} className="btn-primary flex-1 py-2.5 text-xs font-semibold"> <I18nText text={"Pay consultation fee"} /> </Link>
                 <button
                   onClick={() => setSelectedSchedule(null)}
                   className="btn-secondary flex-1 py-2.5 text-xs font-semibold"
                 >
-                  Close
-                </button>
+                   <I18nText text={"Close"} /> </button>
                 <Link
                   to="/dashboard/patient"
                   className="btn-primary flex-1 py-2.5 text-xs font-semibold"
                 >
-                  View My Dashboard
-                </Link>
+                   <I18nText text={"View My Dashboard"} /> </Link>
               </div>
             </div>
           ) : selectedSchedule ? (
             <form onSubmit={handleConfirmBooking} className="space-y-4">
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Doctor:</span>
+                  <span className="text-slate-500"> <I18nText text={"Doctor:"} /> </span>
                   <strong className="text-slate-800">{doctor.full_name}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Date:</span>
+                  <span className="text-slate-500"> <I18nText text={"Date:"} /> </span>
                   <strong className="text-slate-800">
                     {new Date(selectedSchedule.schedule_date).toLocaleDateString('en-GB')}
                   </strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Time:</span>
+                  <span className="text-slate-500"> <I18nText text={"Time:"} /> </span>
                   <strong className="text-slate-800">
                     {selectedSchedule.start_time.slice(0, 5)} - {selectedSchedule.end_time.slice(0, 5)}
                   </strong>
@@ -382,15 +379,14 @@ export const DoctorProfileDetailPage: React.FC = () => {
 
               {bookingError && <Alert type="error" message={bookingError} />}
               <label className="block text-sm">{t('Booking for')}<select value={dependentId} onChange={e => setDependentId(e.target.value)} className="input-field"><option value="">{t('Myself')}</option>{dependents.map(d => <option key={d.id} value={d.id}>{d.full_name} ({d.relationship_name})</option>)}</select></label>
-              <label className="block text-sm">{t('Consultation')}<select value={mode} onChange={e => setMode(e.target.value)} className="input-field"><option value="in_person">{t('At the chamber')}</option>{videoEnabled && <option value="video">Video consultation</option>}</select></label>
+              <label className="block text-sm">{t('Consultation')}<select value={mode} onChange={e => setMode(e.target.value)} className="input-field"><option value="in_person">{t('At the chamber')}</option>{videoEnabled && <option value="video"> <I18nText text={"Video consultation"} /> </option>}</select></label>
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  Brief Note for Doctor / Symptoms (Optional)
-                </label>
+                   <I18nText text={"Brief Note for Doctor / Symptoms (Optional)"} /> </label>
                 <textarea
                   rows={3}
-                  placeholder="e.g. Chronic headache, high blood pressure checkup..."
+                  placeholder={uiText("e.g. Chronic headache, high blood pressure checkup...")}
                   value={patientNote}
                   onChange={(e) => setPatientNote(e.target.value)}
                   className="input-field bg-white"

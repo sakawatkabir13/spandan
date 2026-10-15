@@ -32,6 +32,8 @@ test('patient onboarding, private medical upload, booked-doctor review and shari
   await page.getByRole('button', { name: 'Save medical history', exact: true }).click();
   await expect(page.getByText('Medical history and sharing preferences saved.', { exact: true })).toBeVisible();
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
+  await page.getByRole('button', { name: 'Reports & timeline', exact: true }).click();
+  await page.getByText('Add a medical report', { exact: true }).click();
   await page.getByLabel('Report title', { exact: true }).fill('Blood test for visit');
   await page.getByLabel('Report file', { exact: true }).setInputFiles({ name: 'blood-count.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n') });
   await page.getByRole('button', { name: 'Upload report', exact: true }).click();
@@ -49,9 +51,10 @@ test('patient onboarding, private medical upload, booked-doctor review and shari
   await doctorPage.goto(`/dashboard/doctor/queue?schedule_id=${schedule.id}`);
   await doctorPage.getByRole('link', { name: 'Medical history & reports', exact: true }).click();
   await expect(doctorPage).toHaveURL(new RegExp(appointment.id));
-  await expect(doctorPage.getByText('The patient has not enabled medical-record sharing.', { exact: false })).toBeVisible();
+  await expect(doctorPage.getByText("The patient has not shared this person's records for the visit.", { exact: false })).toBeVisible();
   await expect(doctorPage.getByText('Penicillin', { exact: true })).toHaveCount(0);
-  await page.getByLabel('Share my medical history and reports', { exact: false }).check();
+  await page.getByRole('button', { name: 'Medical history', exact: true }).click();
+  await page.getByLabel("Share this person's history", { exact: false }).check();
   await page.getByRole('button', { name: 'Save medical history', exact: true }).click();
   await expect(page.getByText('Medical history and sharing preferences saved.', { exact: true })).toBeVisible();
   await doctorPage.getByRole('button', { name: 'Refresh records', exact: true }).click();
@@ -60,13 +63,14 @@ test('patient onboarding, private medical upload, booked-doctor review and shari
   const download = doctorPage.waitForEvent('download');
   await doctorPage.getByRole('button', { name: /^Download report/ }).click();
   expect((await download).suggestedFilename()).toBe('blood-count.pdf');
-  await page.getByLabel('Share my medical history and reports', { exact: false }).uncheck();
+  await page.getByLabel("Share this person's history", { exact: false }).uncheck();
   await page.getByRole('button', { name: 'Save medical history', exact: true }).click();
   await expect(page.getByText('Medical history and sharing preferences saved.', { exact: true })).toBeVisible();
   await doctorPage.getByRole('button', { name: 'Refresh records', exact: true }).click();
   await expect(doctorPage.getByText('Penicillin', { exact: true })).toHaveCount(0);
   await expect(doctorPage.getByRole('button', { name: /^Download report/ })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole('button', { name: 'Reports & timeline', exact: true }).click();
   page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: /^Remove/ }).click();
   await expect(page.getByRole('heading', { name: 'Blood test for visit', exact: true })).toHaveCount(0);

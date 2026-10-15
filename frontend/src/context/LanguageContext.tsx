@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import additionalBengali from '../locales/bn.json';
 
 const bengali: Record<string, string> = {
   'Book appointment': 'অ্যাপয়েন্টমেন্ট বুক করুন',
@@ -76,6 +77,16 @@ const LanguageContext = createContext({ language: 'en', setLanguage: (_value: st
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState(() => localStorage.getItem('spandan_language') === 'bn' ? 'bn' : 'en');
   useEffect(() => { localStorage.setItem('spandan_language', language); document.documentElement.lang = language; }, [language]);
-  return <LanguageContext.Provider value={{ language, setLanguage, t: value => language === 'bn' ? (bengali[value] || value) : value }}>{children}</LanguageContext.Provider>;
+  return <LanguageContext.Provider value={{ language, setLanguage, t: value => language === 'bn' ? (bengali[value] || (additionalBengali as Record<string, string>)[value] || value) : value }}>{children}</LanguageContext.Provider>;
 }
 export const useLanguage = () => useContext(LanguageContext);
+
+// Static interface copy only. Names, clinical content, and the English-only assistant stay unchanged.
+export function I18nText({ text }: { text: string }) {
+  const { t } = useLanguage();
+  return <>{t(text)}</>;
+}
+
+export function EnglishOnly({ children }: { children: ReactNode }) {
+  return <LanguageContext.Provider value={{ language: 'en', setLanguage: () => {}, t: value => value }}>{children}</LanguageContext.Provider>;
+}

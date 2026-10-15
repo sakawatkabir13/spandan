@@ -1,3 +1,5 @@
+import { I18nText } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
@@ -18,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export const LiveQueueConsolePage: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const [loadError, setLoadError] = useState('');
   const [queueMessage, setQueueMessage] = useState('');
   const { user } = useAuth();
@@ -147,17 +150,16 @@ export const LiveQueueConsolePage: React.FC = () => {
     }
   };
 
-  if (loading) return <DashboardLayout><LoadingSpinner size="lg" text="Connecting to live chamber queue..." /></DashboardLayout>;
+  if (loading) return <DashboardLayout><LoadingSpinner size="lg" text={uiText("Connecting to live chamber queue...")} /></DashboardLayout>;
   if (!schedule) {
     return (
       <DashboardLayout>
         <div className="glass-card p-12 text-center space-y-4">
           <Clock className="w-12 h-12 text-slate-400 mx-auto" />
           {loadError && <p role="alert" className="text-sm text-red-700">{loadError}</p>}
-          <h3 className="font-bold text-lg text-slate-800">No active consultation session selected</h3><Link to={`/dashboard/${user?.role === 'administrator' ? 'admin' : user?.role}`} className="btn-primary">Choose a session</Link>
+          <h3 className="font-bold text-lg text-slate-800"> <I18nText text={"No active consultation session selected"} /> </h3><Link to={`/dashboard/${user?.role === 'administrator' ? 'admin' : user?.role}`} className="btn-primary"> <I18nText text={"Choose a session"} /> </Link>
           <p className="text-sm text-slate-500 max-w-md mx-auto">
-            Please select an open schedule from your schedules panel to start controlling the serial numbers.
-          </p>
+             <I18nText text={"Please select an open schedule from your schedules panel to start controlling the serial numbers."} /> </p>
         </div>
       </DashboardLayout>
     );
@@ -176,25 +178,22 @@ export const LiveQueueConsolePage: React.FC = () => {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 animate-pulse">
-                <Activity className="w-3.5 h-3.5" /> LIVE CHAMBER CONSOLE
-              </span>
+                <Activity className="w-3.5 h-3.5" />  <I18nText text={"LIVE CHAMBER CONSOLE"} /> </span>
               <span className="text-xs text-slate-400">
-                Date: {new Date(schedule.schedule_date).toLocaleDateString('en-GB')}
+                 <I18nText text={"Date:"} /> {new Date(schedule.schedule_date).toLocaleDateString('en-GB')}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               {schedule.chamber?.name || 'Private Consultation Chamber'}
             </h1>
             <p className="text-xs text-slate-300">
-              Session Hours: {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)} | Capacity: {schedule.booked_count ?? appointments.length} / {schedule.maximum_patients} booked
-            </p>
+               <I18nText text={"Session Hours:"} /> {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}  <I18nText text={"| Capacity:"} /> {schedule.booked_count ?? appointments.length} / {schedule.maximum_patients}  <I18nText text={"booked"} /> </p>
           </div>
 
           <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 w-full xl:w-auto justify-around flex-wrap">
             <div className="text-center">
               <span className="text-[11px] uppercase tracking-wider text-slate-300 font-semibold block">
-                Running Serial
-              </span>
+                 <I18nText text={"Running Serial"} /> </span>
               <span className="text-4xl font-black text-emerald-400">
                 #{queue?.current_serial ?? 0}
               </span>
@@ -205,8 +204,7 @@ export const LiveQueueConsolePage: React.FC = () => {
               disabled={updatingQueue}
               className="btn-primary py-3 px-6 text-sm font-bold shadow-lg shadow-spandan-500/40"
             >
-              Call Next Patient
-              <ArrowRight className="w-4 h-4" />
+               <I18nText text={"Call Next Patient"} /> <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -216,11 +214,10 @@ export const LiveQueueConsolePage: React.FC = () => {
           <form onSubmit={handleUpdateDelayAndMessage} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             <div className="md:col-span-3">
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-amber-600" /> Chamber Delay (Mins)
-              </label>
+                <Clock className="w-3.5 h-3.5 text-amber-600" />  <I18nText text={"Chamber Delay (Mins)"} /> </label>
               <input
                 type="number"
-                aria-label="Chamber delay in minutes"
+                aria-label={uiText("Chamber delay in minutes")}
                 min={0}
                 max={300}
                 step={5}
@@ -232,17 +229,16 @@ export const LiveQueueConsolePage: React.FC = () => {
 
             <div className="md:col-span-7">
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1 flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-spandan-600" /> Live Status Broadcast Message
-              </label>
+                <Sliders className="w-3.5 h-3.5 text-spandan-600" />  <I18nText text={"Live Status Broadcast Message"} /> </label>
               <input
                 type="text"
-                aria-label="Live status broadcast message"
-                placeholder="e.g. Doctor is in chamber; running smoothly or 20 mins delayed due to surgery..."
+                aria-label={uiText("Live status broadcast message")}
+                placeholder={uiText("e.g. Doctor is in chamber; running smoothly or 20 mins delayed due to surgery...")}
                 value={statusMsg}
                 onChange={(e) => setStatusMsg(e.target.value)}
                 className="input-field bg-white"
               />
-              <p className="text-xs text-slate-500 mt-1">This message is public. Keep patient names and medical details private.</p>
+              <p className="text-xs text-slate-500 mt-1"> <I18nText text={"This message is public. Keep patient names and medical details private."} /> </p>
             </div>
 
             <div className="md:col-span-2">
@@ -251,26 +247,25 @@ export const LiveQueueConsolePage: React.FC = () => {
                 disabled={updatingQueue}
                 className="btn-secondary w-full py-2.5 text-xs font-semibold"
               >
-                Broadcast Update
-              </button>
+                 <I18nText text={"Broadcast Update"} /> </button>
             </div>
           </form>
         </div>
 
         <section className="glass-card p-6 space-y-4">
-          <h2 className="text-lg font-bold">Book a Patient at the Chamber</h2>
-          <p className="text-sm text-slate-600">Register a walk-in patient below, or use an existing patient's account phone number.</p>
+          <h2 className="text-lg font-bold"> <I18nText text={"Book a Patient at the Chamber"} /> </h2>
+          <p className="text-sm text-slate-600"> <I18nText text={"Register a walk-in patient below, or use an existing patient's account phone number."} /> </p>
           {bookingMessage && <p role="status" className="text-sm text-spandan-800">{bookingMessage}</p>}
           <form className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 items-end" onSubmit={async e => { e.preventDefault(); const form = e.currentTarget; setUpdatingQueue(true); try { await apiClient.post('/appointments/intake', { ...Object.fromEntries(new FormData(form)), schedule_id: scheduleId }); form.reset(); setBookingMessage('Walk-in patient registered and booked.'); await fetchQueueData(false); } catch (error) { setBookingMessage(errorMessage(error)); } finally { setUpdatingQueue(false); } }}>
-            <label>New patient name<input name="full_name" required minLength={2} className="input-field" /></label>
-            <label>Phone number<input name="phone_number" type="tel" required className="input-field" /></label>
-            <label>Email (optional)<input name="email" type="email" className="input-field" /></label>
-            <button disabled={updatingQueue} className="btn-secondary">Register & book walk-in</button>
+            <label> <I18nText text={"New patient name"} /> <input name="full_name" required minLength={2} className="input-field" /></label>
+            <label> <I18nText text={"Phone number"} /> <input name="phone_number" type="tel" required className="input-field" /></label>
+            <label> <I18nText text={"Email (optional)"} /> <input name="email" type="email" className="input-field" /></label>
+            <button disabled={updatingQueue} className="btn-secondary"> <I18nText text={"Register & book walk-in"} /> </button>
           </form>
           <form onSubmit={bookOffline} className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 items-end">
-            <label className="text-sm">Patient phone<input name="patient_phone" type="tel" required className="input-field" /></label>
-            <label className="text-sm">Booking source<select name="booking_source" className="input-field"><option value="walk_in">Walk-in</option><option value="phone">Phone</option><option value="assistant">Assistant</option></select></label>
-            <button disabled={updatingQueue || schedule.status !== 'open'} className="btn-primary self-end">Book Patient</button>
+            <label className="text-sm"> <I18nText text={"Patient phone"} /> <input name="patient_phone" type="tel" required className="input-field" /></label>
+            <label className="text-sm"> <I18nText text={"Booking source"} /> <select name="booking_source" className="input-field"><option value="walk_in"> <I18nText text={"Walk-in"} /> </option><option value="phone"> <I18nText text={"Phone"} /> </option><option value="assistant"> <I18nText text={"Assistant"} /> </option></select></label>
+            <button disabled={updatingQueue || schedule.status !== 'open'} className="btn-primary self-end"> <I18nText text={"Book Patient"} /> </button>
           </form>
         </section>
 
@@ -278,7 +273,7 @@ export const LiveQueueConsolePage: React.FC = () => {
         <div className="glass-card p-6 border-slate-200 space-y-4">
           <div className="flex flex-wrap gap-3 items-center justify-between pb-3 border-b border-slate-100">
             <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-spandan-600" /> Booked Patient Roster ({appointments.length})
+              <UserCheck className="w-5 h-5 text-spandan-600" />  <I18nText text={"Booked Patient Roster ("} /> {appointments.length})
             </h3>
             <button
               onClick={() => {
@@ -287,14 +282,12 @@ export const LiveQueueConsolePage: React.FC = () => {
               }}
               className="p-2 rounded-xl text-slate-500 hover:text-spandan-600 hover:bg-slate-100 transition text-xs flex items-center gap-1"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
-            </button>
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />  <I18nText text={"Refresh"} /> </button>
           </div>
 
           {appointments.length === 0 ? (
             <p className="text-sm text-slate-500 py-8 text-center italic">
-              No patients booked for this schedule yet.
-            </p>
+               <I18nText text={"No patients booked for this schedule yet."} /> </p>
           ) : (
             <div className="divide-y divide-slate-100">
               {appointments.map((app) => {
@@ -343,23 +336,22 @@ export const LiveQueueConsolePage: React.FC = () => {
                           </Badge>
                           {isCurrent && (
                             <span className="text-[10px] bg-spandan-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wide animate-pulse">
-                              Inside Chamber
-                            </span>
+                               <I18nText text={"Inside Chamber"} /> </span>
                           )}
                         </div>
 
                         <p className="text-xs text-slate-500">
-                          Booked via {app.booking_source}
+                           <I18nText text={"Booked via"} /> {app.booking_source}
                         </p>
-                        <Link className="inline-flex min-h-10 items-center text-sm font-medium text-spandan-700 underline" to={`/dashboard/${user?.role === 'administrator' ? 'admin' : user?.role}/tools?tab=billing&appointment_id=${app.id}`}>Payment & receipt</Link>
-                        {user?.role === 'doctor' && !['cancelled', 'absent'].includes(status) && <Link className="flex min-h-10 items-center text-sm font-medium text-spandan-700 underline" to={`/dashboard/doctor/patients/${app.id}`}>Medical history & reports</Link>}
+                        <Link className="inline-flex min-h-10 items-center text-sm font-medium text-spandan-700 underline" to={`/dashboard/${user?.role === 'administrator' ? 'admin' : user?.role}/tools?tab=billing&appointment_id=${app.id}`}> <I18nText text={"Payment & receipt"} /> </Link>
+                        {user?.role === 'doctor' && !['cancelled', 'absent'].includes(status) && <Link className="flex min-h-10 items-center text-sm font-medium text-spandan-700 underline" to={`/dashboard/doctor/patients/${app.id}`}> <I18nText text={"Medical history & reports"} /> </Link>}
                         {app.consultation_mode === 'video' && ['doctor', 'administrator'].includes(user?.role || '') && !['cancelled', 'completed', 'absent'].includes(status) && <button className="btn-secondary text-xs" onClick={async () => {
                           try { const response = await apiClient.get(`/appointments/${app.id}/video`); window.open(response.data.data.url, '_blank', 'noopener,noreferrer'); }
                           catch (error) { setLoadError(errorMessage(error)); }
-                        }}>Join video consultation</button>}
+                        }}> <I18nText text={"Join video consultation"} /> </button>}
                         {app.patient_note && (
                           <p className="text-xs text-amber-800 bg-amber-50 px-2 py-1 rounded italic max-w-lg">
-                            Note: "{app.patient_note}"
+                             <I18nText text={"Note: \""} /> {app.patient_note}"
                           </p>
                         )}
                       </div>
@@ -373,47 +365,41 @@ export const LiveQueueConsolePage: React.FC = () => {
                             onClick={() => handleUpdateStatus(app.id, 'checked_in')}
                             className="btn-secondary py-1.5 px-3 text-xs font-semibold bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
                           >
-                            Check-In
-                          </button>
+                             <I18nText text={"Check-In"} /> </button>
                         )}
                         {['checked_in', 'skipped'].includes(status) && (
                           <button
                             onClick={() => handleUpdateStatus(app.id, 'waiting')}
                             className="btn-secondary py-1.5 px-3 text-xs font-semibold bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
                           >
-                            Add to Waiting
-                          </button>
+                             <I18nText text={"Add to Waiting"} /> </button>
                         )}
                         {['booked', 'confirmed', 'checked_in', 'waiting', 'skipped'].includes(status) && (
                           <button
                             onClick={() => handleUpdateStatus(app.id, 'in_consultation')}
                             className="btn-secondary py-1.5 px-3 text-xs font-semibold bg-spandan-50 text-spandan-800 border-spandan-200 hover:bg-spandan-100"
                           >
-                            In Room
-                          </button>
+                             <I18nText text={"In Room"} /> </button>
                         )}
                         {['booked', 'confirmed', 'checked_in', 'waiting'].includes(status) && (
                           <button
                             onClick={() => handleUpdateStatus(app.id, 'skipped')}
                             className="btn-secondary py-1.5 px-3 text-xs font-semibold text-amber-700 border-amber-200 hover:bg-amber-50"
                           >
-                            Skip
-                          </button>
+                             <I18nText text={"Skip"} /> </button>
                         )}
                         {status === 'in_consultation' ? (
                           <button
                             onClick={() => handleUpdateStatus(app.id, 'completed')}
                             className="btn-primary py-1.5 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 shadow-none"
                           >
-                            Complete
-                          </button>
+                             <I18nText text={"Complete"} /> </button>
                         ) : (
                           <button
                             onClick={() => handleUpdateStatus(app.id, 'absent')}
                             className="btn-secondary py-1.5 px-3 text-xs font-semibold text-red-600 border-red-200 hover:bg-red-50"
                           >
-                            No-Show
-                          </button>
+                             <I18nText text={"No-Show"} /> </button>
                         )}
                       </div>
                     )}

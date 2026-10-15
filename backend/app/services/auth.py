@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
+import hashlib
+import hmac
+from datetime import datetime, timedelta, timezone
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +16,8 @@ from app.core.security import (
     get_password_hash,
     verify_password,
 )
+from app.core.time import aware
+from app.models.account_session import AccountSession
 from app.models.doctor import AssistantAssignment, DoctorProfile, DoctorVerificationStatus
 from app.models.user import PatientProfile, User, UserRole
 from app.repositories.user import user_repo
@@ -71,7 +75,7 @@ class AuthService:
         audit(db, user, "account.registered", user)
         await db.commit()
         loaded_user = await user_repo.get_by_id_with_profiles(db, user.id)
-        return self.create_tokens(loaded_user)
+        return await self.create_tokens(db, loaded_user)
 
     async def register_doctor(
         self, db: AsyncSession, request: RegisterDoctorRequest
@@ -118,7 +122,7 @@ class AuthService:
         audit(db, user, "account.registered", user)
         await db.commit()
         loaded_user = await user_repo.get_by_id_with_profiles(db, user.id)
-        return self.create_tokens(loaded_user)
+        return await self.create_tokens(db, loaded_user)
 
     async def register_assistant(
         self, db: AsyncSession, request: RegisterAssistantRequest
@@ -156,36 +160,55 @@ class AuthService:
         audit(db, user, "account.registered", user)
         await db.commit()
         loaded_user = await user_repo.get_by_id_with_profiles(db, user.id)
-        return self.create_tokens(loaded_user)
+        return await self.create_tokens(db, loaded_user)
 
     async def authenticate(
-        self, db: AsyncSession, email: str, password: str, mfa_code: Optional[str] = None
+        self, db: AsyncSession, email: str, password: str, mfa_code: Optional[str] = None,
+        *, ip_address=None, user_agent="",
     ) -> Optional[User]:
         user = await user_repo.get_by_email(db, email)
         if user:
             user = await db.scalar(select(User).where(User.id == user.id).with_for_update().execution_options(populate_existing=True))
         if not user or not verify_password(password, user.password_hash):
+            await self.audit_login_failure(db, user, "credentials", ip_address, user_agent)
             return None
         demo = await db.scalar(select(DoctorProfile.is_demo).where(DoctorProfile.user_id == user.id))
         if not user.is_active or (demo and not settings.DEMO_MODE):
+            await self.audit_login_failure(db, user, "inactive_account", ip_address, user_agent)
             raise SpandanException(
                 code="ACCOUNT_INACTIVE",
                 message="Your account has been deactivated or suspended.",
                 status_code=403,
             )
         if user.mfa_enabled:
-            from app.services.account_security import validate_mfa
+            from app.services.account_security import validate_login_mfa
             user = await db.scalar(select(User).where(User.id == user.id).with_for_update().execution_options(populate_existing=True))
-            validate_mfa(user, mfa_code)
+            try:
+                await validate_login_mfa(db, user, mfa_code)
+            except SpandanException as exc:
+                if exc.code != "MFA_REQUIRED":
+                    await self.audit_login_failure(db, user, "authenticator", ip_address, user_agent)
+                raise
         user.last_login_at = utcnow()
         from app.models.audit import AuditLog
         db.add(AuditLog(actor_user_id=user.id, action="account.login", entity_type="user", entity_id=str(user.id)))
         await db.commit()
         return await user_repo.get_by_id_with_profiles(db, user.id)
 
-    def create_tokens(self, user: User) -> TokenResponse:
-        access_token = create_access_token(subject=user.id, role=user.role.value, extra_claims={"ver": user.token_version})
-        refresh_token = create_refresh_token(subject=user.id, role=user.role.value, token_version=user.token_version)
+    async def audit_login_failure(self, db, user, reason, ip_address, user_agent):
+        from app.models.audit import AuditLog
+        db.add(AuditLog(actor_user_id=user.id if user else None, action="account.login_failed", entity_type="user", entity_id=str(user.id) if user else None, ip_address=ip_address, metadata_json={"reason": reason, "user_agent": user_agent[:250]}))
+        await db.commit()
+
+    async def create_tokens(self, db, user: User, *, session=None, ip_address=None, user_agent="") -> TokenResponse:
+        if session is None:
+            session = AccountSession(id=uuid4(), user_id=user.id, token_version=user.token_version, user_agent=user_agent[:250], ip_address=ip_address, expires_at=utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
+            db.add(session)
+        access_token = create_access_token(subject=user.id, role=user.role.value, extra_claims={"ver": user.token_version, "sid": str(session.id)})
+        refresh_token = create_refresh_token(subject=user.id, role=user.role.value, token_version=user.token_version, extra_claims={"sid": str(session.id), "jti": uuid4().hex})
+        session.refresh_digest = hashlib.sha256(refresh_token.encode()).hexdigest()
+        session.last_seen_at = utcnow()
+        await db.commit()
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
@@ -208,6 +231,7 @@ class AuthService:
                 code="INVALID_CREDENTIALS", message=str(e), status_code=401
             )
 
+        await db.execute(select(User.id).where(User.id == user_id).with_for_update())
         user = await user_repo.get_by_id_with_profiles(db, user_id)
         if user and payload.get("ver", 0) != user.token_version:
             raise SpandanException(code="INVALID_CREDENTIALS", message="Session has expired. Please sign in again.", status_code=401)
@@ -217,7 +241,21 @@ class AuthService:
                 message="User not found or account inactive.",
                 status_code=403,
             )
-        return self.create_tokens(user)
+        try:
+            session_id = UUID(payload.get("sid", ""))
+        except (ValueError, TypeError):
+            raise SpandanException("INVALID_CREDENTIALS", "Please sign in again to start a secure device session.", 401)
+        session = await db.scalar(select(AccountSession).where(AccountSession.id == session_id, AccountSession.user_id == user.id).with_for_update().execution_options(populate_existing=True))
+        if not session or session.revoked_at or aware(session.expires_at) <= utcnow():
+            raise SpandanException("INVALID_CREDENTIALS", "This device session has expired or been revoked.", 401)
+        if not hmac.compare_digest(session.refresh_digest, hashlib.sha256(refresh_token.encode()).hexdigest()):
+            session.revoked_at = utcnow()
+            user.token_version += 1
+            from app.models.audit import AuditLog
+            db.add(AuditLog(actor_user_id=user.id, action="account.refresh_reuse_detected", entity_type="account_session", entity_id=str(session.id)))
+            await db.commit()
+            raise SpandanException("INVALID_CREDENTIALS", "A reused session token was detected. Sign in again on your devices.", 401)
+        return await self.create_tokens(db, user, session=session)
 
 
 auth_service = AuthService()

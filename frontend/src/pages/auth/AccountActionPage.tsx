@@ -7,6 +7,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 
 export function AccountActionPage() {
+  const { t: uiText } = useLanguage();
   const { t } = useLanguage();
   const { user, logout } = useAuth();
   const [params] = useSearchParams();
@@ -50,11 +51,11 @@ export function AccountActionPage() {
       } catch (error) { setMessage(errorMessage(error)); }
       finally { setBusy(false); }
     }}>
-      <label className="block">{t('Email Address')}<input aria-label="Email" name="email" type="email" autoComplete="email" required readOnly={recovery && sent} value={email} onChange={event => setEmail(event.target.value)} className="input-field" /></label>
+      <label className="block">{t('Email Address')}<input aria-label={uiText("Email")} name="email" type="email" autoComplete="email" required readOnly={recovery && sent} value={email} onChange={event => setEmail(event.target.value)} className="input-field" /></label>
       {recovery && sent && <>
-        <label className="block">{t('Email verification code')}<input aria-label="Email verification code" name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} required value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} className="input-field" /></label>
-        <label className="block">{t('New password')}<input aria-label="New password" name="new_password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required className="input-field" /></label>
-        <label className="block">{t('Confirm new password')}<input aria-label="Confirm new password" name="confirm_password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required className="input-field" /></label>
+        <label className="block">{t('Email verification code')}<input aria-label={uiText("Email verification code")} name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} required value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} className="input-field" /></label>
+        <label className="block">{t('New password')}<input aria-label={uiText("New password")} name="new_password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required className="input-field" /></label>
+        <label className="block">{t('Confirm new password')}<input aria-label={uiText("Confirm new password")} name="confirm_password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required className="input-field" /></label>
         <p className="text-sm text-slate-600">{t('Use at least 12 characters. Resetting your password signs out all existing sessions.')}</p>
         <div className="flex flex-wrap gap-3">
           <button type="button" className="btn-secondary" disabled={busy || remaining > 0} onClick={() => void requestCode()}>{remaining > 0 ? `${t('Resend code in')} ${remaining}s` : t('Resend reset code')}</button>

@@ -1,3 +1,5 @@
+import { I18nText } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
@@ -16,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export const AITriagePage: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const { user, isAuthenticated } = useAuth();
 
   const [symptomsText, setSymptomsText] = useState('');
@@ -79,8 +82,8 @@ export const AITriagePage: React.FC = () => {
 
   return (
     <MainLayout>
-      <label className="block max-w-4xl mx-auto my-4 rounded-xl border p-4 text-sm"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> I consent to sharing the symptoms I submit with Amazon Bedrock for specialty guidance. Avoid identifying details. Symptom records are retained for 30 days; contact community.cuetinsights@gmail.com for privacy requests.</label>
-      {result?.model_identifier === 'fallback-general-medicine' && <p role="status" className="max-w-4xl mx-auto rounded-xl bg-amber-50 p-4 text-amber-900">AI inference is temporarily unavailable. This result is a general fallback recommendation.</p>}
+      <label className="block max-w-4xl mx-auto my-4 rounded-xl border p-4 text-sm"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />  <I18nText text={"I consent to sharing the symptoms I submit with Amazon Bedrock for specialty guidance. Avoid identifying details. Symptom records are retained for 30 days; contact community.cuetinsights@gmail.com for privacy requests."} /> </label>
+      {result?.model_identifier === 'fallback-general-medicine' && <p role="status" className="max-w-4xl mx-auto rounded-xl bg-amber-50 p-4 text-amber-900"> <I18nText text={"AI inference is temporarily unavailable. This result is a general fallback recommendation."} /> </p>}
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Banner */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-spandan-950 to-slate-900 text-white p-8 shadow-xl border border-slate-800">
@@ -88,12 +91,10 @@ export const AITriagePage: React.FC = () => {
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-xl">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-spandan-500/20 text-spandan-300 text-xs font-semibold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" /> GPT-OSS AI-Assisted Triage
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">AI Medical Symptom Checker</h1>
+                <Sparkles className="w-3.5 h-3.5" />  <I18nText text={"GPT-OSS AI-Assisted Triage"} /> </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight"> <I18nText text={"AI Medical Symptom Checker"} /> </h1>
               <p className="text-sm text-slate-300 leading-relaxed">
-                Describe your health symptoms in your own words. Our medical triage engine will screen for emergency red flags and recommend the exact specialist department for your chamber appointment.
-              </p>
+                 <I18nText text={"Describe your health symptoms in your own words. Our medical triage engine will screen for emergency red flags and recommend the exact specialist department for your chamber appointment."} /> </p>
             </div>
           </div>
         </div>
@@ -103,33 +104,31 @@ export const AITriagePage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                Describe your symptoms in detail <span className="text-red-500">*</span>
+                 <I18nText text={"Describe your symptoms in detail"} /> <span className="text-red-500">*</span>
               </label>
               <textarea
                 required
                 rows={4}
                 minLength={10}
                 maxLength={1200}
-                placeholder="e.g., I have been experiencing severe headaches radiating to my neck along with dizziness for the last 4 days. Mild nausea is also present..."
+                placeholder={uiText("e.g., I have been experiencing severe headaches radiating to my neck along with dizziness for the last 4 days. Mild nausea is also present...")}
                 value={symptomsText}
                 onChange={(e) => setSymptomsText(e.target.value)}
                 className="input-field bg-white"
               />
               <p className="text-xs text-slate-500 mt-1">
-                Please provide specific details such as pain location, intensity, and any triggers.
-              </p>
+                 <I18nText text={"Please provide specific details such as pain location, intensity, and any triggers."} /> </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  Patient Age
-                </label>
+                   <I18nText text={"Patient Age"} /> </label>
                 <input
                   type="number"
                   min={0}
                   max={120}
-                  placeholder="e.g., 34"
+                  placeholder={uiText("e.g., 34")}
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
                   className="input-field bg-white"
@@ -138,29 +137,27 @@ export const AITriagePage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  Gender
-                </label>
+                   <I18nText text={"Gender"} /> </label>
                 <select
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
                   className="input-field bg-white cursor-pointer"
                 >
-                  <option value="Not Specified">Not Specified</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="Not Specified"> <I18nText text={"Not Specified"} /> </option>
+                  <option value="Male"> <I18nText text={"Male"} /> </option>
+                  <option value="Female"> <I18nText text={"Female"} /> </option>
+                  <option value="Other"> <I18nText text={"Other"} /> </option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  Duration (in Days)
-                </label>
+                   <I18nText text={"Duration (in Days)"} /> </label>
                 <input
                   type="number"
                   min={0}
                   max={365}
-                  placeholder="e.g., 3"
+                  placeholder={uiText("e.g., 3")}
                   value={durationDays}
                   onChange={(e) => setDurationDays(e.target.value)}
                   className="input-field bg-white"
@@ -182,7 +179,7 @@ export const AITriagePage: React.FC = () => {
         </div>
 
         {/* Triage Results Display */}
-        {loading && <LoadingSpinner size="lg" text="AI screening symptoms for emergency red flags and department mapping..." />}
+        {loading && <LoadingSpinner size="lg" text={uiText("AI screening symptoms for emergency red flags and department mapping...")} />}
 
         {result && (
           <div
@@ -195,14 +192,13 @@ export const AITriagePage: React.FC = () => {
             <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-200/60">
               <div className="min-w-0 space-y-1">
                 <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                  Triage Recommendation Result
-                </span>
+                   <I18nText text={"Triage Recommendation Result"} /> </span>
                 <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                   {result.recommended_specialization_name}
                 </h2>
                 {result.alternative_specialization_name && (
                   <p className="text-xs text-slate-600">
-                    Alternative specialty: <strong>{result.alternative_specialization_name}</strong>
+                     <I18nText text={"Alternative specialty:"} /> <strong>{result.alternative_specialization_name}</strong>
                   </p>
                 )}
               </div>
@@ -226,16 +222,14 @@ export const AITriagePage: React.FC = () => {
               <div className="mt-4 bg-red-600 text-white p-5 rounded-2xl shadow-lg space-y-3">
                 <div className="flex items-center gap-2 font-bold text-lg">
                   <AlertTriangle className="w-6 h-6 animate-pulse" />
-                  EMERGENCY ACTION REQUIRED IMMEDIATELY
-                </div>
+                   <I18nText text={"EMERGENCY ACTION REQUIRED IMMEDIATELY"} /> </div>
                 <p className="text-sm font-medium leading-relaxed">{result.safety_message}</p>
                 <div className="pt-2">
                   <a
                     href="tel:999"
                     className="inline-flex items-center gap-2 bg-white text-red-700 font-extrabold px-6 py-3 rounded-xl shadow hover:bg-red-50 transition text-base"
                   >
-                    Call Ambulance (999) Now
-                  </a>
+                     <I18nText text={"Call Ambulance (999) Now"} /> </a>
                 </div>
               </div>
             )}
@@ -243,7 +237,7 @@ export const AITriagePage: React.FC = () => {
             {/* Medical Reasoning & Safety */}
             <div className="mt-6 space-y-4 text-slate-800">
               <div>
-                <h4 className="font-semibold text-sm text-slate-900 mb-1">Medical Rationale:</h4>
+                <h4 className="font-semibold text-sm text-slate-900 mb-1"> <I18nText text={"Medical Rationale:"} /> </h4>
                 <p className="text-sm leading-relaxed text-slate-700 bg-slate-50/80 p-4 rounded-xl border border-slate-200/60">
                   {result.reasoning_summary}
                 </p>
@@ -251,7 +245,7 @@ export const AITriagePage: React.FC = () => {
 
               {result.urgency_level !== 'emergency' && result.safety_message && (
                 <div>
-                  <h4 className="font-semibold text-sm text-slate-900 mb-1">Symptom Monitoring & Self-Care:</h4>
+                  <h4 className="font-semibold text-sm text-slate-900 mb-1"> <I18nText text={"Symptom Monitoring & Self-Care:"} /> </h4>
                   <p className="text-sm leading-relaxed text-slate-700 bg-amber-50/60 p-4 rounded-xl border border-amber-200/60">
                     {result.safety_message}
                   </p>
@@ -269,8 +263,7 @@ export const AITriagePage: React.FC = () => {
                     to={result.recommended_specialization_id ? `/doctors?specialization_id=${result.recommended_specialization_id}` : `/doctors?query=${encodeURIComponent(result.recommended_specialization_name)}`}
                     className="btn-primary py-3 px-6 text-sm font-semibold shadow-lg"
                   >
-                    Book {result.recommended_specialization_name} Doctor
-                    <ArrowRight className="w-4 h-4" />
+                     <I18nText text={"Book"} /> {result.recommended_specialization_name}  <I18nText text={"Doctor"} /> <ArrowRight className="w-4 h-4" />
                   </Link>
                 )}
               </div>
@@ -282,13 +275,12 @@ export const AITriagePage: React.FC = () => {
         {isAuthenticated && user?.role === 'patient' && (
           historyLoading ? (
             <div className="glass-card p-6 border-slate-200 flex justify-center">
-              <LoadingSpinner size="sm" text="Loading previous triage checks..." />
+              <LoadingSpinner size="sm" text={uiText("Loading previous triage checks...")} />
             </div>
           ) : history.length > 0 ? (
           <div className="glass-card p-6 border-slate-200 space-y-4">
             <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-              <History className="w-5 h-5 text-spandan-600" /> Your Previous Symptom Checks
-            </h3>
+              <History className="w-5 h-5 text-spandan-600" />  <I18nText text={"Your Previous Symptom Checks"} /> </h3>
             <div className="space-y-3">
               {history.slice(0, 5).map((item) => (
                 <div

@@ -1,3 +1,4 @@
+import { I18nText } from '../../context/LanguageContext';
 import { useLanguage } from '../../context/LanguageContext';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -9,6 +10,7 @@ import { errorMessage } from '../../api/errors';
 import { EmailOTPField } from '../../components/common/EmailOTPField';
 
 export const RegisterPage: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const { t } = useLanguage();
   const [tab, setTab] = useState<'patient' | 'doctor'>('patient');
 
@@ -108,14 +110,14 @@ export const RegisterPage: React.FC = () => {
               <Stethoscope className="w-4 h-4 shrink-0" />{t('Doctor Practitioner')}</button>
           </div>
 
-          {error && <Alert type="error" title="Registration Error" message={error} onClose={() => setError(null)} />}
+          {error && <Alert type="error" title={uiText("Registration Error")} message={error} onClose={() => setError(null)} />}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Full Name')}</label>
               <div className="field-with-icon">
                 <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input aria-label="Full Name"
+                <input aria-label={uiText("Full Name")}
                   type="text"
                   required
                   placeholder={tab === 'patient' ? 'e.g. Rahat Karim' : 'e.g. Dr. Tanvir Ahmed'}
@@ -131,11 +133,11 @@ export const RegisterPage: React.FC = () => {
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Email Address')}</label>
                 <div className="field-with-icon">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                  <input aria-label="Email Address"
+                  <input aria-label={uiText("Email Address")}
                     type="email"
                   autoComplete="email"
                     required
-                    placeholder="name@gmail.com"
+                    placeholder={uiText("name@gmail.com")}
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setEmailOTP(''); }}
                     className="input-field pl-10"
@@ -147,10 +149,10 @@ export const RegisterPage: React.FC = () => {
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Phone Number')}</label>
                 <div className="field-with-icon">
                   <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                  <input aria-label="Phone Number"
+                  <input aria-label={uiText("Phone Number")}
                     type="text"
                     required
-                    placeholder="01712345678 or +8801712345678"
+                    placeholder={uiText("01712345678 or +8801712345678")}
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     className="input-field pl-10"
@@ -163,13 +165,13 @@ export const RegisterPage: React.FC = () => {
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">{t('Password')}</label>
               <div className="field-with-icon">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input aria-label="Password"
+                <input aria-label={uiText("Password")}
                   type="password"
                   autoComplete="new-password"
                   required
                   minLength={8}
                   maxLength={128}
-                  placeholder="At least 8 characters"
+                  placeholder={uiText("At least 8 characters")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field pl-10"
@@ -182,34 +184,31 @@ export const RegisterPage: React.FC = () => {
               <div className="bg-spandan-50/50 p-4 rounded-2xl border border-spandan-200/60 space-y-4 animate-fade-in">
                 <div className="flex items-center gap-2 text-spandan-800 font-semibold text-xs uppercase tracking-wider">
                   <Stethoscope className="w-4 h-4 text-spandan-600" />
-                  <span>BMDC & Professional Credentials</span>
+                  <span> <I18nText text={"BMDC & Professional Credentials"} /> </span>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    BMDC Registration Number (Required)
-                  </label>
-                  <input aria-label="BMDC Registration Number"
+                     <I18nText text={"BMDC Registration Number (Required)"} /> </label>
+                  <input aria-label={uiText("BMDC Registration Number")}
                     type="text"
                     required
-                    placeholder="e.g. A-12345 or BMDC-A-10101"
+                    placeholder={uiText("e.g. A-12345 or BMDC-A-10101")}
                     value={bmdcNumber}
                     onChange={(e) => setBmdcNumber(e.target.value)}
                     className="input-field bg-white"
                   />
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Your BMDC number will be verified by Spandan administrators.
-                  </p>
+                     <I18nText text={"Your BMDC number will be verified by Spandan administrators."} /> </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Current Hospital / Workplace
-                    </label>
-                    <input aria-label="Current Hospital / Workplace"
+                       <I18nText text={"Current Hospital / Workplace"} /> </label>
+                    <input aria-label={uiText("Current Hospital / Workplace")}
                       type="text"
-                      placeholder="e.g. BSMMU / Dhaka Medical"
+                      placeholder={uiText("e.g. BSMMU / Dhaka Medical")}
                       value={workplace}
                       onChange={(e) => setWorkplace(e.target.value)}
                       className="input-field bg-white"
@@ -217,9 +216,8 @@ export const RegisterPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Years of Experience
-                    </label>
-                    <input aria-label="Years of Experience"
+                       <I18nText text={"Years of Experience"} /> </label>
+                    <input aria-label={uiText("Years of Experience")}
                       type="number"
                       required
                       min={0}
@@ -246,7 +244,7 @@ export const RegisterPage: React.FC = () => {
           </form>
 
           <div className="pt-4 border-t border-slate-100 text-center text-sm text-slate-600">
-            Already registered?{' '}
+             <I18nText text={"Already registered?"} /> {' '}
             <Link to="/login" className="font-semibold text-spandan-600 hover:text-spandan-700 underline">{t('Sign in')}</Link>
           </div>
         </div>

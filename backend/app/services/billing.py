@@ -132,6 +132,7 @@ async def checkout(appointment_id: UUID, user, db, *, commit: bool = True, payme
             "client_reference_id": str(appointment.id),
             "customer_email": user.email,
             "metadata[payment_id]": str(payment.id),
+            "payment_intent_data[metadata][payment_id]": str(payment.id),
             "line_items[0][price_data][currency]": payment.currency,
             "line_items[0][price_data][unit_amount]": str(amount),
             "line_items[0][price_data][product_data][name]": "Spandan consultation",

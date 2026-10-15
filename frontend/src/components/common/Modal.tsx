@@ -1,3 +1,4 @@
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
@@ -11,6 +12,7 @@ interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidth = 'md' }) => {
+  const { t: uiText } = useLanguage();
   const titleId = useId();
   const dialog = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
@@ -44,7 +46,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className={`bg-white rounded-2xl shadow-2xl border border-slate-100 w-full ${width} overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]`}>
       <div className="px-4 sm:px-6 py-4 shrink-0 gap-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
         <h3 id={titleId} className="min-w-0 font-semibold text-lg text-slate-800">{title}</h3>
-        <button type="button" aria-label="Close dialog" onClick={onClose} className="p-2 shrink-0 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"><X className="w-5 h-5" /></button>
+        <button type="button" aria-label={uiText("Close dialog")} onClick={onClose} className="p-2 shrink-0 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"><X className="w-5 h-5" /></button>
       </div>
       <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain min-h-0 flex-1">{children}</div>
     </div>

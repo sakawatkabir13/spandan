@@ -61,6 +61,21 @@ def validate_mfa(user, code, allow_pending=False):
     user.mfa_last_counter = counter
 
 
+async def validate_login_mfa(db, user, code):
+    """Recovery codes are single use and only accepted in secure account forms."""
+    normalized = (code or "").replace("-", "").strip().lower()
+    if user.mfa_enabled and len(normalized) == 16:
+        from app.models.account_session import MFARecoveryCode
+        digest = hashlib.sha256(f"{user.id}:{normalized}".encode()).hexdigest()
+        row = await db.scalar(select(MFARecoveryCode).where(MFARecoveryCode.user_id == user.id, MFARecoveryCode.digest == digest).with_for_update())
+        if not row:
+            raise SpandanException("INVALID_MFA", "Recovery code is invalid or already used.", 401)
+        await db.delete(row)
+        db.add(AuditLog(actor_user_id=user.id, action="account.recovery_code_used", entity_type="user", entity_id=str(user.id)))
+        return
+    validate_mfa(user, code)
+
+
 async def issue_action(db, user, purpose):
     channel = "sms" if purpose == "phone" else "email"
     configured = bool(settings.TWILIO_ACCOUNT_SID) if channel == "sms" else settings.email_enabled

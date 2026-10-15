@@ -81,19 +81,22 @@ apiClient.interceptors.response.use(
       }
 
       try {
-        const refreshResp = await axios.post<ApiResponse<AuthTokens>>(
-          `${BASE_URL}/auth/refresh`,
-          { refresh_token: refreshToken },
-          { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
-        );
-
-        const newAccess = refreshResp.data.data.access_token;
-        const newRefresh = refreshResp.data.data.refresh_token;
-
-        localStorage.setItem('spandan_access_token', newAccess);
-        if (newRefresh) {
-          localStorage.setItem('spandan_refresh_token', newRefresh);
-        }
+        const rotate = async () => {
+          // A second tab may already have rotated this token while we waited for its lock.
+          const latest = localStorage.getItem('spandan_refresh_token');
+          const access = localStorage.getItem('spandan_access_token');
+          if (latest && latest !== refreshToken && access) return access;
+          const refreshResp = await axios.post<ApiResponse<AuthTokens>>(
+            `${BASE_URL}/auth/refresh`,
+            { refresh_token: latest || refreshToken },
+            { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
+          );
+          const tokens = refreshResp.data.data;
+          localStorage.setItem('spandan_access_token', tokens.access_token);
+          localStorage.setItem('spandan_refresh_token', tokens.refresh_token);
+          return tokens.access_token;
+        };
+        const newAccess = navigator.locks ? await navigator.locks.request('spandan-token-refresh', rotate) : await rotate();
 
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newAccess}`;

@@ -33,6 +33,9 @@ class DoctorProfile(Base):
     biography = Column(Text, nullable=True)
     current_workplace = Column(String, nullable=True, index=True)
     years_of_experience = Column(Integer, default=0, nullable=False)
+    languages = Column(String(200), nullable=False, default="", server_default="")
+    minimum_patient_age = Column(Integer, nullable=True)
+    maximum_patient_age = Column(Integer, nullable=True)
     verification_status = Column(
         Enum(DoctorVerificationStatus, name="doctorverificationstatus", create_constraint=True),
         default=DoctorVerificationStatus.PENDING,

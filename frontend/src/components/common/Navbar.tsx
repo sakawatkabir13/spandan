@@ -1,3 +1,4 @@
+import { I18nText } from '../../context/LanguageContext';
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -5,6 +6,7 @@ import { Activity, LogOut, Search, Sparkles, User as UserIcon } from 'lucide-rea
 import { useLanguage } from '../../context/LanguageContext';
 
 export const Navbar: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const { language, setLanguage, t } = useLanguage();
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
@@ -32,19 +34,17 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80 transition-all">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group shrink-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-spandan-600 to-spandan-400 flex items-center justify-center text-white shadow-md shadow-spandan-500/20 group-hover:scale-105 transition duration-200">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-spandan-600 flex items-center justify-center text-white group-hover:bg-spandan-700 transition duration-200">
             <Activity className="w-6 h-6" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-slate-900 via-spandan-800 to-spandan-600 bg-clip-text text-transparent">
-              Spandan
-            </span>
+            <span className="font-bold text-lg sm:text-xl tracking-tight text-spandan-950">
+               <I18nText text={"Spandan"} /> </span>
             <span className="hidden sm:block text-[10px] font-medium tracking-widest text-spandan-600 -mt-1">
-              Find Care. Book Easily
-            </span>
+               <I18nText text={"Care, closer to you"} /> </span>
           </div>
         </Link>
 
@@ -63,12 +63,12 @@ export const Navbar: React.FC = () => {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <button aria-label="Change language" className="min-h-11 px-1 text-xs sm:text-sm font-semibold" onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}>{language === 'en' ? 'বাংলা' : 'English'}</button>
+          <button aria-label={uiText("Change language")} className="min-h-11 px-1 text-xs sm:text-sm font-semibold" onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}>{language === 'en' ? 'বাংলা' : 'English'}</button>
           {isAuthenticated && user ? (
             <div className="flex items-center gap-2 sm:gap-3">
               <Link
                 to={getDashboardPath()}
-                aria-label="Open your dashboard"
+                aria-label={uiText("Open your dashboard")}
                 className="btn-secondary text-sm py-2 px-2 sm:px-4 shadow-none border-spandan-200 bg-spandan-50/50 hover:bg-spandan-100/50 text-spandan-800"
               >
                 <UserIcon className="w-4 h-4" />
@@ -79,8 +79,8 @@ export const Navbar: React.FC = () => {
               </Link>
               <button
                 onClick={handleLogout}
-                title="Logout"
-                aria-label="Logout"
+                title={uiText("Logout")}
+                aria-label={uiText("Logout")}
                 className="p-3 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition"
               >
                 <LogOut className="w-5 h-5" />
@@ -98,7 +98,7 @@ export const Navbar: React.FC = () => {
           )}
         </div>
       </div>
-      {!pathname.startsWith('/dashboard') && <nav aria-label="Mobile navigation" className="md:hidden flex flex-wrap gap-x-5 gap-y-2 px-4 pb-3 text-sm font-medium text-slate-600"><Link to="/doctors">{t('Find Doctors')}</Link><Link to="/ai-triage">{t('AI Symptom Checker')}</Link></nav>}
+      {!pathname.startsWith('/dashboard') && <nav aria-label={uiText("Mobile navigation")} className="md:hidden flex flex-wrap gap-x-5 gap-y-2 px-4 pb-3 text-sm font-medium text-slate-600"><Link to="/doctors">{t('Find Doctors')}</Link><Link to="/ai-triage">{t('AI Symptom Checker')}</Link></nav>}
     </header>
   );
 };

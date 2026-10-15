@@ -79,10 +79,11 @@ test.describe.serial('Full-stack chamber operations', () => {
     await page.goto('/dashboard/patient');
     await expect(page.getByText('Browser Chamber Updated').first()).toBeVisible();
     await page.goto('/dashboard/patient/tools?tab=family');
-    await page.getByLabel('full name').fill('Browser Child');
-    await page.getByLabel('relationship name').fill('Child');
-    await page.getByRole('button', { name: 'Add family member' }).click();
-    await expect(page.getByText('Browser Child · Child')).toBeVisible();
+    await page.getByRole('button', { name: 'Add family member', exact: true }).click();
+    await page.getByRole('dialog').getByLabel('Full name', { exact: true }).fill('Browser Child');
+    await page.getByRole('dialog').getByLabel('Relationship', { exact: true }).fill('Child');
+    await page.getByRole('dialog').getByRole('button', { name: 'Add family member', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Browser Child', exact: true })).toBeVisible();
     await page.goto('/dashboard/patient');
     await page.getByRole('button', { name: /Cancel/i }).first().click();
     await page.getByLabel('Cancellation reason').fill('Browser workflow test');

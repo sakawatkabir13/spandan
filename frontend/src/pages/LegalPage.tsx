@@ -1,3 +1,4 @@
+import { I18nText } from '../context/LanguageContext';
 import React from 'react';
 import { Footer } from '../components/common/Footer';
 import { Navbar } from '../components/common/Navbar';
@@ -46,7 +47,7 @@ export const LegalPage: React.FC<{ document: LegalDocument }> = ({ document }) =
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-12 sm:px-6">
         <article className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-10 shadow-sm">
           <h1 className="text-3xl font-bold text-slate-900">{content.title}</h1>
-          <p className="mt-2 text-sm text-slate-500">Updated 15 October 2026</p>
+          <p className="mt-2 text-sm text-slate-500"> <I18nText text={"Updated 15 October 2026"} /> </p>
           <div className="mt-8 space-y-7">
             {content.sections.map(([heading, body]) => (
               <section key={heading}>

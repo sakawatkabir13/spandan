@@ -48,6 +48,9 @@ class DoctorProfileResponse(BaseModel):
     biography: Optional[str] = None
     current_workplace: Optional[str] = None
     years_of_experience: int
+    languages: str = ""
+    minimum_patient_age: int | None = None
+    maximum_patient_age: int | None = None
     verification_status: DoctorVerificationStatus
     created_at: datetime
     updated_at: datetime
@@ -70,6 +73,9 @@ class DoctorProfileUpdate(BaseModel):
         return values
 
     full_name: Optional[str] = None
+    languages: str | None = Field(None, max_length=200)
+    minimum_patient_age: int | None = Field(None, ge=0, le=120)
+    maximum_patient_age: int | None = Field(None, ge=0, le=120)
     biography: Optional[str] = None
     current_workplace: Optional[str] = None
     years_of_experience: Optional[int] = Field(None, ge=0)

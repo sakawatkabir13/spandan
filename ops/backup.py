@@ -15,6 +15,8 @@ from pathlib import Path
 ROOT = Path(os.environ.get("SPANDAN_ROOT", str(Path(__file__).resolve().parents[1])))
 BACKUPS = ROOT / ".runtime" / "backups"
 KEY = ROOT / ".runtime" / "backup.key"
+DB_CONTAINER = os.environ.get("SPANDAN_DB_CONTAINER", "spandan_db")
+BACKEND_CONTAINER = os.environ.get("SPANDAN_BACKEND_CONTAINER", "spandan_backend")
 
 
 def digest(path):
@@ -68,17 +70,18 @@ def backup():
                 [
                     "docker",
                     "exec",
-                    "spandan_db",
+                    *(["-e", "SPANDAN_BACKUP_DATABASE=" + os.environ["SPANDAN_BACKUP_DATABASE"]] if os.environ.get("SPANDAN_BACKUP_DATABASE") else []),
+                    DB_CONTAINER,
                     "sh",
                     "-c",
-                    'pg_dump -Fc -U "$POSTGRES_USER" -d "$POSTGRES_DB"',
+                    'pg_dump -Fc -U "${POSTGRES_USER:-postgres}" -d "${SPANDAN_BACKUP_DATABASE:-${POSTGRES_DB:-postgres}}"',
                 ],
                 stdout=file,
                 check=True,
             )
         with (folder / "uploads.tar.gz").open("wb") as file:
             subprocess.run(
-                ["docker", "exec", "spandan_backend", "tar", "czf", "-", "-C", "/app/uploads", "."],
+                ["docker", "exec", BACKEND_CONTAINER, "tar", "czf", "-", "-C", "/app/uploads", "."],
                 stdout=file,
                 check=True,
             )
@@ -120,7 +123,7 @@ def backup():
                             "docker",
                             "exec",
                             "-i",
-                            "spandan_backend",
+                            BACKEND_CONTAINER,
                             "python",
                             "-m",
                             "scripts.upload_backup",

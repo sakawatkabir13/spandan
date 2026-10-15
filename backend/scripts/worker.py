@@ -40,6 +40,14 @@ async def run():
             await ensure_demo_sessions(db)
         from app.services.chat_retention import cleanup_chat
         await cleanup_chat(db, now)
+        from app.models.operations import WaitlistEntry
+        from app.repositories.schedule import schedule_repo
+        from app.services.waitlist import offer_places
+        waitlist_sessions = list(await db.scalars(select(WaitlistEntry.schedule_id).where(WaitlistEntry.status.in_(["waiting", "offered"])).distinct()))
+        for schedule_id in sorted(waitlist_sessions, key=str):
+            session = await schedule_repo.get_by_id_with_queue(db, schedule_id, lock=True)
+            if session:
+                await offer_places(db, session)
         appointments = await db.scalars(
             select(Appointment)
             .join(Schedule, Schedule.id == Appointment.schedule_id)
@@ -67,7 +75,7 @@ async def run():
                         db,
                         user,
                         "Appointment reminder",
-                        (f"Spandan session: {schedule.schedule_date}, serial {appointment.serial_number}. Contact the hospital to confirm a consultation; this booking does not reserve a hospital visit." if doctor.is_demo else f"Your consultation is on {schedule.schedule_date}, serial {appointment.serial_number}. Please check your queue before travelling."),
+                        (f"Spandan session: {schedule.schedule_date}, serial {appointment.serial_number}. Contact the hospital to confirm a consultation; this booking does not reserve a hospital visit." if doctor.is_demo else f"Your consultation is on {schedule.schedule_date}, serial {appointment.serial_number}. Please check your queue before travelling.") + f"\nPrepare your medical history, reports, and current medicine list. View directions, payment, sharing, and rescheduling: {settings.FRONTEND_URL}/dashboard/patient/appointments/{appointment.id}",
                         f"reminder:{appointment.id}",
                     )
         await db.execute(
@@ -77,6 +85,10 @@ async def run():
             )
         )
         await db.execute(delete(EmailOTP).where(EmailOTP.expires_at < now - timedelta(days=1)))
+        from app.models.account_session import AccountSession
+        from app.models.care import BookingEvent
+        await db.execute(delete(AccountSession).where(AccountSession.expires_at < now - timedelta(days=30)))
+        await db.execute(delete(BookingEvent).where(BookingEvent.created_at < now - timedelta(days=365)))
         await db.execute(
             delete(AccountAction).where(AccountAction.expires_at < now - timedelta(days=1))
         )

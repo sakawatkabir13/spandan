@@ -1,3 +1,4 @@
+import { useLanguage } from '../../context/LanguageContext';
 import React from 'react';
 import { AlertCircle, CheckCircle, Info, XCircle } from 'lucide-react';
 
@@ -9,6 +10,7 @@ interface AlertProps {
 }
 
 export const Alert: React.FC<AlertProps> = ({ type = 'info', title, message, onClose }) => {
+  const { t: uiText } = useLanguage();
   const styles = {
     success: {
       bg: 'bg-green-50 border-green-200 text-green-900',
@@ -38,7 +40,7 @@ export const Alert: React.FC<AlertProps> = ({ type = 'info', title, message, onC
       {onClose && (
         <button
           type="button"
-          aria-label="Dismiss message"
+          aria-label={uiText("Dismiss message")}
           onClick={onClose}
           className="text-slate-400 hover:text-slate-600 transition p-2 shrink-0 rounded-lg"
         >

@@ -11,7 +11,7 @@
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-GPT--OSS-FF9900?style=for-the-badge)](https://aws.amazon.com/bedrock/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](./docker-compose.yml)
 
@@ -65,6 +65,9 @@ Booking a private chamber consultation in Bangladesh today means phone calls, pa
 - 🤖 **AI symptom triage** that recommends which specialty to consult
 - 🔐 Email OTP verification and password recovery
 - 📋 Medical history, encrypted reports, and patient-controlled sharing with eligible booked doctors
+- 👪 Separate family medical charts, private report previews, and doctor-access history
+- 🧭 One appointment page for queue tracking, payments, shared reports, and follow-up
+- 💚 Saved doctors and time-limited offers for released waitlist places
 - 💳 Hosted checkout, payment status, and receipts
 - 📱 Fully responsive across desktop, tablet, and mobile
 
@@ -75,6 +78,8 @@ Booking a private chamber consultation in Bangladesh today means phone calls, pa
 - 📈 Track today's queue, active serials, and consultation history
 - 🏥 Manage **multiple chambers** with independent schedules and fees
 - 📋 Review patient-shared medical history and reports before eligible consultations
+- 🗓️ Today's workspace with patient preparation and unresolved visit review
+- 📝 Review and publish visit summaries, prescriptions, and follow-up instructions
 
 ### 🧑‍💼 For Assistants
 
@@ -92,6 +97,7 @@ Booking a private chamber consultation in Bangladesh today means phone calls, pa
 
 - 🔑 Email + password auth with **JWT access + refresh tokens** and **Argon2/Bcrypt** hashing
 - 🔁 Logout and password changes revoke existing access and refresh tokens
+- 📱 Device session management, sign-in activity, refresh-token reuse protection, and MFA recovery codes
 - 🏭 Separate development and production Docker stacks with health checks
 - 🧪 Backend tests with **Pytest** + frontend tests with **Vitest** + **Testing Library**
 - 🎨 Theming and design tokens with **Tailwind CSS**
@@ -152,7 +158,7 @@ For auth flow, queue locking, state machines, the ERD, and deployment topology, 
 | Framework | **React 18** |
 | Language | **TypeScript 5** |
 | Build tool | **Vite 8** |
-| Styling | **Tailwind CSS 3** |
+| Styling | **Tailwind CSS 4** |
 | Routing | **React Router 7** |
 | Forms | **React Hook Form** + **Zod** resolvers |
 | Data fetching | **TanStack Query v5** |
@@ -333,8 +339,6 @@ Local configuration uses `.env`; production Compose explicitly loads `.env.produ
 | `AWS_BEARER_TOKEN_BEDROCK` | ⚙️ | Development/initial deployment credential; use an IAM role when available |
 | `AWS_REGION` | ⚙️ | Default `us-east-1` |
 | `BEDROCK_TRIAGE_MODEL` | ⚙️ | Default `openai.gpt-oss-120b-1:0`, independent of chat |
-| `BEDROCK_CHAT_MODEL` | ⚙️ | Operator-approved `openai.gpt-oss-120b-1:0`; release evaluation controls selection |
-| `CHAT_ENABLED` | ⚙️ | Off until private MCP connectivity and the 100-scenario evaluation qualify |
 | `UPLOAD_DIR` | ✅ | Server-side upload path (default `uploads`) |
 | `MAX_UPLOAD_SIZE_MB` | ✅ | Default `5` |
 | `EMERGENCY_CONTACT_NUMBER` | ✅ | Default `999` |
@@ -352,80 +356,9 @@ There are two independent stacks. Do not combine their Compose files.
 | `.env.example` | Tracked template for local `.env` |
 | `.env.production.example` | Tracked template for private production `.env.production` |
 
-Actual environment files contain deployment settings and secrets and are excluded from Git. Example files contain placeholders only. A separate VPS overlay is no longer required: production defaults preserve the existing `spandan_pgdata` and `spandan_backend_uploads` volumes and expose the frontend at `127.0.0.1:8082` for the host HTTPS proxy.
+Actual environment files are private and excluded from Git. Example templates contain placeholders only. Keep credentials on the server and configure optional integrations through the matching template.
 
-### Production setup
-
-Create the private production configuration:
-
-```bash
-cp .env.production.example .env.production
-chmod 600 .env.production
-```
-
-Set the database credentials and matching URL, independent JWT and medical-record encryption secrets, Bedrock credentials, public URLs, allowed hosts, and integration credentials. Placeholder values must be replaced before startup.
-
-Production binds the frontend to `HTTP_LISTEN_HOST=127.0.0.1` and `HTTP_LISTEN_PORT=8082`. Configure the host Nginx HTTPS proxy to forward to that address. The backend and database have no published host ports. A different network topology can override the listen address and port explicitly.
-
-For a first deployment:
-
-```bash
-docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml config --quiet
-docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml up --build -d --wait
-```
-
-For subsequent releases:
-
-```bash
-sh ops/release.sh
-```
-
-The release script builds images tagged with the Git revision, creates an encrypted snapshot, applies migrations, verifies readiness, and restores the previous runtime if verification fails. It requires the existing stack to be running for the pre-release backup. `sh ops/rollback.sh` restores the preceding recorded runtime without downgrading the database.
-
-Existing installations can use the production file alone. Retire any old `docker-compose.vps.yml` and remove it from custom commands or scheduled jobs after updating the repository. Preserve the production environment, existing database/upload volume names, backup key, and medical-record encryption key.
-
-### Email and payments
-
-Gmail uses `smtp.gmail.com`, port `587`, STARTTLS, and `community.cuetinsights@gmail.com` as the configured sender. Store the app password only in `SMTP_PASSWORD`.
-
-For hosted checkout, configure `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` from the same Stripe sandbox. The webhook endpoint is:
-
-```text
-https://spandan.cuetinsights.dev/api/v1/payments/webhook
-```
-
-Subscribe to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, and `refund.updated`. Checkout status is verified with Stripe; return URL parameters cannot mark a payment as paid. Live Stripe keys are rejected.
-
-After changing backend environment values, recreate the backend using the current release tag:
-
-```bash
-RELEASE_TAG=$(cat .runtime/current-release) docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml up -d --no-deps backend
-```
-
-### Logs and maintenance
-
-```bash
-docker compose -p spandan --env-file .env.production -f docker-compose.prod.yml logs --tail=100 -f backend
-sh ops/run-backup.sh
-sh ops/maintenance.sh
-python3 ops/monitor.py
-```
-
-Run backups daily, maintenance every minute, and monitoring every five minutes using the server scheduler. The scripts use the stable production container names. Container logs rotate at 10 MB with three retained files per service.
-
-Encrypted snapshots are stored in `.runtime/backups`. Keep `.runtime/backup.key` separately and test recovery into an isolated database before a live restore. Optional off-site delivery requires configured storage credentials.
-
-### Medical record storage
-
-Patients can review medical history and upload PDF, JPEG, PNG, or WebP reports, up to 5 MB per file, 25 files, and 100 MB per patient. Sharing starts disabled. Eligible booked doctors can access shared records; cancelled/absent appointments and sessions older than 30 days are excluded. Account-holder records are never shared through a dependent's appointment.
-
-Files are encrypted under `UPLOAD_DIR/.medical`, excluded from public file serving, and checked for authorization on every download. Preserve `MFA_ENCRYPTION_KEY`, or the fallback `JWT_SECRET_KEY` used when records were created: replacing the encryption secret without migrating existing files makes those files unreadable. Encrypted upload snapshots include these reports.
-
-### Completed workflows
-
-Patients can discover approved doctors, view profile photos, book, confirm, or cancel appointments, edit their profile, and track live queue progress. Doctors can manage chambers, create individual or recurring schedules, control bookings, cancel sessions, edit professional details, and create assistants with individual permissions. Assistants can book registered patients and operate assigned queues. Administrators can verify doctors, control user access, and inspect recent audited activity.
-
-Queue tracking uses aggregate SSE events with a 15-second polling fallback. Session times use `APP_TIMEZONE` (`Asia/Dhaka` by default). Sessions cannot overlap for the same doctor, booked session times cannot be changed without first cancelling bookings, and cancelled serial numbers are not reused.
+The production stack builds the frontend and backend, applies migrations, and checks service health. Deployment-specific networking, credentials, and maintenance settings belong in private operator configuration.
 
 ---
 
@@ -507,18 +440,3 @@ Contributions can be proposed through GitHub issues and pull requests.
 Made with 💚 in 🇧🇩 Bangladesh by the [Spandan team](#-contributors)
 
 </div>
-
-
-### Spandan Assistant deployment
-
-The signed-in English support interface is separate from the symptom checker. FastAPI runs Bedrock orchestration and the MCP client; [spandan-mcp-server](https://github.com/sakawatkabir13/spandan-mcp-server) is an independent stateless service. Its contract is `spandan-tools-v1` with MCP protocol `2026-07-28`. There are no database or Bedrock credentials on that instance.
-
-Keep `CHAT_ENABLED=false` until both private HTTPS listeners are reachable and model qualification passes. `ops/chat-private-nginx.conf` and `ops/mcp-private-nginx.conf` describe the reciprocal listeners on private TCP 8443. Restrict each EC2 security group to the other instance's private address, require trusted client certificates, and keep the backend callback port bound to host loopback. The public frontend proxy denies the internal API prefix.
-
-Set independent `CHAT_ENCRYPTION_KEY`, Ed25519 `CHAT_SIGNING_PRIVATE_KEY`, `CHAT_MCP_SERVICE_TOKEN`, `CHAT_MCP_URL`, and `CHAT_TLS_CA/CERT/KEY` in private configuration. Mount runtime certificates and the evaluation gate under `.runtime/chat`, readable by container UID/GID 10001. Certificate keys and the private CA must remain outside Git; renew service certificates before their expiry. `ops/create-chat-tls.py` creates initial trust material without overwriting an existing CA. For the eventual IAM role migration, use `ops/bedrock-iam-policy.json`, remove the bearer key, and set `AWS_USE_INSTANCE_ROLE=true`.
-
-Run the opt-in comparison against isolated synthetic test data using `RUN_CHAT_EVALUATION=1 PYTHONPATH=../../spandan-mcp-server/src pytest -s -q tests/test_chat_evaluation.py` from `backend`. It exercises the real MCP transport and all three configured model candidates. Run `python -m scripts.qualify_chat` afterwards; this reruns security/regression checks and writes the ignored `.runtime/chat-evaluation.json`. Qualification requires 100 scenarios per model and the agreed accuracy, mutation safety, cost and latency thresholds. Copy the gate to `.runtime/chat/chat-evaluation.json` on the application host, select the qualifying model and its token prices, then enable the flag and release. Incompatible prompt or tool changes invalidate the gate. Never enable chat merely because inference connectivity works.
-
-Every write uses a five-minute proposal and an explicit Confirm button. Finance, permissions and moderation also require fresh password/MFA verification in a secure form. Conversation content is encrypted, removed after 30 days by the scheduled worker, and deletable by its owner. Pending proposals are cancelled on deletion; verified business actions retain separate audit records. Usage records include model, feature, billed input/output token counts and estimated cost, with monthly USD 5/10 alerts. Disabling the flag preserves the normal website workflows.
-
-The evaluated 120B baseline was explicitly selected by the operator after the cheaper candidates failed the complete release rule. To qualify that approved choice, use `python -m scripts.qualify_chat --approved-model openai.gpt-oss-120b-1:0`. This requires the same accuracy and security checks; it does not automatically escalate requests or change the triage model.

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, select
 
 from app.api.dependencies.auth import get_current_active_user, require_roles
@@ -67,7 +67,7 @@ async def system_status(user=Depends(require_roles(UserRole.ADMINISTRATOR)), db=
     return create_success_response(
         "Operational service status.",
         {
-            "ai_model": settings.GROQ_MODEL,
+            "ai_model": settings.BEDROCK_TRIAGE_MODEL if settings.AI_PROVIDER == "bedrock" else settings.GROQ_MODEL,
             "ai_requests_24h": total,
             "ai_fallbacks_24h": fallback,
             "delivery_jobs_overdue": overdue,
@@ -208,13 +208,21 @@ class DependentRequest(BaseModel):
     relationship_name: str = Field(min_length=2, max_length=50)
     date_of_birth: str | None = None
 
+    @field_validator("full_name", "relationship_name")
+    @classmethod
+    def not_blank(cls, value):
+        if len(value.strip()) < 2:
+            raise ValueError("Enter at least two non-space characters.")
+        return value.strip()
+
 
 @router.get("/dependents")
-async def list_dependents(user=Depends(require_roles(UserRole.PATIENT)), db=Depends(get_db)):
+async def list_dependents(include_archived: bool = Query(False), user=Depends(require_roles(UserRole.PATIENT)), db=Depends(get_db)):
     profile = await patient_repo.get_by_user_id(db, user.id)
-    rows = await db.scalars(
-        select(Dependent).where(Dependent.patient_id == profile.id, Dependent.is_active.is_(True))
-    )
+    stmt = select(Dependent).where(Dependent.patient_id == profile.id)
+    if not include_archived:
+        stmt = stmt.where(Dependent.is_active.is_(True))
+    rows = await db.scalars(stmt.order_by(Dependent.created_at))
     return create_success_response("Family members fetched.", [record(row) for row in rows])
 
 
@@ -240,6 +248,39 @@ async def create_dependent(
     db.add(row)
     await db.commit()
     return create_success_response("Family member added.", record(row))
+
+
+@router.patch("/dependents/{id}")
+async def update_dependent(id: UUID, request: DependentRequest, user=Depends(require_roles(UserRole.PATIENT)), db=Depends(get_db)):
+    from datetime import date
+    profile = await patient_repo.get_by_user_id(db, user.id)
+    await db.execute(select(PatientProfile.id).where(PatientProfile.id == profile.id).with_for_update())
+    row = await db.get(Dependent, id)
+    if not row or row.patient_id != profile.id:
+        raise SpandanException("NOT_FOUND", "Family member not found.", 404)
+    try:
+        dob = date.fromisoformat(request.date_of_birth) if request.date_of_birth else None
+    except ValueError:
+        raise SpandanException("VALIDATION_ERROR", "Use YYYY-MM-DD for date of birth.")
+    if dob and dob > date.today():
+        raise SpandanException("VALIDATION_ERROR", "Date of birth cannot be in the future.")
+    row.full_name = request.full_name
+    row.relationship_name = request.relationship_name
+    row.date_of_birth = dob
+    db.add(AuditLog(actor_user_id=user.id, action="dependent.updated", entity_type="dependent", entity_id=str(id)))
+    await db.commit()
+    return create_success_response("Family member updated.", record(row))
+
+
+@router.post("/dependents/{id}/restore")
+async def restore_dependent(id: UUID, user=Depends(require_roles(UserRole.PATIENT)), db=Depends(get_db)):
+    profile = await patient_repo.get_by_user_id(db, user.id)
+    row = await db.scalar(select(Dependent).where(Dependent.id == id, Dependent.patient_id == profile.id).with_for_update())
+    if not row:
+        raise SpandanException("NOT_FOUND", "Family member not found.", 404)
+    row.is_active = True
+    await db.commit()
+    return create_success_response("Family member restored.", record(row))
 
 
 @router.delete("/dependents/{id}")
@@ -295,10 +336,44 @@ async def my_waitlist(user=Depends(require_roles(UserRole.PATIENT)), db=Depends(
     profile = await patient_repo.get_by_user_id(db, user.id)
     rows = await db.scalars(
         select(WaitlistEntry).where(
-            WaitlistEntry.patient_id == profile.id, WaitlistEntry.status == "waiting"
+            WaitlistEntry.patient_id == profile.id, WaitlistEntry.status.in_(["waiting", "offered", "expired", "unavailable"])
         )
     )
-    return create_success_response("Waitlist fetched.", [record(row) for row in rows])
+    from app.repositories.schedule import schedule_repo
+    result = []
+    for row in rows:
+        schedule = await schedule_repo.get_by_id_with_queue(db, row.schedule_id)
+        doctor = await db.get(DoctorProfile, schedule.doctor_id)
+        result.append({**record(row), "doctor_name": doctor.full_name, "chamber_name": schedule.chamber.name, "session_date": schedule.schedule_date, "start_time": schedule.start_time, "fee": schedule.chamber.consultation_fee})
+    return create_success_response("Waitlist fetched.", result)
+
+
+class AcceptOfferBody(BaseModel):
+    dependent_id: UUID | None = None
+
+
+@router.post("/waitlist/{id}/accept", status_code=201)
+async def accept_offer(id: UUID, request: AcceptOfferBody, user=Depends(require_roles(UserRole.PATIENT)), db=Depends(get_db)):
+    from app.core.time import aware
+    from app.repositories.schedule import schedule_repo
+    from app.schemas.appointment import AppointmentCreate, AppointmentResponse
+    from app.services.appointment import appointment_service
+    profile = await patient_repo.get_by_user_id(db, user.id)
+    row = await db.get(WaitlistEntry, id)
+    if not row or row.patient_id != profile.id:
+        raise SpandanException("NOT_FOUND", "Waitlist offer not found.", 404)
+    await schedule_repo.get_by_id_with_queue(db, row.schedule_id, lock=True)
+    await db.refresh(row)
+    if row.status == "booked" and row.appointment_id:
+        from app.repositories.appointment import appointment_repo
+        appointment = await appointment_repo.get_by_id_with_details(db, row.appointment_id)
+        if appointment.dependent_id != request.dependent_id:
+            raise SpandanException("CONFLICT", "This offer was already booked for a different family member.", 409)
+        return create_success_response("This offer is already booked.", AppointmentResponse.model_validate(appointment))
+    if row.status != "offered" or not row.offer_expires_at or aware(row.offer_expires_at) <= datetime.now(timezone.utc):
+        raise SpandanException("OFFER_EXPIRED", "This offer is no longer available. Rejoin the waitlist for another place.", 409)
+    appointment = await appointment_service.book_appointment(db, user, AppointmentCreate(schedule_id=row.schedule_id, dependent_id=request.dependent_id))
+    return create_success_response("Waitlist place booked.", AppointmentResponse.model_validate(appointment))
 
 
 @router.delete("/waitlist/{id}")
@@ -396,6 +471,11 @@ async def export_personal_data(user=Depends(get_current_active_user), db=Depends
     if profile:
         from app.api.routes.medical import medical_payload
         data["medical_records"] = await medical_payload(db, profile)
+        from app.models.care import AppointmentSharing, VisitSummary
+        data["family_medical_records"] = [{"dependent_id": row.id, "records": await medical_payload(db, profile, row.id)} for row in await db.scalars(select(Dependent).where(Dependent.patient_id == profile.id))]
+        own_ids = select(Appointment.id).where(Appointment.patient_id == profile.id)
+        data["visit_sharing"] = [record(row) for row in await db.scalars(select(AppointmentSharing).where(AppointmentSharing.appointment_id.in_(own_ids)))]
+        data["visit_summaries"] = [record(row) for row in await db.scalars(select(VisitSummary).where(VisitSummary.appointment_id.in_(own_ids), VisitSummary.published_at.is_not(None)))]
     return create_success_response("Personal data export.", data)
 
 
@@ -444,7 +524,22 @@ async def resolve_privacy(
                 raise SpandanException(
                     "CONFLICT", "Resolve active appointments before anonymizing this account.", 409
                 )
+            from sqlalchemy import delete
+
+            from app.models.care import (
+                AppointmentSharing,
+                BookingEvent,
+                DependentMedicalHistory,
+                FavoriteDoctor,
+                VisitSummary,
+            )
             from app.models.medical import MedicalHistory, MedicalReport
+            own_ids = select(Appointment.id).where(Appointment.patient_id == profile.id)
+            await db.execute(delete(AppointmentSharing).where(AppointmentSharing.appointment_id.in_(own_ids)))
+            await db.execute(delete(VisitSummary).where(VisitSummary.appointment_id.in_(own_ids)))
+            await db.execute(delete(BookingEvent).where(BookingEvent.patient_id == profile.id))
+            await db.execute(delete(FavoriteDoctor).where(FavoriteDoctor.patient_id == profile.id))
+            await db.execute(delete(DependentMedicalHistory).where(DependentMedicalHistory.dependent_id.in_(select(Dependent.id).where(Dependent.patient_id == profile.id))))
             for report in await db.scalars(select(MedicalReport).where(MedicalReport.patient_id == profile.id)):
                 medical_file_keys.append(report.storage_key)
                 await db.delete(report)
@@ -493,6 +588,11 @@ async def resolve_privacy(
         target.is_active = False
         target.token_version += 1
         target.mfa_secret = None
+        from sqlalchemy import delete
+
+        from app.models.account_session import AccountSession, MFARecoveryCode
+        await db.execute(delete(AccountSession).where(AccountSession.user_id == target.id))
+        await db.execute(delete(MFARecoveryCode).where(MFARecoveryCode.user_id == target.id))
         target.mfa_enabled = target.is_email_verified = target.is_phone_verified = False
         for notification in await db.scalars(
             select(Notification).where(Notification.user_id == target.id)
@@ -544,6 +644,8 @@ async def analytics(
     if doctor_ids is not None:
         stmt = stmt.where(Appointment.doctor_id.in_(doctor_ids))
     rows = list((await db.scalars(stmt)).all())
+    from app.services.care_metrics import care_metrics
+    care = await care_metrics(db, rows, cutoff, doctor_ids)
     counts = {
         status.value: sum(a.appointment_status == status for a in rows)
         for status in AppointmentStatus
@@ -563,6 +665,7 @@ async def analytics(
         "Operational analytics.",
         {
             "days": days,
+            "care": care,
             "total_bookings": len(rows),
             "status_counts": counts,
             "average_consultation_minutes": round(sum(durations) / len(durations), 1)

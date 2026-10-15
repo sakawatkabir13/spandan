@@ -1,3 +1,4 @@
+import { I18nText } from '../../context/LanguageContext';
 import React, { useEffect, useState } from "react";
 import { apiClient } from "../../api/client";
 import { EmailOTPField } from "./EmailOTPField";
@@ -71,7 +72,7 @@ export const AssistantManagement: React.FC<{ doctorId: string }> = ({
   };
   return (
     <section className="glass-card p-6 space-y-4">
-      <h2 className="text-xl font-bold">Chamber Assistants</h2>
+      <h2 className="text-xl font-bold"> <I18nText text={"Chamber Assistants"} /> </h2>
       {message && (
         <p role="status" className="text-sm text-spandan-800">
           {message}
@@ -79,8 +80,7 @@ export const AssistantManagement: React.FC<{ doctorId: string }> = ({
       )}
       <form onSubmit={create} className="grid sm:grid-cols-2 gap-3">
         <label className="text-sm">
-          Full name
-          <input
+           <I18nText text={"Full name"} /> <input
             name="full_name"
             required
             minLength={2}
@@ -88,12 +88,10 @@ export const AssistantManagement: React.FC<{ doctorId: string }> = ({
           />
         </label>
         <label className="text-sm">
-          Email
-          <input name="email" type="email" required className="input-field" value={email} onChange={event => { setEmail(event.target.value); setEmailOTP(""); }} />
+           <I18nText text={"Email"} /> <input name="email" type="email" required className="input-field" value={email} onChange={event => { setEmail(event.target.value); setEmailOTP(""); }} />
         </label>
         <label className="text-sm">
-          Phone
-          <input
+           <I18nText text={"Phone"} /> <input
             name="phone_number"
             type="tel"
             required
@@ -101,8 +99,7 @@ export const AssistantManagement: React.FC<{ doctorId: string }> = ({
           />
         </label>
         <label className="text-sm">
-          Initial password
-          <input
+           <I18nText text={"Initial password"} /> <input
             name="password"
             type="password"
             required
@@ -113,8 +110,7 @@ export const AssistantManagement: React.FC<{ doctorId: string }> = ({
         </label>
         <div className="sm:col-span-2"><EmailOTPField email={email} code={emailOTP} onChange={setEmailOTP} disabled={busy} /></div>
         <button disabled={busy} className="btn-primary sm:col-span-2">
-          Create Assistant
-        </button>
+           <I18nText text={"Create Assistant"} /> </button>
       </form>
       {assignments.map((a) => (
         <div key={a.id} className="border-t pt-4 space-y-2">

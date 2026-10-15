@@ -6,6 +6,7 @@ import { useLanguage } from '../../context/LanguageContext';
 export function EmailOTPField({ email, code, onChange, disabled = false }: {
   email: string; code: string; onChange: (code: string) => void; disabled?: boolean;
 }) {
+  const { t: uiText } = useLanguage();
   const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -34,7 +35,7 @@ export function EmailOTPField({ email, code, onChange, disabled = false }: {
     }}>{busy ? t('Sending code…') : remaining > 0 ? `${t('Resend code in')} ${remaining}s` : t(matches ? 'Resend verification code' : 'Send verification code')}</button>
     {message && <p role="status" className="text-sm text-slate-700">{message}</p>}
     <label className="block text-sm font-medium">{t('Email verification code')}
-      <input aria-label="Email verification code" name="email_otp" className="input-field mt-1" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} placeholder="000000" required value={code} disabled={disabled} onChange={event => onChange(event.target.value.replace(/\D/g, '').slice(0, 6))} />
+      <input aria-label={uiText("Email verification code")} name="email_otp" className="input-field mt-1" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} placeholder="000000" required value={code} disabled={disabled} onChange={event => onChange(event.target.value.replace(/\D/g, '').slice(0, 6))} />
     </label>
   </div>;
 }

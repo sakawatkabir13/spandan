@@ -28,6 +28,8 @@ class MedicalReport(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     patient_id = Column(UUID(as_uuid=True), ForeignKey("patient_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    dependent_id = Column(UUID(as_uuid=True), ForeignKey("dependents.id", ondelete="CASCADE"), nullable=True, index=True)
+    share_with_doctors = Column(Boolean, nullable=False, default=True, server_default="true")
     title = Column(String(120), nullable=False)
     report_type = Column(String(30), nullable=False)
     report_date = Column(Date, nullable=True)

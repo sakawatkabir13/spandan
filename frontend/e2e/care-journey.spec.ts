@@ -1,0 +1,104 @@
+import { test, expect, Page } from '@playwright/test';
+import { readCode } from './mailbox';
+
+const password = 'CareJourneyBrowser123!';
+async function login(page: Page, email: string) {
+  await page.goto('/login');
+  await page.getByLabel('Email Address', { exact: true }).fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+  await expect(page).toHaveURL(/dashboard/);
+}
+
+test('family chart, PDF preview, per-visit sharing, doctor publication, favorites and waitlist acceptance', async ({ page, browser }) => {
+  test.setTimeout(120000);
+  const suffix = Date.now().toString();
+  async function api(method: string, path: string, data?: unknown, token?: string) {
+    const response = await page.request.fetch('/api/v1' + path, { method, data, headers: token ? { Authorization: 'Bearer ' + token } : {} });
+    expect(response.ok(), await response.text()).toBeTruthy();
+    return (await response.json()).data;
+  }
+  async function register(role: string) {
+    const email = `care-${role}-${suffix}@example.com`;
+    await api('POST', '/auth/registration-code', { email });
+    return api('POST', '/auth/register/' + role, { email, email_otp: await readCode(email), password, full_name: role === 'doctor' ? 'Care Journey Doctor' : 'Care Journey Patient', phone_number: (role === 'doctor' ? '016' : '015') + suffix.slice(-8), ...(role === 'doctor' ? { medical_registration_number: 'CARE-' + suffix } : {}) });
+  }
+  const doctor = await register('doctor'); const patient = await register('patient');
+  const doctorId = doctor.user.doctor_profile.id;
+  const admin = await api('POST', '/auth/login', { email: 'e2e-admin@example.com', password: 'E2EAdminPassword123!' });
+  await api('POST', `/doctors/${doctorId}/verify`, { status: 'approved' }, admin.access_token);
+  const chamber = await api('POST', '/chambers', { name: 'Care Journey Chamber', address: 'Medical Road', district: 'Dhaka', area: 'Dhanmondi', consultation_fee: 500, follow_up_fee: 300 }, doctor.access_token);
+  const sessionBody = { chamber_id: chamber.id, schedule_date: new Date(Date.now() + 86400000).toISOString().slice(0, 10), start_time: '17:00', end_time: '21:00', maximum_patients: 1 };
+  const schedule = await api('POST', '/schedules', sessionBody, doctor.access_token);
+  const family = await api('POST', '/dependents', { full_name: 'Care Journey Child', relationship_name: 'Child', date_of_birth: '2020-01-01' }, patient.access_token);
+  await api('PATCH', `/medical-records/me/history?dependent_id=${family.id}`, { allergies: 'Child allergy for reviewed visit', history_reviewed: true, share_with_doctors: false }, patient.access_token);
+  const pdfPage = await browser.newPage();
+  await pdfPage.setContent('<!doctype html><html><body><h1>Sample medical report</h1><p>Synthetic browser test document</p></body></html>');
+  const pdf = await pdfPage.pdf(); await pdfPage.close();
+  const upload = await page.request.post(`/api/v1/medical-records/me/reports?dependent_id=${family.id}`, { headers: { Authorization: 'Bearer ' + patient.access_token }, multipart: { title: 'Child reviewed report', report_type: 'lab', file: { name: 'sample.pdf', mimeType: 'application/pdf', buffer: pdf } } });
+  expect(upload.ok(), await upload.text()).toBeTruthy();
+  const report = (await upload.json()).data;
+  const appointment = await api('POST', '/appointments', { schedule_id: schedule.id, dependent_id: family.id }, patient.access_token);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await login(page, patient.user.email);
+  await page.goto(`/dashboard/patient/appointments/${appointment.id}`);
+  await expect(page.getByRole('heading', { name: 'Appointment details', exact: true })).toBeVisible();
+  await expect(page.getByText('Care Journey Child', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pay consultation fee', exact: true })).toBeVisible();
+  await page.getByLabel(/Share Care Journey Child/).check();
+  await page.getByLabel(/^Child reviewed report/).check();
+  await page.getByRole('button', { name: 'Save visit sharing', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Sharing saved for this visit.' })).toBeVisible();
+  await page.getByRole('button', { name: /^Preview/ }).click();
+  const preview = page.getByRole('dialog', { name: 'Child reviewed report', exact: true });
+  await expect(preview.getByRole('img', { name: 'PDF preview', exact: true })).toBeVisible();
+  await expect(preview.getByText('Sample medical report', { exact: false })).toBeAttached();
+  await expect(preview.getByRole('alert')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(preview).toHaveCount(0);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: '/tmp/spandan-care-appointment-mobile.png', fullPage: true });
+  await page.goto(`/doctors/${doctorId}`);
+  await page.getByRole('button', { name: 'Save doctor', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Remove saved doctor', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.goto('/dashboard/patient/home');
+  await expect(page.getByRole('heading', { name: 'Saved doctors', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Care Journey Doctor/ })).toBeVisible();
+  const doctorContext = await browser.newContext(); const doctorPage = await doctorContext.newPage();
+  await login(doctorPage, doctor.user.email);
+  await api('PATCH', `/appointments/${appointment.id}/status`, { appointment_status: 'in_consultation' }, doctor.access_token);
+  await doctorPage.goto(`/dashboard/doctor/patients/${appointment.id}`);
+  await expect(doctorPage.getByText('Child allergy for reviewed visit', { exact: true })).toBeVisible();
+  await doctorPage.getByLabel('Consultation summary', { exact: true }).fill('Doctor reviewed the shared report and discussed the visit.');
+  await doctorPage.getByLabel('Prescription (medicine, dose, route, frequency, duration)', { exact: true }).fill('Reviewed prescription instructions.');
+  await doctorPage.getByLabel('Follow-up & preparation instructions', { exact: true }).fill('Bring prior reports to the follow-up.');
+  await expect(doctorPage.getByRole('button', { name: 'Publish reviewed summary', exact: true })).toBeDisabled();
+  await doctorPage.getByRole('checkbox', { name: /I have reviewed this summary/ }).check();
+  await doctorPage.getByRole('button', { name: 'Publish reviewed summary', exact: true }).click();
+  await expect(doctorPage.getByRole('button', { name: 'Publish reviewed changes', exact: true })).toBeVisible();
+  await doctorPage.evaluate(() => window.scrollTo(0, 0));
+  await doctorPage.screenshot({ path: '/tmp/spandan-care-doctor-chart.png', fullPage: true });
+  await page.goto(`/dashboard/patient/appointments/${appointment.id}`);
+  await expect(page.getByText('Doctor reviewed the shared report and discussed the visit.', { exact: true })).toBeVisible();
+  await page.goto(`/dashboard/patient/records?dependent_id=${family.id}`);
+  await page.getByRole('button', { name: 'Doctor access', exact: true }).click();
+  await expect(page.getByText('Care Journey Doctor', { exact: true }).first()).toBeVisible();
+  const offerSchedule = await api('POST', '/schedules', { ...sessionBody, start_time: '09:00', end_time: '12:00' }, doctor.access_token);
+  const existing = await api('POST', '/appointments', { schedule_id: offerSchedule.id }, patient.access_token);
+  const otherEmail = `care-offer-${suffix}@example.com`;
+  await api('POST', '/auth/registration-code', { email: otherEmail });
+  const other = await api('POST', '/auth/register/patient', { email: otherEmail, email_otp: await readCode(otherEmail), password, full_name: 'Offer Browser Patient', phone_number: '014' + suffix.slice(-8) });
+  await api('POST', `/waitlist/${offerSchedule.id}`, {}, other.access_token);
+  await api('PATCH', `/appointments/${existing.id}/status`, { appointment_status: 'cancelled' }, patient.access_token);
+  await page.evaluate(() => localStorage.clear());
+  await login(page, otherEmail);
+  await page.goto('/dashboard/patient/tools?tab=waitlist');
+  await page.getByRole('button', { name: 'Accept reserved place', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Confirm booking', exact: true }).click();
+  await expect(page).toHaveURL(/patient\/appointments\//);
+  await expect(page.getByText('Offer Browser Patient', { exact: true }).first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  await doctorContext.close();
+  expect(report.id).toBeTruthy();
+});

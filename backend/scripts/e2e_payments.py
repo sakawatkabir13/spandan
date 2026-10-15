@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import html
 import json
+import os
 import time
 from uuid import uuid4
 
@@ -17,7 +18,7 @@ def install(app, settings):
 
     settings.STRIPE_SECRET_KEY = "sk_test_browser_fixture"
     settings.STRIPE_WEBHOOK_SECRET = "whsec_browser_fixture"
-    settings.FRONTEND_URL = "http://127.0.0.1:5175"
+    settings.FRONTEND_URL = os.environ.get("E2E_URL", "http://127.0.0.1:5175")
     sessions = {}
 
     async def provider(method, path, data=None, key=None):

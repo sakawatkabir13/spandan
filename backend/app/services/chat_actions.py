@@ -190,6 +190,7 @@ async def snapshot(db, user, name, args, *, lock=False):
         item = schedule_card(row)
         doctor = await db.get(DoctorProfile, row.doctor_id)
         item["doctor_name"] = doctor.full_name
+        item["patient_age_range"] = project(doctor, ["minimum_patient_age", "maximum_patient_age"])
         item["active_bookings"] = await db.scalar(
             select(func.count(Appointment.id)).where(
                 Appointment.schedule_id == ident,

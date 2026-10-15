@@ -1,0 +1,28 @@
+import { I18nText } from '../../context/LanguageContext';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, CalendarDays, FileHeart, Stethoscope, Wallet } from 'lucide-react';
+import { apiClient } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
+import { Appointment, DoctorProfile } from '../../types';
+import { DashboardLayout } from '../../components/layout/DashboardLayout';
+import { errorMessage } from '../../api/errors';
+
+export function PatientHomePage() {
+  const { user } = useAuth();
+  const [next, setNext] = useState<Appointment | null>(null);
+  const [saved, setSaved] = useState<DoctorProfile[]>([]);
+  useEffect(() => { void apiClient.get('/patients/me/favorite-doctors?limit=6').then(r => setSaved(r.data.data)).catch(() => {}); }, []);
+  const [percent, setPercent] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  useEffect(() => { void Promise.all([apiClient.get('/appointments/me'), apiClient.get('/medical-records/me')]).then(([a, m]) => {
+    const appointments: Appointment[] = a.data.data;
+    setNext(appointments.filter(v => !['completed', 'cancelled', 'absent'].includes(v.appointment_status) && (!v.schedule || v.schedule.schedule_date >= new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' }))).sort((a, b) => `${a.schedule?.schedule_date}T${a.schedule?.start_time}`.localeCompare(`${b.schedule?.schedule_date}T${b.schedule?.start_time}`))[0] || null);
+    setPercent(m.data.data.completion.percent);
+  }).catch(e => setError(errorMessage(e))).finally(() => setLoading(false)); }, []);
+  return <DashboardLayout><div className="space-y-7"><header><h1 className="page-heading"> <I18nText text={"Hello,"} /> {user?.full_name?.split(' ')[0] || 'there'}.</h1><p className="page-description"> <I18nText text={"Your care, appointments, and next steps in one place."} /> </p></header>{error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}{loading ? <p role="status"> <I18nText text={"Loading your overview…"} /> </p> : <section className="visit-highlight"><div className="visit-highlight-header flex items-center gap-2 p-5 text-sm font-semibold text-spandan-800"><CalendarDays className="h-5 w-5" /> <I18nText text={"Your next visit"} /> </div><div className="p-5 sm:p-7">{next ? <><div className="flex flex-wrap justify-between gap-5"><div><h2 className="text-2xl font-semibold tracking-tight">{next.doctor?.full_name}</h2><p className="mt-2 text-sm text-slate-500">{next.chamber?.name}</p><p className="mt-3 text-sm font-medium">{next.schedule?.schedule_date} · {next.schedule?.start_time.slice(0, 5)}  <I18nText text={"· Serial #"} /> {next.serial_number}</p></div><Link className="btn-primary self-center" to={`/dashboard/patient/appointments/${next.id}`}> <I18nText text={"Open visit"} /> <ArrowRight className="h-4 w-4" /></Link></div><p className="mt-5 border-t border-slate-100 pt-4 text-sm text-slate-500"> <I18nText text={"Review your queue, pay the fee, and choose which reports to share before travelling."} /> </p></> : <><h2 className="text-xl font-semibold"> <I18nText text={"Ready when you need care"} /> </h2><p className="mt-2 text-sm text-slate-500"> <I18nText text={"You have no active appointments. Search for a doctor and choose a session that suits you."} /> </p><Link to="/doctors?view=booking" className="btn-primary mt-5"> <I18nText text={"Find a doctor"} /> <Stethoscope className="h-4 w-4" /></Link></>}</div></section>}
+    <div className="grid gap-4 sm:grid-cols-2"><Link to="/dashboard/patient/records" className="glass-card flex items-start gap-4 p-5"><FileHeart className="mt-1 h-6 w-6 text-spandan-600" /><div><h2 className="section-heading"> <I18nText text={"Prepare your health profile"} /> </h2><p className="mt-2 text-sm text-slate-500">{percent === 100 ? 'Your history is reviewed. Keep it up to date before each visit.' : 'Add personal details and review your history. Previous reports are optional.'}</p>{percent !== null && <div className="mt-3 flex items-center gap-3"><div className="h-1.5 flex-1 rounded-full bg-slate-100"><div className="h-full rounded-full bg-spandan-500 transition-[width]" style={{ width: `${percent}%` }} /></div><span className="text-xs font-semibold text-spandan-700">{percent}%</span></div>}</div></Link><Link to="/dashboard/patient/payments" className="glass-card flex items-start gap-4 p-5"><Wallet className="mt-1 h-6 w-6 text-spandan-600" /><div><h2 className="section-heading"> <I18nText text={"Payments & receipts"} /> </h2><p className="mt-2 text-sm text-slate-500"> <I18nText text={"Pay your consultation fee securely, check payment progress, or download a receipt."} /> </p><span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-spandan-700"> <I18nText text={"Manage payments"} /> <ArrowRight className="h-4 w-4" /></span></div></Link></div>
+    {!!saved.length && <section id="saved-doctors" className="glass-card scroll-mt-24 p-5 sm:p-6"><h2 className="section-heading"><I18nText text="Saved doctors" /></h2><div className="mt-4 divide-y divide-slate-100">{saved.map(doctor => <Link key={doctor.id} to={`/doctors/${doctor.id}`} className="flex min-h-16 items-center justify-between gap-3 py-3"><div><p className="text-sm font-semibold">{doctor.full_name}</p><p className="mt-1 text-xs text-slate-500">{doctor.specializations.map(s => s.name).join(', ')}</p></div><ArrowRight className="h-4 w-4 shrink-0 text-spandan-600" /></Link>)}</div></section>}
+  </div></DashboardLayout>;
+}

@@ -5,18 +5,23 @@
 @config "../tailwind.config.js";
 
 @layer base {
+  *, ::before, ::after { border-color: #e2e8f0; }
   body {
-    @apply bg-slate-50 text-slate-900 antialiased selection:bg-spandan-500 selection:text-white font-sans;
+    @apply text-slate-900 antialiased selection:bg-spandan-500 selection:text-white font-sans;
+    background: #f4f8f6;
+    font-feature-settings: "cv11", "ss01";
+    line-height: 1.6;
   }
 }
 
 @layer components {
-  /* Glassmorphism Cards & Modals */
+  /* Shared surfaces and controls. */
   .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-white/40 shadow-glass rounded-2xl transition-all duration-300;
+    @apply bg-white border border-slate-200 rounded-2xl;
+    box-shadow: 0 2px 3px #123e3003, 0 8px 28px #123e3004;
   }
   .glass-card-hover {
-    @apply hover:shadow-glass-lg hover:-translate-y-1 hover:border-spandan-300/60;
+    @apply hover:border-spandan-300/60;
   }
   .glass-dark {
     @apply bg-slateDark-900/80 backdrop-blur-md border border-slate-800/60 shadow-glass rounded-2xl text-white;
@@ -29,13 +34,13 @@
 
   /* Button Variants */
   .btn-primary {
-    @apply px-5 py-2.5 rounded-xl bg-gradient-to-r from-spandan-600 to-spandan-500 text-white font-medium shadow-md shadow-spandan-500/25 hover:shadow-lg hover:shadow-spandan-500/35 hover:from-spandan-700 hover:to-spandan-600 active:scale-[0.98] transition-all duration-200 inline-flex min-h-11 max-w-full items-center justify-center gap-2 text-center leading-snug disabled:opacity-50 disabled:pointer-events-none;
+    @apply px-5 py-2.5 rounded-xl bg-spandan-600 text-white font-semibold hover:bg-spandan-700 active:scale-[0.98] transition duration-200 inline-flex min-h-11 max-w-full items-center justify-center gap-2 text-center leading-snug disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-secondary {
     @apply px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all duration-200 inline-flex min-h-11 max-w-full items-center justify-center gap-2 text-center leading-snug shadow-sm disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-danger {
-    @apply px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white font-medium shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/35 active:scale-[0.98] transition-all duration-200 inline-flex min-h-11 max-w-full items-center justify-center gap-2 text-center leading-snug disabled:opacity-50 disabled:pointer-events-none;
+    @apply px-5 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 active:scale-[0.98] transition duration-200 inline-flex min-h-11 max-w-full items-center justify-center gap-2 text-center leading-snug disabled:opacity-50 disabled:pointer-events-none;
   }
 }
 
@@ -83,6 +88,32 @@
   }
   :where(input, select, textarea) { min-width: 0; max-width: 100%; }
   :where(h1, h2, h3, h4, p, dd, label) { overflow-wrap: anywhere; }
+}
+
+@keyframes page-enter { from { opacity: .5; } to { opacity: 1; } }
+@keyframes dialog-enter { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
+@layer components {
+  .animate-fade-in { animation: page-enter 180ms ease-out both; }
+  [role="dialog"] { animation: dialog-enter 200ms ease-out both; }
+  .page-heading { font-size: clamp(1.6rem, 2.8vw, 2.1rem); line-height: 1.18; letter-spacing: -.035em; font-weight: 700; color: #132e27; }
+  .page-description { max-width: 65ch; color: #60756c; font-size: .925rem; margin-top: .5rem; }
+  .section-heading { font-size: 1.125rem; font-weight: 650; letter-spacing: -.02em; color: #132e27; }
+  .segmented-control { display: flex; gap: .25rem; padding: .3rem; background: #e9f0ec; border-radius: .85rem; overflow-x: auto; }
+  .segmented-control > :is(a, button) { white-space: nowrap; padding: .6rem .9rem; border-radius: .6rem; font-size: .875rem; font-weight: 600; color: #51695e; transition: background 160ms, color 160ms; }
+  .segmented-control > [aria-pressed="true"], .segmented-control > [aria-current="page"] { background: white; color: #0c5d40; box-shadow: 0 1px 4px #123e3010; }
+  .empty-state { padding: 3rem 1.5rem; text-align: center; border: 1px dashed #c9d9d0; border-radius: 1rem; background: #fafcfb; }
+  .dashboard-shell { background: #f4f8f6; }
+  .dashboard-sidebar { background: #fff; border: 1px solid #dfe9e3; border-radius: 1.25rem; }
+  .dashboard-link[aria-current="page"] { background: #e5f3eb; color: #0c5d40; box-shadow: inset 3px 0 #14734f; }
+  .dashboard-link { transition: color 150ms, background 150ms; }
+  .dashboard-link:hover { background: #f2f7f4; }
+  .visit-highlight { border: 1px solid #b9dfcc; background: #fff; border-radius: 1.25rem; overflow: hidden; }
+  .visit-highlight-header { background: #eaf5ef; border-bottom: 1px solid #cfe6d9; }
+  .mobile-nav { padding-bottom: max(.25rem, env(safe-area-inset-bottom)); }
+  .mobile-nav a { position: relative; min-height: 4rem; }
+  .mobile-nav a[aria-current="page"]::before { content: ''; position: absolute; width: 1.5rem; height: 3px; border-radius: 0 0 5px 5px; background: #14734f; top: 0; }
+  .patient-shell { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+  @media (min-width: 1024px) { .patient-shell { padding-bottom: 0; } }
 }
 @layer components {
   .btn-primary > svg, .btn-secondary > svg, .btn-danger > svg { flex-shrink: 0; }

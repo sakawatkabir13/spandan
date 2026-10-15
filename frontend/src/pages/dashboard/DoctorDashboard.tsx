@@ -1,3 +1,5 @@
+import { I18nText } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
@@ -16,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export const DoctorDashboard: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const [loadError, setLoadError] = useState('');
   const [formError, setFormError] = useState('');
   const { user } = useAuth();
@@ -153,10 +156,9 @@ export const DoctorDashboard: React.FC = () => {
         {/* Header */}
         <div className="glass-card p-6 border-slate-200 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Doctor Chamber Portal</h1>
+            <h1 className="text-2xl font-bold text-slate-900"> <I18nText text={"Doctor Chamber Portal"} /> </h1>
             <p className="text-sm text-slate-600">
-              Manage your private consultation centers, schedules, and enter live queue operations.
-            </p>
+               <I18nText text={"Manage your private consultation centers, schedules, and enter live queue operations."} /> </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -164,8 +166,7 @@ export const DoctorDashboard: React.FC = () => {
               onClick={() => { setFormError(''); setChamberModalOpen(true); }}
               className="btn-secondary py-2 px-4 text-xs font-semibold"
             >
-              <Plus className="w-4 h-4" /> Add Chamber
-            </button>
+              <Plus className="w-4 h-4" />  <I18nText text={"Add Chamber"} /> </button>
             <button
               onClick={() => {
                 if (chambers.length === 0) {
@@ -178,13 +179,12 @@ export const DoctorDashboard: React.FC = () => {
               }}
               className="btn-primary py-2 px-4 text-xs font-semibold"
             >
-              <Plus className="w-4 h-4" /> Add Schedule
-            </button>
+              <Plus className="w-4 h-4" />  <I18nText text={"Add Schedule"} /> </button>
           </div>
         </div>
 
         {loading ? (
-          <LoadingSpinner size="lg" text="Loading your chamber operations..." />
+          <LoadingSpinner size="lg" text={uiText("Loading your chamber operations...")} />
         ) : (
           <div className="grid grid-cols-1 2xl:grid-cols-3 gap-8">
             {/* Schedules Column */}
@@ -192,15 +192,13 @@ export const DoctorDashboard: React.FC = () => {
               <div className="glass-card p-6 border-slate-200 space-y-4">
                 <div className="flex flex-wrap gap-3 items-center justify-between border-b pb-3">
                   <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-spandan-600" /> Active & Upcoming Schedules
-                  </h3>
-                  <span className="text-xs text-slate-500 font-semibold">{schedules.length} Sessions</span>
+                    <Calendar className="w-5 h-5 text-spandan-600" />  <I18nText text={"Active & Upcoming Schedules"} /> </h3>
+                  <span className="text-xs text-slate-500 font-semibold">{schedules.length}  <I18nText text={"Sessions"} /> </span>
                 </div>
 
                 {schedules.length === 0 ? (
                   <p className="text-sm text-slate-500 py-6 text-center italic">
-                    No consultation sessions listed. Click "Add Schedule" above to create one.
-                  </p>
+                     <I18nText text={"No consultation sessions listed. Click \"Add Schedule\" above to create one."} /> </p>
                 ) : (
                   <div className="space-y-4">
                     {schedules.map((sched) => {
@@ -236,13 +234,13 @@ export const DoctorDashboard: React.FC = () => {
                                 {sched.start_time.slice(0, 5)} - {sched.end_time.slice(0, 5)}
                               </span>
                               <span>
-                                Max Capacity: <strong>{sched.maximum_patients}</strong>
+                                 <I18nText text={"Max Capacity:"} /> <strong>{sched.maximum_patients}</strong>
                               </span>
                             </div>
 
                             {sched.queue_state && (
                               <div className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg inline-block font-semibold mt-1">
-                                Live Console: Serial #{sched.queue_state.current_serial}{' '}
+                                 <I18nText text={"Live Console: Serial #"} /> {sched.queue_state.current_serial}{' '}
                                 {sched.queue_state.delay_minutes > 0 && `(+${sched.queue_state.delay_minutes}m delay)`}
                               </div>
                             )}
@@ -253,13 +251,12 @@ export const DoctorDashboard: React.FC = () => {
                               to={`/dashboard/doctor/queue?schedule_id=${sched.id}`}
                               className="btn-primary py-2.5 px-5 text-sm font-semibold w-full xl:w-auto text-center"
                             >
-                              Launch Queue Console
-                            </Link>
-                            {!['cancelled', 'completed'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => setEditingSchedule(sched)}>Edit Session</button>}
-                            {!['cancelled', 'completed'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'completed')}>Complete Session</button>}
-                            {['open', 'full'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'closed')}>Close Bookings</button>}
-                            {['closed', 'draft'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'open')}>Open Bookings</button>}
-                            {!['cancelled', 'completed'].includes(sched.status) && <button className="btn-danger text-xs" onClick={() => { if (window.confirm('Cancel this session and its unfinished appointments?')) void changeSession(sched.id, 'cancelled'); }}>Cancel Session</button>}
+                               <I18nText text={"Launch Queue Console"} /> </Link>
+                            {!['cancelled', 'completed'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => setEditingSchedule(sched)}> <I18nText text={"Edit Session"} /> </button>}
+                            {!['cancelled', 'completed'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'completed')}> <I18nText text={"Complete Session"} /> </button>}
+                            {['open', 'full'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'closed')}> <I18nText text={"Close Bookings"} /> </button>}
+                            {['closed', 'draft'].includes(sched.status) && <button className="btn-secondary text-xs" onClick={() => void changeSession(sched.id, 'open')}> <I18nText text={"Open Bookings"} /> </button>}
+                            {!['cancelled', 'completed'].includes(sched.status) && <button className="btn-danger text-xs" onClick={() => { if (window.confirm('Cancel this session and its unfinished appointments?')) void changeSession(sched.id, 'cancelled'); }}> <I18nText text={"Cancel Session"} /> </button>}
                           </div>
                         </div>
                       );
@@ -274,26 +271,25 @@ export const DoctorDashboard: React.FC = () => {
               <div className="glass-card p-6 border-slate-200 space-y-4">
                 <div className="flex flex-wrap gap-3 items-center justify-between border-b pb-3">
                   <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-spandan-600" /> My Chambers
-                  </h3>
-                  <span className="text-xs text-slate-500 font-semibold">{chambers.length} Locations</span>
+                    <MapPin className="w-5 h-5 text-spandan-600" />  <I18nText text={"My Chambers"} /> </h3>
+                  <span className="text-xs text-slate-500 font-semibold">{chambers.length}  <I18nText text={"Locations"} /> </span>
                 </div>
 
                 {chambers.length === 0 ? (
-                  <p className="text-xs text-slate-500 py-4 text-center">No chambers added yet.</p>
+                  <p className="text-xs text-slate-500 py-4 text-center"> <I18nText text={"No chambers added yet."} /> </p>
                 ) : (
                   <div className="space-y-4">
                     {chambers.map((c) => (
                       <div key={c.id} className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-1.5">
                         <h4 className="font-bold text-sm text-slate-900">{c.name}</h4>
-                        <button className="btn-secondary text-xs" onClick={() => setEditingChamber(c)}>Edit Chamber</button>
+                        <button className="btn-secondary text-xs" onClick={() => setEditingChamber(c)}> <I18nText text={"Edit Chamber"} /> </button>
                         <p className="text-xs text-slate-600">{c.address}</p>
                         <p className="text-xs text-slate-500">
                           {c.area}, {c.district}
                         </p>
                         <div className="flex justify-between text-xs font-semibold pt-1 text-spandan-800">
-                          <span>New Fee: ৳{c.consultation_fee}</span>
-                          {c.follow_up_fee && <span>Follow-up: ৳{c.follow_up_fee}</span>}
+                          <span> <I18nText text={"New Fee: ৳"} /> {c.consultation_fee}</span>
+                          {c.follow_up_fee && <span> <I18nText text={"Follow-up: ৳"} /> {c.follow_up_fee}</span>}
                         </div>
                       </div>
                     ))}
@@ -305,19 +301,18 @@ export const DoctorDashboard: React.FC = () => {
         )}
 
         {/* Add Chamber Modal */}
-        <Modal isOpen={!!editingChamber} onClose={() => setEditingChamber(null)} title="Edit Chamber">{editingChamber && <ChamberEditor chamber={editingChamber} saved={() => { setEditingChamber(null); void fetchData(); }} />}</Modal>
-        <Modal isOpen={!!editingSchedule} onClose={() => setEditingSchedule(null)} title="Edit Session">{editingSchedule && <ScheduleEditor schedule={editingSchedule} saved={() => { setEditingSchedule(null); void fetchData(); }} />}</Modal>
-        <Modal isOpen={chamberModalOpen} onClose={() => setChamberModalOpen(false)} title="Register New Chamber">
+        <Modal isOpen={!!editingChamber} onClose={() => setEditingChamber(null)} title={uiText("Edit Chamber")}>{editingChamber && <ChamberEditor chamber={editingChamber} saved={() => { setEditingChamber(null); void fetchData(); }} />}</Modal>
+        <Modal isOpen={!!editingSchedule} onClose={() => setEditingSchedule(null)} title={uiText("Edit Session")}>{editingSchedule && <ScheduleEditor schedule={editingSchedule} saved={() => { setEditingSchedule(null); void fetchData(); }} />}</Modal>
+        <Modal isOpen={chamberModalOpen} onClose={() => setChamberModalOpen(false)} title={uiText("Register New Chamber")}>
           <form onSubmit={handleCreateChamber} className="space-y-4">
             {formError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{formError}</p>}
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
-                Chamber / Center Name
-              </label>
-              <input aria-label="Chamber name"
+                 <I18nText text={"Chamber / Center Name"} /> </label>
+              <input aria-label={uiText("Chamber name")}
                 type="text"
                 required
-                placeholder="e.g. Popular Diagnostic Dhanmondi / Labaid Specialist"
+                placeholder={uiText("e.g. Popular Diagnostic Dhanmondi / Labaid Specialist")}
                 value={chamName}
                 onChange={(e) => setChamName(e.target.value)}
                 className="input-field bg-white"
@@ -326,19 +321,19 @@ export const DoctorDashboard: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Area / Thana</label>
-                <input aria-label="Area"
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1"> <I18nText text={"Area / Thana"} /> </label>
+                <input aria-label={uiText("Area")}
                   type="text"
                   required
-                  placeholder="e.g. Dhanmondi / Mirpur / Gulshan"
+                  placeholder={uiText("e.g. Dhanmondi / Mirpur / Gulshan")}
                   value={chamArea}
                   onChange={(e) => setChamArea(e.target.value)}
                   className="input-field bg-white"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">District / City</label>
-                <input aria-label="District"
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1"> <I18nText text={"District / City"} /> </label>
+                <input aria-label={uiText("District")}
                   type="text"
                   required
                   value={chamDistrict}
@@ -349,11 +344,11 @@ export const DoctorDashboard: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Street Address</label>
-              <input aria-label="Street address"
+              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1"> <I18nText text={"Street Address"} /> </label>
+              <input aria-label={uiText("Street address")}
                 type="text"
                 required
-                placeholder="e.g. House #16, Road #2, Dhanmondi R/A"
+                placeholder={uiText("e.g. House #16, Road #2, Dhanmondi R/A")}
                 value={chamAddress}
                 onChange={(e) => setChamAddress(e.target.value)}
                 className="input-field bg-white"
@@ -363,9 +358,8 @@ export const DoctorDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
-                  Consultation Fee (৳)
-                </label>
-                <input aria-label="Consultation fee"
+                   <I18nText text={"Consultation Fee (৳)"} /> </label>
+                <input aria-label={uiText("Consultation fee")}
                   type="number"
                   required
                   min={100}
@@ -377,8 +371,7 @@ export const DoctorDashboard: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
-                  Follow-up Fee (৳)
-                </label>
+                   <I18nText text={"Follow-up Fee (৳)"} /> </label>
                 <input
                   type="number"
                   required
@@ -393,9 +386,8 @@ export const DoctorDashboard: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
-                Chamber Reception Phone (Optional)
-              </label>
-              <input aria-label="Chamber phone"
+                 <I18nText text={"Chamber Reception Phone (Optional)"} /> </label>
+              <input aria-label={uiText("Chamber phone")}
                 type="text"
                 placeholder="+8801712345678"
                 value={chamPhone}
@@ -410,8 +402,7 @@ export const DoctorDashboard: React.FC = () => {
                 onClick={() => setChamberModalOpen(false)}
                 className="btn-secondary py-2 px-4 text-xs font-semibold"
               >
-                Cancel
-              </button>
+                 <I18nText text={"Cancel"} /> </button>
               <button type="submit" disabled={chamSubmitting} className="btn-primary py-2 px-5 text-xs font-semibold">
                 {chamSubmitting ? 'Saving...' : 'Save Chamber'}
               </button>
@@ -420,11 +411,11 @@ export const DoctorDashboard: React.FC = () => {
         </Modal>
 
         {/* Add Schedule Modal */}
-        <Modal isOpen={scheduleModalOpen} onClose={() => setScheduleModalOpen(false)} title="Create New Schedule">
+        <Modal isOpen={scheduleModalOpen} onClose={() => setScheduleModalOpen(false)} title={uiText("Create New Schedule")}>
           <form onSubmit={handleCreateSchedule} className="space-y-4">
             {formError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{formError}</p>}
             <div>
-              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Select Chamber</label>
+              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1"> <I18nText text={"Select Chamber"} /> </label>
               <select
                 value={schedChamberId}
                 onChange={(e) => setSchedChamberId(e.target.value)}
@@ -439,8 +430,8 @@ export const DoctorDashboard: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Date</label>
-              <input aria-label="Date"
+              <label className="block text-xs font-semibold uppercase text-slate-700 mb-1"> <I18nText text={"Date"} /> </label>
+              <input aria-label={uiText("Date")}
                 type="date"
                 required
                 min={new Date().toISOString().slice(0, 10)}
@@ -463,13 +454,12 @@ export const DoctorDashboard: React.FC = () => {
                 onChange={(e) => setSchedRepeat(e.target.checked)}
                 className="h-4 w-4 rounded border-slate-300 text-spandan-600"
               />
-              Repeat this session weekly
-            </label>
+               <I18nText text={"Repeat this session weekly"} /> </label>
 
             {schedRepeat && (
               <div className="space-y-3 rounded-xl border border-spandan-100 bg-spandan-50/50 p-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Repeat Until</label>
+                  <label className="block text-xs font-semibold uppercase text-slate-700 mb-1"> <I18nText text={"Repeat Until"} /> </label>
                   <input
                     type="date"
                     required
@@ -480,7 +470,7 @@ export const DoctorDashboard: React.FC = () => {
                   />
                 </div>
                 <fieldset>
-                  <legend className="block text-xs font-semibold uppercase text-slate-700 mb-2">Consultation Days</legend>
+                  <legend className="block text-xs font-semibold uppercase text-slate-700 mb-2"> <I18nText text={"Consultation Days"} /> </legend>
                   <div className="flex flex-wrap gap-2">
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label, day) => (
                       <label key={label} className={`cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold ${schedWeekdays.includes(day) ? 'border-spandan-500 bg-spandan-100 text-spandan-800' : 'border-slate-200 bg-white text-slate-600'}`}>
@@ -500,7 +490,7 @@ export const DoctorDashboard: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Start Time</label>
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1"> <I18nText text={"Start Time"} /> </label>
                 <input
                   type="time"
                   required
@@ -510,7 +500,7 @@ export const DoctorDashboard: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">End Time</label>
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1"> <I18nText text={"End Time"} /> </label>
                 <input
                   type="time"
                   required
@@ -523,7 +513,7 @@ export const DoctorDashboard: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">Maximum Serials</label>
+                <label className="block text-xs font-semibold uppercase text-slate-700 mb-1"> <I18nText text={"Maximum Serials"} /> </label>
                 <input
                   type="number"
                   required
@@ -536,8 +526,7 @@ export const DoctorDashboard: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase text-slate-700 mb-1">
-                  Avg. Mins Per Patient
-                </label>
+                   <I18nText text={"Avg. Mins Per Patient"} /> </label>
                 <input
                   type="number"
                   required
@@ -556,8 +545,7 @@ export const DoctorDashboard: React.FC = () => {
                 onClick={() => setScheduleModalOpen(false)}
                 className="btn-secondary py-2 px-4 text-xs font-semibold"
               >
-                Cancel
-              </button>
+                 <I18nText text={"Cancel"} /> </button>
               <button type="submit" disabled={schedSubmitting} className="btn-primary py-2 px-5 text-xs font-semibold">
                 {schedSubmitting ? 'Creating...' : schedRepeat ? 'Create Recurring Schedules' : 'Create Schedule'}
               </button>

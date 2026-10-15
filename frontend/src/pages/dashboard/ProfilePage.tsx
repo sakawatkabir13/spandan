@@ -1,3 +1,5 @@
+import { I18nText } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useState } from "react";
 import { apiClient } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
@@ -15,6 +17,7 @@ import { MedicalRecords } from "../../components/common/MedicalRecords";
 import { Link, useSearchParams } from "react-router-dom";
 
 export const ProfilePage: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const { user, updateUser, logout } = useAuth();
   const [params] = useSearchParams();
   const [profile, setProfile] = useState<DoctorProfile | PatientProfile | null>(
@@ -67,6 +70,8 @@ export const ProfilePage: React.FC = () => {
       ? {
           ...fields,
           years_of_experience: Number(fields.years_of_experience),
+          minimum_patient_age: fields.minimum_patient_age === '' ? null : Number(fields.minimum_patient_age),
+          maximum_patient_age: fields.maximum_patient_age === '' ? null : Number(fields.maximum_patient_age),
           specialization_ids: selected,
         }
       : { ...fields, date_of_birth: fields.date_of_birth || null };
@@ -152,10 +157,10 @@ export const ProfilePage: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        {!isDoctor && user?.role === 'patient' && params.get('onboarding') === '1' && <section className="rounded-2xl bg-spandan-50 border border-spandan-200 p-6 space-y-2"><h1 className="text-xl font-bold">Welcome to Spandan. Complete your health profile.</h1><p className="text-sm text-slate-600">Add your details, medical history, and any previous reports so your doctor can prepare for your appointment. You can update them at any time.</p><Link className="text-sm text-spandan-700 underline" to="/dashboard/patient">Continue to appointments</Link></section>}
-        {user?.role === 'patient' && <nav className="flex flex-wrap gap-2 text-sm text-spandan-700" aria-label="Profile sections"><a className="rounded-xl bg-white border border-slate-200 px-3 py-2.5" href="#personal-details">Personal details</a><a className="rounded-xl bg-white border border-slate-200 px-3 py-2.5" href="#medical-records">Medical history & reports</a><a className="rounded-xl bg-white border border-slate-200 px-3 py-2.5" href="#account-security">Account security</a></nav>}
+        {!isDoctor && user?.role === 'patient' && params.get('onboarding') === '1' && <section className="rounded-2xl bg-spandan-50 border border-spandan-200 p-6 space-y-2"><h1 className="text-xl font-bold"> <I18nText text={"Welcome to Spandan. Complete your health profile."} /> </h1><p className="text-sm text-slate-600"> <I18nText text={"Add your details, medical history, and any previous reports so your doctor can prepare for your appointment. You can update them at any time."} /> </p><Link className="text-sm text-spandan-700 underline" to="/dashboard/patient"> <I18nText text={"Continue to appointments"} /> </Link></section>}
+        {user?.role === 'patient' && <nav className="flex flex-wrap gap-2 text-sm text-spandan-700" aria-label={uiText("Profile sections")}><a className="rounded-xl bg-white border border-slate-200 px-3 py-2.5" href="#personal-details"> <I18nText text={"Personal details"} /> </a><a className="rounded-xl bg-white border border-slate-200 px-3 py-2.5" href="#medical-records"> <I18nText text={"Medical history & reports"} /> </a><a className="rounded-xl bg-white border border-slate-200 px-3 py-2.5" href="#account-security"> <I18nText text={"Account security"} /> </a></nav>}
         <section className="glass-card p-6 space-y-4 scroll-mt-24" id="personal-details">
-          <h1 className="text-2xl font-bold">My Profile</h1>
+          <h1 className="text-2xl font-bold"> <I18nText text={"My Profile"} /> </h1>
           <p className="text-sm text-slate-600 break-words">
             {user?.email} · {user?.phone_number}
           </p>
@@ -183,8 +188,7 @@ export const ProfilePage: React.FC = () => {
                   )}
                   <div className="space-y-2 flex-1">
                     <label className="block text-sm font-medium">
-                      Profile photo
-                      <input
+                       <I18nText text={"Profile photo"} /> <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         className="block mt-1 text-sm w-full"
@@ -193,20 +197,18 @@ export const ProfilePage: React.FC = () => {
                         }
                       />
                     </label>
-                    <p className="text-xs text-slate-500">JPEG, PNG, or WebP up to 5 MB.</p>
+                    <p className="text-xs text-slate-500"> <I18nText text={"JPEG, PNG, or WebP up to 5 MB."} /> </p>
                     <button
                       type="button"
                       disabled={busy || !photoFile}
                       onClick={uploadPhoto}
                       className="btn-secondary text-sm py-2"
                     >
-                      Upload Photo
-                    </button>
+                       <I18nText text={"Upload Photo"} /> </button>
                   </div>
                 </div>
                 <label className="block text-sm">
-                  Full name
-                  <input
+                   <I18nText text={"Full name"} /> <input
                     name="full_name"
                     required
                     minLength={2}
@@ -217,7 +219,7 @@ export const ProfilePage: React.FC = () => {
                 {doc ? (
                   <>
                     <p className="rounded-xl bg-slate-100 p-4 text-sm">
-                      {doc.is_demo ? 'Account ID' : 'BMDC'}: {doc.is_demo ? doc.id.slice(0, 8).toUpperCase() : doc.medical_registration_number} · Status:{" "}
+                      {doc.is_demo ? 'Account ID' : 'BMDC'}: {doc.is_demo ? doc.id.slice(0, 8).toUpperCase() : doc.medical_registration_number}  <I18nText text={"· Status:"} /> {" "}
                       <strong>{doc.verification_status}</strong>
                       {!doc.is_demo && doc.verification_notes && (
                         <span className="block mt-2">
@@ -226,16 +228,14 @@ export const ProfilePage: React.FC = () => {
                       )}
                     </p>
                     <label className="block text-sm">
-                      Current workplace
-                      <input
+                       <I18nText text={"Current workplace"} /> <input
                         name="current_workplace"
                         defaultValue={doc.current_workplace || ""}
                         className="input-field"
                       />
                     </label>
                     <label className="block text-sm">
-                      Years of experience
-                      <input
+                       <I18nText text={"Years of experience"} /> <input
                         name="years_of_experience"
                         type="number"
                         min={0}
@@ -245,18 +245,18 @@ export const ProfilePage: React.FC = () => {
                       />
                     </label>
                     <label className="block text-sm">
-                      Biography
-                      <textarea
+                       <I18nText text={"Biography"} /> <textarea
                         name="biography"
                         rows={4}
                         defaultValue={doc.biography || ""}
                         className="input-field"
                       />
                     </label>
+                    <label className="block text-sm"> <I18nText text={"Consultation languages"} /> <input name="languages" maxLength={200} defaultValue={doc.languages || ''} placeholder={uiText("For example, English, Bangla")} className="input-field mt-1" /></label>
+                    <fieldset className="grid gap-3 sm:grid-cols-2"><legend className="mb-2 text-sm font-medium"> <I18nText text={"Patient age range (leave blank if unrestricted)"} /> </legend><label className="block text-sm"> <I18nText text={"Minimum age"} /> <input name="minimum_patient_age" type="number" min={0} max={120} defaultValue={doc.minimum_patient_age ?? ''} className="input-field mt-1" /></label><label className="block text-sm"> <I18nText text={"Maximum age"} /> <input name="maximum_patient_age" type="number" min={0} max={120} defaultValue={doc.maximum_patient_age ?? ''} className="input-field mt-1" /></label></fieldset>
                     <fieldset>
                       <legend className="text-sm font-semibold mb-2">
-                        Specializations
-                      </legend>
+                         <I18nText text={"Specializations"} /> </legend>
                       <div className="grid sm:grid-cols-2 gap-2">
                         {specs.map((spec) => (
                           <label
@@ -284,8 +284,7 @@ export const ProfilePage: React.FC = () => {
                   patient && (
                     <>
                       <label className="block text-sm">
-                        Date of birth
-                        <input
+                         <I18nText text={"Date of birth"} /> <input
                           name="date_of_birth"
                           type="date"
                           max={new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' })}
@@ -294,31 +293,28 @@ export const ProfilePage: React.FC = () => {
                         />
                       </label>
                       <label className="block text-sm">
-                        Gender
-                        <select
+                         <I18nText text={"Gender"} /> <select
                           name="gender"
-                          aria-label="Gender"
+                          aria-label={uiText("Gender")}
                           defaultValue={patient.gender || ""}
                           className="input-field"
                         >
-                          <option value="">Choose an option</option>
-                          <option value="Not specified">Prefer not to say</option>
-                          <option>Male</option>
-                          <option>Female</option>
-                          <option>Other</option>
+                          <option value=""> <I18nText text={"Choose an option"} /> </option>
+                          <option value="Not specified"> <I18nText text={"Prefer not to say"} /> </option>
+                          <option value="Male"> <I18nText text={"Male"} /> </option>
+                          <option value="Female"> <I18nText text={"Female"} /> </option>
+                          <option value="Other"> <I18nText text={"Other"} /> </option>
                         </select>
                       </label>
                       <label className="block text-sm">
-                        Address
-                        <textarea
+                         <I18nText text={"Address"} /> <textarea
                           name="address"
                           defaultValue={patient.address || ""}
                           className="input-field"
                         />
                       </label>
                       <label className="block text-sm">
-                        Emergency contact
-                        <input
+                         <I18nText text={"Emergency contact"} /> <input
                           name="emergency_contact"
                           defaultValue={patient.emergency_contact || ""}
                           className="input-field"
@@ -328,23 +324,19 @@ export const ProfilePage: React.FC = () => {
                   )
                 )}
                 <button disabled={busy} className="btn-primary">
-                  Save Profile
-                </button>
+                   <I18nText text={"Save Profile"} /> </button>
               </form>
             )
           )}
         </section>
         {patient && user?.role === 'patient' && <MedicalRecords profile={patient} />}
         <section className="glass-card p-6 space-y-4 scroll-mt-24" id="account-security">
-          <h2 className="text-xl font-bold">Change Password</h2>
+          <h2 className="text-xl font-bold"> <I18nText text={"Change Password"} /> </h2>
           <p className="text-sm text-slate-600">
-            You will need to sign in again on all devices after changing your
-            password.
-          </p>
+             <I18nText text={"You will need to sign in again on all devices after changing your password."} /> </p>
           <form onSubmit={changePassword} className="space-y-3">
             <label className="block text-sm">
-              Current password
-              <input
+               <I18nText text={"Current password"} /> <input
                 type="password"
                 name="current_password"
                 autoComplete="current-password"
@@ -353,8 +345,7 @@ export const ProfilePage: React.FC = () => {
               />
             </label>
             <label className="block text-sm">
-              New password
-              <input
+               <I18nText text={"New password"} /> <input
                 type="password"
                 name="new_password"
                 autoComplete="new-password"
@@ -364,8 +355,7 @@ export const ProfilePage: React.FC = () => {
               />
             </label>
             <button disabled={busy} className="btn-primary">
-              Change Password
-            </button>
+               <I18nText text={"Change Password"} /> </button>
           </form>
         </section>
         {doc && <AssistantManagement doctorId={doc.id} />}

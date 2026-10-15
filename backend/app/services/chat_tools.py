@@ -91,7 +91,7 @@ def project(row, names):
 def doctor_card(row):
     return {
         **project(
-            row, ["id", "full_name", "current_workplace", "verification_status", "source_url"]
+            row, ["id", "full_name", "current_workplace", "verification_status", "source_url", "languages", "minimum_patient_age", "maximum_patient_age"]
         ),
         "specialties": [s.name for s in row.specializations],
         "href": f"/doctors/{row.id}",
@@ -165,7 +165,7 @@ def appointment_card(row, user=None):
         "attendee_name": row.attendee_name or row.patient.full_name,
         "doctor_name": row.doctor.full_name,
         "session": schedule_card(row.schedule),
-        "href": "/dashboard/patient"
+        "href": f"/dashboard/patient/appointments/{row.id}"
         if user is None or user.role == UserRole.PATIENT
         else f"/dashboard/{dashboard_role(user)}/queue?schedule_id={row.schedule_id}",
     }

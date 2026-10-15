@@ -1,3 +1,4 @@
+import { I18nText } from '../../context/LanguageContext';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiClient } from '../../api/client';
@@ -36,7 +37,7 @@ export function DirectoryDetailPage() {
       <div className="flex flex-wrap gap-3">{doctor.appointment_phone && <a className="btn-primary" href={`tel:${doctor.appointment_phone}`}>{t('Call hospital')}: {doctor.appointment_phone}</a>}<a className="btn-secondary" href={doctor.contact_source_url || doctor.source_url} target="_blank" rel="noopener noreferrer">{t('Visit hospital website')}</a></div>
       {doctor.booking_status === 'demo_only' && doctor.demo_doctor_id && <div className="rounded-xl bg-spandan-50 p-4 space-y-3"><p>{t('Spandan schedules are separate from hospital availability. A Spandan booking does not reserve a hospital visit.')}</p><Link className="btn-primary" to={`/doctors/${doctor.demo_doctor_id}`}>{t('Book appointment')}</Link></div>}
       <SourceLink doctor={doctor} />
-      <p className="text-sm text-slate-500">{t('To request a correction or removal, contact')} <a className="underline" href="mailto:community.cuetinsights@gmail.com">community.cuetinsights@gmail.com</a>.</p>
+      <p className="text-sm text-slate-500">{t('To request a correction or removal, contact')} <a className="underline" href="mailto:community.cuetinsights@gmail.com"> <I18nText text={"community.cuetinsights@gmail.com"} /> </a>.</p>
     </article>}
   </div></MainLayout>;
 }

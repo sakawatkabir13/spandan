@@ -1,3 +1,5 @@
+import { I18nText } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/LanguageContext';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
@@ -9,6 +11,7 @@ import { Badge } from '../../components/common/Badge';
 import { Calendar, Clock, MapPin } from 'lucide-react';
 
 export const AssistantDashboard: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const [loadError, setLoadError] = useState('');
   useAuth();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -35,23 +38,20 @@ export const AssistantDashboard: React.FC = () => {
       <div className="space-y-8">
         {loadError && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{loadError}</p>}
         <div className="glass-card p-6 border-slate-200">
-          <h1 className="text-2xl font-bold text-slate-900">Assistant Queue Console</h1>
+          <h1 className="text-2xl font-bold text-slate-900"> <I18nText text={"Assistant Queue Console"} /> </h1>
           <p className="text-sm text-slate-600">
-            Manage live running serials, delays, and patient check-ins for your assigned doctor chambers.
-          </p>
+             <I18nText text={"Manage live running serials, delays, and patient check-ins for your assigned doctor chambers."} /> </p>
         </div>
 
         {loading ? (
-          <LoadingSpinner size="lg" text="Loading assigned chamber schedules..." />
+          <LoadingSpinner size="lg" text={uiText("Loading assigned chamber schedules...")} />
         ) : schedules.length === 0 ? (
           <div className="glass-card p-12 text-center text-slate-500">
-            No open schedules found for your assigned chambers today.
-          </div>
+             <I18nText text={"No open schedules found for your assigned chambers today."} /> </div>
         ) : (
           <div className="glass-card p-6 border-slate-200 space-y-4">
             <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-spandan-600" /> Assigned Sessions
-            </h3>
+              <Calendar className="w-5 h-5 text-spandan-600" />  <I18nText text={"Assigned Sessions"} /> </h3>
 
             <div className="space-y-4">
               {schedules.map((sched) => (
@@ -72,7 +72,7 @@ export const AssistantDashboard: React.FC = () => {
                     </p>
                     <p className="text-xs text-slate-500 flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
-                      {sched.start_time.slice(0, 5)} - {sched.end_time.slice(0, 5)} | Running Serial #{sched.queue_state?.current_serial ?? 0}
+                      {sched.start_time.slice(0, 5)} - {sched.end_time.slice(0, 5)}  <I18nText text={"| Running Serial #"} /> {sched.queue_state?.current_serial ?? 0}
                     </p>
                   </div>
 
@@ -80,8 +80,7 @@ export const AssistantDashboard: React.FC = () => {
                     to={`/dashboard/assistant/queue?schedule_id=${sched.id}`}
                     className="btn-primary py-2.5 px-5 text-xs font-semibold"
                   >
-                    Open Live Queue Console
-                  </Link>
+                     <I18nText text={"Open Live Queue Console"} /> </Link>
                 </div>
               ))}
             </div>

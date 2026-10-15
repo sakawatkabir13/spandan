@@ -71,6 +71,9 @@ export interface Qualification {
 }
 
 export interface DoctorProfile {
+  languages?: string;
+  minimum_patient_age?: number | null;
+  maximum_patient_age?: number | null;
   is_demo?: boolean;
   source_url?: string | null;
   id: string;
@@ -118,6 +121,7 @@ export interface QueueState {
 }
 
 export interface Schedule {
+  confirmed_at?: string | null;
   id: string;
   doctor_id: string;
   chamber_id: string;

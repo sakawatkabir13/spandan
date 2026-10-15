@@ -71,6 +71,11 @@ async def update_user_status(db, user, user_id, is_active, *, commit=True):
         )
     previous = target.is_active
     target.is_active = is_active
+    if previous and not is_active and target.role == UserRole.DOCTOR:
+        doctor_id = await db.scalar(select(DoctorProfile.id).where(DoctorProfile.user_id == target.id))
+        if doctor_id:
+            from app.services.availability import notify_unavailability
+            await notify_unavailability(db, doctor_id, datetime.now(timezone.utc).isoformat())
     db.add(
         AuditLog(
             actor_user_id=user.id,
@@ -119,13 +124,18 @@ async def join_waitlist(schedule_id: UUID, user, db, *, commit: bool = True):
     if not entry:
         entry = WaitlistEntry(schedule_id=schedule_id, patient_id=profile.id)
         db.add(entry)
+    elif entry.status in ("waiting", "offered"):
+        return create_success_response("You are already on this session's waitlist.", record(entry))
+    entry.created_at = datetime.now(timezone.utc)
+    entry.offer_expires_at = None
+    entry.offered_at = None
     entry.status = "waiting"
     if commit:
         await db.commit()
     else:
         await db.flush()
     return create_success_response(
-        "Joined the cancellation waitlist. You will be notified when space becomes available.",
+        "Joined the waitlist. Released places are offered in order with a 15-minute acceptance window.",
         record(entry),
     )
 
@@ -134,10 +144,17 @@ async def leave_waitlist(id: UUID, user, db, *, commit: bool = True):
     if user.role != UserRole.PATIENT:
         raise SpandanException("FORBIDDEN", "Patient access is required.", 403)
     profile = await patient_repo.get_by_user_id(db, user.id)
+    from app.repositories.schedule import schedule_repo
     row = await db.get(WaitlistEntry, id)
     if not row or row.patient_id != profile.id:
         raise SpandanException("NOT_FOUND", "Waitlist entry not found.", 404)
+    schedule = await schedule_repo.get_by_id_with_queue(db, row.schedule_id, lock=True)
+    await db.refresh(row)
+    if row.status == "booked":
+        raise SpandanException("CONFLICT", "This offer was already booked. Manage the appointment instead.", 409)
     row.status = "cancelled"
+    from app.services.waitlist import offer_places
+    await offer_places(db, schedule)
     if commit:
         await db.commit()
     else:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import get_current_active_user, require_roles
@@ -54,15 +54,17 @@ async def register_assistant(
 
 
 @router.post("/login", response_model=ApiResponse[TokenResponse])
-async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
-    user = await auth_service.authenticate(db, request.email, request.password, request.mfa_code)
+async def login(request: LoginRequest, http_request: Request, db: AsyncSession = Depends(get_db)):
+    ip_address = http_request.client.host[:64] if http_request.client else None
+    user_agent = http_request.headers.get("user-agent", "")[:250]
+    user = await auth_service.authenticate(db, request.email, request.password, request.mfa_code, ip_address=ip_address, user_agent=user_agent)
     if not user:
         raise SpandanException(
             code="INVALID_CREDENTIALS",
             message="Incorrect email or password.",
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
-    tokens = auth_service.create_tokens(user)
+    tokens = await auth_service.create_tokens(db, user, ip_address=ip_address, user_agent=user_agent)
     return create_success_response(message="Login successful.", data=tokens)
 
 

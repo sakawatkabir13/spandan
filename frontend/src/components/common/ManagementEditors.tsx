@@ -1,3 +1,4 @@
+import { I18nText } from '../../context/LanguageContext';
 import { useState } from 'react';
 import { apiClient } from '../../api/client';
 import { errorMessage } from '../../api/errors';
@@ -21,8 +22,8 @@ export function ChamberEditor({ chamber, saved }: { chamber: Chamber; saved: () 
       <label key={key} className="block text-sm">{key.replaceAll('_', ' ')}
         <input aria-label={key.replaceAll('_', ' ')} name={key} required={key !== 'phone_number'} type={key.endsWith('fee') ? 'number' : 'text'} min={0} defaultValue={(chamber as any)[key] ?? ''} className="input-field" />
       </label>)}
-    <label className="block">Availability<select name="is_active" defaultValue={String(chamber.is_active)} className="input-field"><option value="true">Active</option><option value="false">Inactive</option></select></label>
-    <button className="btn-primary" disabled={busy}>Save Chamber</button>
+    <label className="block"> <I18nText text={"Availability"} /> <select name="is_active" defaultValue={String(chamber.is_active)} className="input-field"><option value="true"> <I18nText text={"Active"} /> </option><option value="false"> <I18nText text={"Inactive"} /> </option></select></label>
+    <button className="btn-primary" disabled={busy}> <I18nText text={"Save Chamber"} /> </button>
   </form>;
 }
 
@@ -42,11 +43,11 @@ export function ScheduleEditor({ schedule, saved }: { schedule: Schedule; saved:
     catch (error) { setMessage(errorMessage(error)); }
     finally { setBusy(false); }
   }}>
-    <p className="text-sm text-slate-600">Times can only change before bookings exist. Capacity cannot be reduced below current bookings.</p>
+    <p className="text-sm text-slate-600"> <I18nText text={"Times can only change before bookings exist. Capacity cannot be reduced below current bookings."} /> </p>
     {message && <p role="alert">{message}</p>}
     {['start_time', 'end_time', 'maximum_patients', 'average_consultation_minutes'].map(key =>
       <label key={key} className="block">{key.replaceAll('_', ' ')}<input name={key} type={key.endsWith('time') ? 'time' : 'number'} min={1} required defaultValue={key.endsWith('time') ? (schedule as any)[key].slice(0, 5) : (schedule as any)[key]} className="input-field" /></label>)}
-    {(schedule as any).series_id && <label className="block"><input name="series" type="checkbox" /> Apply to this and later sessions in the recurring series</label>}
-    <button disabled={busy} className="btn-primary">Save Session</button>
+    {(schedule as any).series_id && <label className="block"><input name="series" type="checkbox" />  <I18nText text={"Apply to this and later sessions in the recurring series"} /> </label>}
+    <button disabled={busy} className="btn-primary"> <I18nText text={"Save Session"} /> </button>
   </form>;
 }

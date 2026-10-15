@@ -54,4 +54,6 @@ class MedicalReportResponse(ReportFields):
     content_type: str
     size_bytes: int
     created_at: datetime
+    dependent_id: UUID | None = None
+    share_with_doctors: bool = True
     model_config = ConfigDict(from_attributes=True)

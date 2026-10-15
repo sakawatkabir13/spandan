@@ -31,7 +31,7 @@ class CompleteAction(RecoveryRequest):
 
 class MfaRequest(BaseModel):
     password: str = Field(max_length=128)
-    code: str | None = Field(None, pattern="^[0-9]{6}$")
+    code: str | None = Field(None, min_length=6, max_length=30)
 
 
 @router.post("/registration-code")
@@ -152,10 +152,18 @@ async def manage_mfa(
         raise SpandanException("INVALID_CREDENTIALS", "Incorrect password.", 401)
     if not user.mfa_secret or (action == "disable" and not user.mfa_enabled):
         raise SpandanException("CONFLICT", "Set up an authenticator first.", 409)
-    validate_mfa(user, request.code, allow_pending=action == "enable")
+    if action == "enable":
+        validate_mfa(user, request.code, allow_pending=True)
+    else:
+        from app.services.account_security import validate_login_mfa
+        await validate_login_mfa(db, user, request.code)
     user.mfa_enabled = action == "enable"
     if action == "disable":
         user.mfa_secret = None
+        from sqlalchemy import delete
+
+        from app.models.account_session import MFARecoveryCode
+        await db.execute(delete(MFARecoveryCode).where(MFARecoveryCode.user_id == user.id))
     user.token_version += 1
     db.add(
         AuditLog(

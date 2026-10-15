@@ -68,6 +68,17 @@ async def get_current_user(
         )
     if payload.get("ver", 0) != user.token_version:
         raise SpandanException(code="INVALID_CREDENTIALS", message="Session has expired. Please sign in again.", status_code=401)
+    if payload.get("sid"):
+        from datetime import datetime, timezone
+
+        from app.core.time import aware
+        from app.models.account_session import AccountSession
+        try:
+            session = await db.get(AccountSession, UUID(payload["sid"]))
+        except (ValueError, TypeError):
+            session = None
+        if not session or session.user_id != user.id or session.revoked_at or aware(session.expires_at) <= datetime.now(timezone.utc):
+            raise SpandanException("INVALID_CREDENTIALS", "This device session has expired or been revoked.", 401)
     return user
 
 

@@ -1,3 +1,4 @@
+import { I18nText } from '../../context/LanguageContext';
 import React, { useEffect, useState } from "react";
 import { apiClient } from "../../api/client";
 import { ApiResponse, User } from "../../types";
@@ -38,10 +39,9 @@ export const UserManagementPage: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="glass-card p-6 space-y-5">
-        <h1 className="text-2xl font-bold">User Management</h1>
+        <h1 className="text-2xl font-bold"> <I18nText text={"User Management"} /> </h1>
         <p className="text-slate-600">
-          Review accounts and manage access to Spandan.
-        </p>
+           <I18nText text={"Review accounts and manage access to Spandan."} /> </p>
         {error && (
           <p role="alert" className="text-red-700">
             {error}
@@ -81,15 +81,13 @@ export const UserManagementPage: React.FC = () => {
             disabled={page === 0 || loading}
             onClick={() => setPage(page - 1)}
           >
-            Previous
-          </button>
+             <I18nText text={"Previous"} /> </button>
           <button
             className="btn-secondary"
             disabled={users.length < 100 || loading}
             onClick={() => setPage(page + 1)}
           >
-            Next
-          </button>
+             <I18nText text={"Next"} /> </button>
         </div>
       </div>
     </DashboardLayout>

@@ -104,6 +104,7 @@ class ScheduleResponse(ScheduleBase):
     cancellation_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    confirmed_at: datetime | None = None
     queue_state: Optional[QueueStateResponse] = None
     chamber: Optional[ChamberResponse] = None
 

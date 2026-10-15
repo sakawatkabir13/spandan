@@ -41,6 +41,9 @@ class WaitlistEntry(Base):
         UUID(as_uuid=True), ForeignKey("patient_profiles.id"), nullable=False, index=True
     )
     status = Column(String(20), nullable=False, default="waiting")
+    offered_at = Column(DateTime(timezone=True), nullable=True)
+    offer_expires_at = Column(DateTime(timezone=True), nullable=True)
+    appointment_id = Column(UUID(as_uuid=True), ForeignKey("appointments.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
 
 

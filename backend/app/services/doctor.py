@@ -70,6 +70,13 @@ class DoctorService:
             profile.current_workplace = update_data.current_workplace
         if update_data.years_of_experience is not None:
             profile.years_of_experience = update_data.years_of_experience
+        for key in ("languages", "minimum_patient_age", "maximum_patient_age"):
+            if key in update_data.model_fields_set:
+                if key == "languages" and update_data.languages is None:
+                    raise SpandanException("VALIDATION_ERROR", "Languages cannot be null.")
+                setattr(profile, key, getattr(update_data, key))
+        if profile.minimum_patient_age is not None and profile.maximum_patient_age is not None and profile.minimum_patient_age > profile.maximum_patient_age:
+            raise SpandanException("VALIDATION_ERROR", "Minimum patient age must not exceed maximum patient age.")
 
         if update_data.specialization_ids is not None:
             result = await db.execute(
@@ -114,6 +121,9 @@ class DoctorService:
         from datetime import datetime, timezone
 
         profile.verified_at = datetime.now(timezone.utc)
+        if previous_status == DoctorVerificationStatus.APPROVED.value and req.status != DoctorVerificationStatus.APPROVED:
+            from app.services.availability import notify_unavailability
+            await notify_unavailability(db, profile.id, profile.verified_at.isoformat())
         db.add(
             AuditLog(
                 actor_user_id=admin_user.id,

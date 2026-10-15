@@ -215,6 +215,20 @@ async def receipt(id: UUID, user=Depends(get_current_active_user), db=Depends(ge
     )
 
 
+async def record_checkout_failure(db, payment, event):
+    from app.models.audit import AuditLog
+    event_id = event.get("id")
+    if not isinstance(event_id, str) or not event_id.startswith("evt_") or len(event_id) > 200:
+        raise SpandanException("INVALID_EVENT", "Invalid payment failure event.", 400)
+    # The payment row lock serializes redelivery; no card details or failure text are retained.
+    existing = await db.scalar(select(AuditLog.id).where(
+        AuditLog.action == "payment.checkout_failed", AuditLog.entity_id == str(payment.id),
+        AuditLog.metadata_json["provider_event_id"].as_string() == event_id,
+    ))
+    if not existing:
+        db.add(AuditLog(action="payment.checkout_failed", entity_type="payment", entity_id=str(payment.id), metadata_json={"provider_event_id": event_id}))
+
+
 @router.post("/webhook")
 async def webhook(request: Request, db=Depends(get_db)):
     if not settings.STRIPE_WEBHOOK_SECRET:
@@ -247,6 +261,8 @@ async def webhook(request: Request, db=Depends(get_db)):
     supported = {
         "checkout.session.completed",
         "checkout.session.async_payment_succeeded",
+        "checkout.session.async_payment_failed",
+        "payment_intent.payment_failed",
         "refund.updated",
     }
     if event_type not in supported or not obj.get("metadata", {}).get("payment_id"):
@@ -258,7 +274,24 @@ async def webhook(request: Request, db=Depends(get_db)):
     payment = await db.scalar(select(Payment).where(Payment.id == payment_id).with_for_update())
     if not payment:
         return create_success_response("Ignored unknown payment.")
-    if event_type in ("checkout.session.completed", "checkout.session.async_payment_succeeded"):
+    if event_type == "payment_intent.payment_failed":
+        if payment.provider != "stripe" or not payment.provider_reference:
+            raise SpandanException("PAYMENT_MISMATCH", "Payment details do not match.", 400)
+        session = await billing.stripe("GET", f"checkout/sessions/{payment.provider_reference}")
+        intent = session.get("payment_intent")
+        intent_id = intent.get("id") if isinstance(intent, dict) else intent
+        if (
+            session.get("livemode") is True
+            or intent_id != obj.get("id")
+            or obj.get("amount") != int(Decimal(payment.amount) * 100)
+            or obj.get("currency") != payment.currency
+            or session.get("metadata", {}).get("payment_id") != str(payment.id)
+        ):
+            raise SpandanException("PAYMENT_MISMATCH", "Payment details do not match.", 400)
+        await record_checkout_failure(db, payment, event)
+        await db.commit()
+        return create_success_response("Payment failure recorded. The patient can retry checkout.")
+    if event_type in ("checkout.session.completed", "checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed"):
         if (
             payment.provider != "stripe"
             or obj.get("id") != payment.provider_reference
@@ -266,6 +299,10 @@ async def webhook(request: Request, db=Depends(get_db)):
             or obj.get("currency") != payment.currency
         ):
             raise SpandanException("PAYMENT_MISMATCH", "Payment details do not match.", 400)
+        if event_type == "checkout.session.async_payment_failed":
+            await record_checkout_failure(db, payment, event)
+            await db.commit()
+            return create_success_response("Payment failure recorded. The patient can retry checkout.")
         if obj.get("payment_status") != "paid":
             return create_success_response("Test payment is awaiting confirmation.")
         if payment.status == "pending":

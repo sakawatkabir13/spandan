@@ -4,7 +4,7 @@ test('assistant consent, streaming cards, confirmation, history and mobile conta
   const user = { id: 'chat-browser-patient', role: 'patient', email: 'patient@example.test', is_active: true, patient_profile: { id: 'patient-profile', full_name: 'Browser Patient' } };
   const action = { id: 'chat-action', name: 'propose_checkout', status: 'pending', requires_step_up: false, expires_at: new Date(Date.now() + 300000).toISOString(), summary: { doctor_name: 'Dr. A Very Long Specialist Name For Responsive Layout Testing', attendee_name: 'Browser Patient', session_date: '2026-12-01', consultation_fee: '500.00', currency: 'bdt' } };
   let confirmations = 0;
-  await page.addInitScript(u => { localStorage.setItem('spandan_user', JSON.stringify(u)); localStorage.setItem('spandan_access_token', 'isolated-browser-token'); }, user);
+  await page.addInitScript(u => { localStorage.setItem('spandan_language', 'bn'); localStorage.setItem('spandan_user', JSON.stringify(u)); localStorage.setItem('spandan_access_token', 'isolated-browser-token'); }, user);
   const success = (data: unknown) => JSON.stringify({ success: true, data });
   await page.route('**/api/v1/**', async route => {
     const path = new URL(route.request().url()).pathname;

@@ -1,3 +1,4 @@
+import { I18nText } from '../../context/LanguageContext';
 import { useLanguage } from '../../context/LanguageContext';
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -8,6 +9,7 @@ import { Activity, ArrowRight, Lock, Mail } from 'lucide-react';
 import { errorMessage } from '../../api/errors';
 
 export const LoginPage: React.FC = () => {
+  const { t: uiText } = useLanguage();
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,18 +62,18 @@ export const LoginPage: React.FC = () => {
             </p>
           </div>
 
-          {error && <Alert type="error" title="Login Failed" message={error} onClose={() => setError(null)} />}
+          {error && <Alert type="error" title={uiText("Login Failed")} message={error} onClose={() => setError(null)} />}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">{t('Email Address')}</label>
               <div className="field-with-icon">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input aria-label="Email Address"
+                <input aria-label={uiText("Email Address")}
                   type="email"
                   autoComplete="email"
                   required
-                  placeholder="you@example.com"
+                  placeholder={uiText("you@example.com")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-field pl-10"
@@ -85,7 +87,7 @@ export const LoginPage: React.FC = () => {
               </div>
               <div className="field-with-icon">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-                <input aria-label="Password"
+                <input aria-label={uiText("Password")}
                   type="password"
                   autoComplete="current-password"
                   required
@@ -97,7 +99,7 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <details className="rounded-xl border border-slate-200 p-3"><summary className="text-sm text-slate-600 font-medium">Use an authenticator code</summary><label className="mt-3 block text-sm">Authenticator code<input aria-label="Authenticator code" value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\D/g, ''))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} className="input-field mt-1" /></label></details>
+            <details className="rounded-xl border border-slate-200 p-3"><summary className="text-sm text-slate-600 font-medium"> <I18nText text={"Use an authenticator or recovery code"} /> </summary><label className="mt-3 block text-sm"> <I18nText text={"Authenticator or recovery code"} /> <input aria-label={uiText("Authenticator code")} value={mfaCode} onChange={e => setMfaCode(e.target.value)} autoComplete="one-time-code" maxLength={30} className="input-field mt-1" /></label><p className="mt-2 text-xs text-slate-500"> <I18nText text={"Use your six-digit authenticator code, or one unused recovery code."} /> </p></details>
             <Link to="/forgot-password" className="block underline text-sm">{t('Forgot your password?')}</Link>
             <button
               type="submit"
@@ -111,10 +113,9 @@ export const LoginPage: React.FC = () => {
 
           <div className="pt-4 border-t border-slate-100 text-center text-sm text-slate-600 space-y-2">
             <p>
-              Don't have an account yet?{' '}
+               <I18nText text={"Don't have an account yet?"} /> {' '}
               <Link to="/register" className="font-semibold text-spandan-600 hover:text-spandan-700 underline">
-                Register here
-              </Link>
+                 <I18nText text={"Register here"} /> </Link>
             </p>
           </div>
         </div>
