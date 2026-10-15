@@ -1,5 +1,27 @@
 import { expect, test } from '@playwright/test';
 
+test('signed-out account controls fit small phones in both languages', async ({ page }) => {
+  for (const language of ['en', 'bn']) {
+    await page.goto('/privacy');
+    await page.evaluate(value => localStorage.setItem('spandan_language', value), language);
+    await page.reload();
+    for (const width of [320, 360, 390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const layout = await page.locator('header').evaluate(el => {
+        const bar = el.firstElementChild!;
+        const bounds = bar.getBoundingClientRect();
+        const edge = bounds.right - parseFloat(getComputedStyle(bar).paddingRight);
+        const controls = bar.lastElementChild!.getBoundingClientRect();
+        return { width: innerWidth, page: document.documentElement.scrollWidth, header: el.scrollWidth, edge, controlsRight: controls.right };
+      });
+      expect(layout.page, `${language}: ${JSON.stringify(layout)}`).toBeLessThanOrEqual(width + 1);
+      expect(layout.header, `${language}: ${JSON.stringify(layout)}`).toBeLessThanOrEqual(width + 1);
+      expect(layout.controlsRight, `${language}: account controls must preserve the page gutter`).toBeLessThanOrEqual(layout.edge + 1);
+    }
+  }
+});
+
 test('signed-in navigation fits every role at tablet breakpoints in both languages', async ({ page }) => {
   let role = 'patient';
   await page.addInitScript(() => {

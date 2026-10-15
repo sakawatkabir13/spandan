@@ -41,7 +41,7 @@ export const Navbar: React.FC = () => {
             <Activity className="w-6 h-6" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-slate-900 via-spandan-800 to-spandan-600 bg-clip-text text-transparent">
+            <span className="font-bold text-base sm:text-xl tracking-tight bg-gradient-to-r from-slate-900 via-spandan-800 to-spandan-600 bg-clip-text text-transparent">
                <I18nText text={"Spandan"} /> </span>
             <span className="hidden sm:block text-[10px] font-medium tracking-widest text-spandan-600 -mt-1">
                <I18nText text={"Find Care. Book Easily"} /> </span>
@@ -63,7 +63,7 @@ export const Navbar: React.FC = () => {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-3">
           <button aria-label={uiText("Change language")} className="min-h-11 px-1 text-xs sm:text-sm font-semibold" onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}>{language === 'en' ? 'বাংলা' : 'English'}</button>
           {isAuthenticated && user ? (
             <div className="flex items-center gap-2 sm:gap-3">
@@ -88,11 +88,11 @@ export const Navbar: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <Link to="/login" className="btn-secondary text-xs sm:text-sm py-2 px-2.5 sm:px-4">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Link to="/login" className="btn-secondary text-xs sm:text-sm py-2 px-2 sm:px-4">
                 {t('Login')}
               </Link>
-              <Link to="/register" className="btn-primary text-xs sm:text-sm py-2 px-2.5 sm:px-4">
+              <Link to="/register" className="btn-primary text-xs sm:text-sm py-2 px-2 sm:px-4">
                 {t('Register')}
               </Link>
             </div>
