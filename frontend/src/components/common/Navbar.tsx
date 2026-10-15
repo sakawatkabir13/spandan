@@ -48,7 +48,7 @@ export const Navbar: React.FC = () => {
           </div>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6 font-medium text-slate-600 text-sm">
+        <nav className="hidden lg:flex items-center gap-6 font-medium text-slate-600 text-sm">
           <Link to="/doctors" aria-current={pathname.startsWith('/doctors') || pathname.startsWith('/directory') ? 'page' : undefined} className="navbar-link hover:text-spandan-600 transition flex items-center gap-1.5">
             <Search className="w-4 h-4 text-slate-400" />
             {t('Find Doctors')}
@@ -99,7 +99,7 @@ export const Navbar: React.FC = () => {
           )}
         </div>
       </div>
-      {!pathname.startsWith('/dashboard') && <nav aria-label={uiText("Mobile navigation")} className="md:hidden flex flex-wrap gap-x-5 gap-y-2 px-4 pb-3 text-sm font-medium text-slate-600"><Link to="/doctors">{t('Find Doctors')}</Link><Link to="/ai-triage">{t('AI Symptom Checker')}</Link></nav>}
+      {!pathname.startsWith('/dashboard') && <nav aria-label={uiText("Mobile navigation")} className="lg:hidden flex flex-wrap gap-x-5 gap-y-2 px-4 pb-3 text-sm font-medium text-slate-600"><Link to="/doctors">{t('Find Doctors')}</Link><Link to="/ai-triage">{t('AI Symptom Checker')}</Link></nav>}
     </header>
   );
 };
